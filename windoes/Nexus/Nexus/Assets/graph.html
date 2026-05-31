@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body { margin: 0; overflow: hidden; background: #0f0a1a; font-family: 'Segoe UI', Arial, sans-serif; }
+        canvas { display: block; cursor: grab; }
+        canvas:active { cursor: grabbing; }
+        #status { position: absolute; top: 16px; left: 16px; color: #e9d5ff; background: rgba(124, 58, 237, 0.9); padding: 12px 18px; border-radius: 8px; font-size: 14px; font-weight: 500; box-shadow: 0 4px 12px rgba(124, 58, 237, 0.4); }
+        #controls { position: absolute; top: 16px; right: 16px; background: rgba(45, 36, 56, 0.95); padding: 12px; border-radius: 10px; border: 2px solid #7c3aed; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); }
+        #controls button { background: #7c3aed; color: white; border: none; padding: 10px 18px; margin: 3px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s; box-shadow: 0 2px 6px rgba(124, 58, 237, 0.3); }
+        #controls button:hover { background: #8b5cf6; transform: translateY(-1px); box-shadow: 0 4px 10px rgba(124, 58, 237, 0.5); }
+        #controls button:active { transform: translateY(0); }
+        #controls button.active { background: #dc2626; box-shadow: 0 2px 6px rgba(220, 38, 38, 0.4); }
+        #controls button.active:hover { background: #ef4444; }
+        #controls button.delete-mode { background: #f59e0b; }
+        #controls button.delete-mode:hover { background: #fbbf24; }
+        #linkInfo { position: absolute; bottom: 16px; left: 16px; right: 16px; background: rgba(45, 36, 56, 0.95); padding: 16px; border-radius: 10px; border: 2px solid #7c3aed; color: #e9d5ff; max-height: 200px; overflow-y: auto; display: none; }
+        #linkInfo h3 { margin: 0 0 12px 0; color: #a78bfa; }
+        .link-item { padding: 8px; margin: 4px 0; background: rgba(124, 58, 237, 0.2); border-radius: 6px; display: flex; justify-content: space-between; align-items: center; }
+        .link-item button { background: #dc2626; color: white; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        .link-item button:hover { background: #ef4444; }
+    </style>
+</head>
+<body>
+    <div id="status">Waiting for data...</div>
+    <div id="controls">
+        <button onclick="zoomIn()">🔍+</button>
+        <button onclick="zoomOut()">🔍-</button>
+        <button onclick="resetView()">🔄</button>
+        <button id="linkBtn" onclick="toggleLinkMode()">🔗 Link</button>
+        <button id="deleteLinkBtn" onclick="toggleDeleteLinkMode()">✂️ Delete</button>
+        <button onclick="toggleLinkList()">📋 List</button>
+    </div>
+    <div id="linkInfo">
+        <h3>🔗 All Connections</h3>
+        <div id="linkList"></div>
+    </div>
+    <canvas id="graph"></canvas>
+    <script>
+        const canvas = document.getElementById('graph');
+        const ctx = canvas.getContext('2d');
+        const statusDiv = document.getElementById('status');
+        const linkBtn = document.getElementById('linkBtn');
+        const deleteLinkBtn = document.getElementById('deleteLinkBtn');
+        const linkInfo = document.getElementById('linkInfo');
+        const linkList = document.getElementById('linkList');
+        let nodes = [], links = [];
+        let width = window.innerWidth, height = window.innerHeight;
+        let scale = 1, offsetX = 0, offsetY = 0;
+        let isDragging = false, dragStartX = 0, dragStartY = 0;
+        let selectedNode = null;
+        let linkMode = false, deleteLinkMode = false;
+        let linkStartNode = null;
+        let mouseX = 0, mouseY = 0;
+        let hoveredLink = null;
+
+        canvas.width = width;
+        canvas.height = height;
+
+        window.addEventListener('resize', () => {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            if (nodes.length > 0) draw();
+        });
+
+        function toggleLinkMode() {
+            linkMode = !linkMode;
+            deleteLinkMode = false;
+            linkStartNode = null;
+            linkBtn.classList.toggle('active', linkMode);
+            deleteLinkBtn.classList.remove('delete-mode');
+            statusDiv.style.display = 'block';
+            statusDiv.textContent = linkMode ? 'Click nodes to link' : 'Link mode off';
+            if (!linkMode) setTimeout(() => statusDiv.style.display = 'none', 2000);
+            draw();
+        }
+
+        function toggleDeleteLinkMode() {
+            deleteLinkMode = !deleteLinkMode;
+            linkMode = false;
+            linkStartNode = null;
+            deleteLinkBtn.classList.toggle('delete-mode', deleteLinkMode);
+            linkBtn.classList.remove('active');
+            statusDiv.style.display = 'block';
+            statusDiv.textContent = deleteLinkMode ? 'Click line to delete' : 'Delete mode off';
+            if (!deleteLinkMode) setTimeout(() => statusDiv.style.display = 'none', 2000);
+            draw();
+        }
+
+        function toggleLinkList() {
+            linkInfo.style.display = linkInfo.style.display === 'none' ? 'block' : 'none';
+            updateLinkList();
+        }
+
+        function updateLinkList() {
+            linkList.innerHTML = '';
+            if (links.length === 0) {
+                linkList.innerHTML = '<p>No connections</p>';
+                return;
+            }
+            links.forEach(link => {
+                const source = nodes.find(n => n.id === link.SourceId);
+                const target = nodes.find(n => n.id === link.TargetId);
+                if (source && target) {
+                    const div = document.createElement('div');
+                    div.className = 'link-item';
+                    div.innerHTML = `<span>${source.title} → ${target.title}</span><button onclick="deleteLink(${link.SourceId}, ${link.TargetId})">Delete</button>`;
+                    linkList.appendChild(div);
+                }
+            });
+        }
+
+        function deleteLink(sourceId, targetId) {
+            links = links.filter(l => !(l.SourceId === sourceId && l.TargetId === targetId));
+            window.chrome.webview.postMessage(JSON.stringify({ action: 'deleteLink', sourceId: sourceId, targetId: targetId }));
+            updateLinkList();
+            draw();
+            statusDiv.style.display = 'block';
+            statusDiv.textContent = 'Connection deleted';
+            setTimeout(() => statusDiv.style.display = 'none', 2000);
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left - offsetX) / scale;
+            const y = (e.clientY - rect.top - offsetY) / scale;
+            
+            if (deleteLinkMode) {
+                const clickedLink = findLinkAtPoint(x, y);
+                if (clickedLink) {
+                    deleteLink(clickedLink.SourceId, clickedLink.TargetId);
+                    return;
+                }
+            }
+            
+            const clickedNode = nodes.find(n => {
+                const dx = x - n.x;
+                const dy = y - n.y;
+                return Math.sqrt(dx*dx + dy*dy) < 12;
+            });
+            
+            if (linkMode && clickedNode) {
+                if (!linkStartNode) {
+                    linkStartNode = clickedNode;
+                    statusDiv.style.display = 'block';
+                    statusDiv.textContent = `Selected: ${clickedNode.title}`;
+                } else if (clickedNode !== linkStartNode) {
+                    const newLink = { SourceId: linkStartNode.id, TargetId: clickedNode.id };
+                    if (!links.find(l => l.SourceId === newLink.SourceId && l.TargetId === newLink.TargetId)) {
+                        links.push(newLink);
+                        window.chrome.webview.postMessage(JSON.stringify({ action: 'createLink', sourceId: linkStartNode.id, targetId: clickedNode.id }));
+                        statusDiv.textContent = `Linked: ${linkStartNode.title} → ${clickedNode.title}`;
+                        updateLinkList();
+                    }
+                    linkStartNode = null;
+                    setTimeout(() => statusDiv.style.display = 'none', 2000);
+                    draw();
+                }
+            } else if (!linkMode && !deleteLinkMode) {
+                selectedNode = clickedNode;
+                if (!selectedNode) {
+                    isDragging = true;
+                    dragStartX = e.clientX - offsetX;
+                    dragStartY = e.clientY - offsetY;
+                }
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = (e.clientX - rect.left - offsetX) / scale;
+            mouseY = (e.clientY - rect.top - offsetY) / scale;
+            
+            if (deleteLinkMode) {
+                hoveredLink = findLinkAtPoint(mouseX, mouseY);
+                canvas.style.cursor = hoveredLink ? 'pointer' : 'grab';
+            }
+            
+            if (isDragging) {
+                offsetX = e.clientX - dragStartX;
+                offsetY = e.clientY - dragStartY;
+                draw();
+            } else if (selectedNode) {
+                selectedNode.x = mouseX;
+                selectedNode.y = mouseY;
+                draw();
+            } else if ((linkMode && linkStartNode) || deleteLinkMode) {
+                draw();
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            isDragging = false;
+            selectedNode = null;
+        });
+
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            scale *= e.deltaY > 0 ? 0.9 : 1.1;
+            scale = Math.max(0.1, Math.min(5, scale));
+            draw();
+        });
+
+        function findLinkAtPoint(x, y) {
+            const threshold = 10 / scale;
+            for (const link of links) {
+                const source = nodes.find(n => n.id === link.SourceId);
+                const target = nodes.find(n => n.id === link.TargetId);
+                if (source && target) {
+                    if (distanceToLine(x, y, source.x, source.y, target.x, target.y) < threshold) return link;
+                }
+            }
+            return null;
+        }
+
+        function distanceToLine(px, py, x1, y1, x2, y2) {
+            const A = px - x1, B = py - y1, C = x2 - x1, D = y2 - y1;
+            const dot = A * C + B * D;
+            const lenSq = C * C + D * D;
+            let param = lenSq !== 0 ? dot / lenSq : -1;
+            let xx, yy;
+            if (param < 0) { xx = x1; yy = y1; }
+            else if (param > 1) { xx = x2; yy = y2; }
+            else { xx = x1 + param * C; yy = y1 + param * D; }
+            return Math.sqrt((px - xx) * (px - xx) + (py - yy) * (py - yy));
+        }
+
+        function zoomIn() { scale = Math.min(5, scale * 1.2); draw(); }
+        function zoomOut() { scale = Math.max(0.1, scale * 0.8); draw(); }
+        function resetView() { scale = 1; offsetX = 0; offsetY = 0; nodes.length > 0 ? simulate() : draw(); }
+
+        window.chrome.webview.addEventListener('message', event => {
+            try {
+                const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+                if (!data.Nodes || data.Nodes.length === 0) {
+                    statusDiv.textContent = 'No notes';
+                    return;
+                }
+                nodes = data.Nodes.map(n => ({ id: n.Id, title: n.Title || 'Untitled', x: width/2 + (Math.random() - 0.5) * 200, y: height/2 + (Math.random() - 0.5) * 200, vx: 0, vy: 0 }));
+                links = data.Links || [];
+                simulate();
+                updateLinkList();
+                setTimeout(() => statusDiv.style.display = 'none', 2000);
+            } catch (e) { statusDiv.textContent = 'Error: ' + e.message; }
+        });
+
+        function simulate() {
+            for (let i = 0; i < 150; i++) {
+                nodes.forEach(n => { n.vx *= 0.85; n.vy *= 0.85; });
+                for (let i = 0; i < nodes.length; i++) {
+                    for (let j = i + 1; j < nodes.length; j++) {
+                        const dx = nodes[j].x - nodes[i].x, dy = nodes[j].y - nodes[i].y;
+                        const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+                        const force = 2000 / (dist * dist);
+                        nodes[i].vx -= dx * force; nodes[i].vy -= dy * force;
+                        nodes[j].vx += dx * force; nodes[j].vy += dy * force;
+                    }
+                }
+                links.forEach(l => {
+                    const source = nodes.find(n => n.id === l.SourceId);
+                    const target = nodes.find(n => n.id === l.TargetId);
+                    if (source && target) {
+                        const dx = target.x - source.x, dy = target.y - source.y;
+                        const dist = Math.sqrt(dx*dx + dy*dy), force = dist * 0.02;
+                        source.vx += dx * force; source.vy += dy * force;
+                        target.vx -= dx * force; target.vy -= dy * force;
+                    }
+                });
+                nodes.forEach(n => {
+                    n.x += n.vx; n.y += n.vy;
+                    n.x = Math.max(50, Math.min(width - 50, n.x));
+                    n.y = Math.max(50, Math.min(height - 50, n.y));
+                });
+            }
+            draw();
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, width, height);
+            ctx.save();
+            ctx.translate(offsetX, offsetY);
+            ctx.scale(scale, scale);
+            
+            links.forEach(l => {
+                const source = nodes.find(n => n.id === l.SourceId);
+                const target = nodes.find(n => n.id === l.TargetId);
+                if (source && target) {
+                    const isHovered = hoveredLink && hoveredLink.SourceId === l.SourceId && hoveredLink.TargetId === l.TargetId;
+                    ctx.strokeStyle = isHovered ? '#f59e0b' : '#7c3aed';
+                    ctx.lineWidth = isHovered ? 5 / scale : 3 / scale;
+                    ctx.beginPath();
+                    ctx.moveTo(source.x, source.y);
+                    ctx.lineTo(target.x, target.y);
+                    ctx.stroke();
+                }
+            });
+            
+            if (linkMode && linkStartNode) {
+                ctx.strokeStyle = '#dc2626';
+                ctx.lineWidth = 4 / scale;
+                ctx.setLineDash([8 / scale, 8 / scale]);
+                ctx.beginPath();
+                ctx.moveTo(linkStartNode.x, linkStartNode.y);
+                ctx.lineTo(mouseX, mouseY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+            
+            nodes.forEach(n => {
+                const gradient = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, 12);
+                if (linkStartNode === n) {
+                    gradient.addColorStop(0, '#ef4444');
+                    gradient.addColorStop(1, '#dc2626');
+                } else {
+                    gradient.addColorStop(0, '#a78bfa');
+                    gradient.addColorStop(1, '#7c3aed');
+                }
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(n.x, n.y, 12, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#e9d5ff';
+                ctx.lineWidth = 3 / scale;
+                ctx.stroke();
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+                ctx.shadowBlur = 4;
+                ctx.fillStyle = '#e9d5ff';
+                ctx.font = `bold ${15/scale}px Segoe UI`;
+                const textWidth = ctx.measureText(n.title).width;
+                ctx.fillText(n.title, n.x - textWidth/2, n.y + 28/scale);
+                ctx.shadowBlur = 0;
+            });
+            
+            ctx.restore();
+        }
+    </script>
+</body>
+</html>

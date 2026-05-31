@@ -1,0 +1,24 @@
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/icon.png"
+  adaptive_icon_background: "#2196F3"
+  adaptive_icon_foreground: "assets/icon/icon_foreground.png"
+  
+  # Optional web config
+  web:
+    generate: true
+    image_path: "assets/icon/icon.png"
+    background_color: "#2196F3"
+    theme_color: "#2196F3"
+  
+  # Windows config
+  windows:
+    generate: true
+    image_path: "assets/icon/icon.png"
+    icon_size: 48
+  
+  # macOS config  
+  macos:
+    generate: true
+    image_path: "assets/icon/icon.png"

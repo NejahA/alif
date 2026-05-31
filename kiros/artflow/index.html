@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArtFlow - Creative Coding Platform</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Source+Code+Pro:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <i class="fas fa-palette"></i>
+                <h1>ArtFlow</h1>
+            </div>
+            <p class="tagline">Create generative art with code</p>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="editor-container">
+                <!-- Code Editor -->
+                <div class="code-editor">
+                    <div class="editor-header">
+                        <h3><i class="fas fa-code"></i> Code Editor</h3>
+                        <div class="editor-actions">
+                            <button class="btn btn-run" id="runBtn">
+                                <i class="fas fa-play"></i> Run Code
+                            </button>
+                            <button class="btn btn-save" id="saveBtn">
+                                <i class="fas fa-save"></i> Save
+                            </button>
+                            <button class="btn btn-share" id="shareBtn">
+                                <i class="fas fa-share"></i> Share
+                            </button>
+                        </div>
+                    </div>
+                    <div class="editor-area">
+                        <textarea id="codeInput" spellcheck="false">// Welcome to ArtFlow!
+// Create generative art with JavaScript
+
+// Set up canvas
+const canvas = document.getElementById('artCanvas');
+const ctx = canvas.getContext('2d');
+
+// Clear canvas
+ctx.fillStyle = '#0f172a';
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+// Draw colorful circles
+for (let i = 0; i < 50; i++) {
+    const x = Math.random() * canvas.width;
+    const y = Math.random() * canvas.height;
+    const radius = Math.random() * 30 + 10;
+    
+    // Create gradient
+    const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+    gradient.addColorStop(0, `hsl(${Math.random() * 360}, 100%, 70%)`);
+    gradient.addColorStop(1, `hsl(${Math.random() * 360}, 100%, 30%)`);
+    
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Add glow effect
+    ctx.shadowColor = gradient;
+    ctx.shadowBlur = 15;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+}
+
+// Add some lines
+ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+ctx.lineWidth = 2;
+for (let i = 0; i < 20; i++) {
+    ctx.beginPath();
+    ctx.moveTo(Math.random() * canvas.width, Math.random() * canvas.height);
+    ctx.lineTo(Math.random() * canvas.width, Math.random() * canvas.height);
+    ctx.stroke();
+}</textarea>
+                    </div>
+                    <div class="editor-footer">
+                        <div class="language-selector">
+                            <i class="fas fa-cog"></i>
+                            <select id="languageSelect">
+                                <option value="javascript">JavaScript</option>
+                                <option value="python">Python (Coming Soon)</option>
+                                <option value="p5js">p5.js (Coming Soon)</option>
+                            </select>
+                        </div>
+                        <div class="theme-toggle">
+                            <i class="fas fa-moon"></i>
+                            <label class="switch">
+                                <input type="checkbox" id="themeToggle">
+                                <span class="slider"></span>
+                            </label>
+                            <i class="fas fa-sun"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Art Canvas -->
+                <div class="art-canvas">
+                    <div class="canvas-header">
+                        <h3><i class="fas fa-paint-brush"></i> Art Canvas</h3>
+                        <div class="canvas-actions">
+                            <button class="btn btn-clear" id="clearBtn">
+                                <i class="fas fa-eraser"></i> Clear
+                            </button>
+                            <button class="btn btn-download" id="downloadBtn">
+                                <i class="fas fa-download"></i> Download
+                            </button>
+                            <div class="history-controls">
+                                <button class="history-btn" id="undoBtn" title="Undo (Ctrl+Z)">
+                                    <i class="fas fa-undo"></i>
+                                </button>
+                                <button class="history-btn" id="redoBtn" title="Redo (Ctrl+Y)">
+                                    <i class="fas fa-redo"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="canvas-area">
+                        <canvas id="artCanvas" width="800" height="600"></canvas>
+                    </div>
+                    <div class="canvas-controls">
+                        <div class="control-group">
+                            <label for="brushSize"><i class="fas fa-circle"></i> Brush Size</label>
+                            <input type="range" id="brushSize" min="1" max="50" value="10">
+                            <span id="brushSizeValue">10</span>
+                        </div>
+                        <div class="control-group">
+                            <label for="colorPicker"><i class="fas fa-fill-drip"></i> Color</label>
+                            <input type="color" id="colorPicker" value="#3b82f6">
+                        </div>
+                        <div class="control-group">
+                            <label for="toolSelect"><i class="fas fa-mouse-pointer"></i> Tool</label>
+                            <select id="toolSelect">
+                                <option value="brush">Brush</option>
+                                <option value="line">Line</option>
+                                <option value="circle">Circle</option>
+                                <option value="rectangle">Rectangle</option>
+                                <option value="gradient">Gradient</option>
+                                <option value="text">Text</option>
+                                <option value="eraser">Eraser</option>
+                                <option value="fill">Fill</option>
+                            </select>
+                        </div>
+                        <div class="animation-controls">
+                            <button class="animation-btn" id="animateBtn">
+                                <i class="fas fa-play"></i> Animate
+                            </button>
+                            <button class="animation-btn stop" id="stopAnimationBtn" style="display: none;">
+                                <i class="fas fa-stop"></i> Stop
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gallery & Tools -->
+            <div class="sidebar">
+                <!-- Tools Panel -->
+                <div class="tools-panel">
+                    <h3><i class="fas fa-tools"></i> Tools</h3>
+                    <div class="tool-buttons">
+                        <button class="tool-btn active" data-tool="brush">
+                            <i class="fas fa-paint-brush"></i>
+                            <span>Brush</span>
+                        </button>
+                        <button class="tool-btn" data-tool="line">
+                            <i class="fas fa-slash"></i>
+                            <span>Line</span>
+                        </button>
+                        <button class="tool-btn" data-tool="circle">
+                            <i class="fas fa-circle"></i>
+                            <span>Circle</span>
+                        </button>
+                        <button class="tool-btn" data-tool="rectangle">
+                            <i class="fas fa-square"></i>
+                            <span>Rectangle</span>
+                        </button>
+                        <button class="tool-btn" data-tool="gradient">
+                            <i class="fas fa-fill-drip"></i>
+                            <span>Gradient</span>
+                        </button>
+                        <button class="tool-btn" data-tool="text">
+                            <i class="fas fa-font"></i>
+                            <span>Text</span>
+                        </button>
+                        <button class="tool-btn" data-tool="eraser">
+                            <i class="fas fa-eraser"></i>
+                            <span>Eraser</span>
+                        </button>
+                        <button class="tool-btn" data-tool="fill">
+                            <i class="fas fa-fill"></i>
+                            <span>Fill</span>
+                        </button>
+                    </div>
+                    <div class="tool-options" id="toolOptions">
+                        <!-- Dynamic tool options will appear here -->
+                    </div>
+                </div>
+
+                <!-- Layers Panel -->
+                <div class="layers-panel">
+                    <h3><i class="fas fa-layer-group"></i> Layers</h3>
+                    <div class="layers-list" id="layersList">
+                        <div class="layer-item active">
+                            <i class="fas fa-eye"></i>
+                            <span>Background</span>
+                            <div class="layer-actions">
+                                <button class="layer-btn" title="Move up"><i class="fas fa-arrow-up"></i></button>
+                                <button class="layer-btn" title="Move down"><i class="fas fa-arrow-down"></i></button>
+                                <button class="layer-btn" title="Delete"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                        <div class="layer-item">
+                            <i class="fas fa-eye"></i>
+                            <span>Foreground</span>
+                            <div class="layer-actions">
+                                <button class="layer-btn" title="Move up"><i class="fas fa-arrow-up"></i></button>
+                                <button class="layer-btn" title="Move down"><i class="fas fa-arrow-down"></i></button>
+                                <button class="layer-btn" title="Delete"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn btn-add-layer" id="addLayerBtn">
+                        <i class="fas fa-plus"></i> Add Layer
+                    </button>
+                </div>
+
+                <!-- Filters Panel -->
+                <div class="filters-panel">
+                    <h3><i class="fas fa-sliders-h"></i> Filters</h3>
+                    <div class="filter-buttons">
+                        <button class="filter-btn" data-filter="grayscale">Grayscale</button>
+                        <button class="filter-btn" data-filter="sepia">Sepia</button>
+                        <button class="filter-btn" data-filter="invert">Invert</button>
+                        <button class="filter-btn" data-filter="blur">Blur</button>
+                        <button class="filter-btn" data-filter="brightness">Brightness</button>
+                        <button class="filter-btn" data-filter="contrast">Contrast</button>
+                    </div>
+                </div>
+
+                <!-- Gallery -->
+                <div class="gallery-panel">
+                    <h3><i class="fas fa-images"></i> Gallery</h3>
+                    <div class="gallery-grid">
+                        <!-- Gallery items will be loaded dynamically -->
+                        <div class="gallery-loading">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <p>Loading gallery...</p>
+                        </div>
+                    </div>
+                    <button class="btn btn-view-all" id="refreshGalleryBtn">
+                        <i class="fas fa-sync-alt"></i> Refresh Gallery
+                    </button>
+                </div>  
+
+                <!-- Community -->
+                <div class="community-panel">
+                    <h3><i class="fas fa-users"></i> Community</h3>
+                    <div class="community-stats">
+                        <div class="stat">
+                            <i class="fas fa-paint-brush"></i>
+                            <div>
+                                <h4>1,234</h4>
+                                <p>Creations Today</p>
+                            </div>
+                        </div>
+                        <div class="stat">
+                            <i class="fas fa-user"></i>
+                            <div>
+                                <h4>5,678</h4>
+                                <p>Active Artists</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="featured-artist">
+                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=artist1" alt="Artist">
+                        <div>
+                            <h4>@codePainter</h4>
+                            <p>Featured Artist</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>ArtFlow</h4>
+                    <p>Create, share, and explore generative art with code.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Features</h4>
+                    <ul>
+                        <li>Code-to-Art Editor</li>
+                        <li>Real-time Preview</li>
+                        <li>Community Gallery</li>
+                        <li>Export & Share</li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Connect</h4>
+                    <div class="social-links">
+                        <a href="#"><i class="fab fa-github"></i></a>
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                        <a href="#"><i class="fab fa-discord"></i></a>
+                        <a href="#"><i class="fab fa-youtube"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 ArtFlow. All rights reserved. | <a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal" id="shareModal">
+        <div class="modal-content">
+            <h3><i class="fas fa-share"></i> Share Your Creation</h3>
+            <div class="share-options">
+                <div class="share-option">
+                    <i class="fas fa-link"></i>
+                    <div>
+                        <h4>Share Link</h4>
+                        <p>Copy a link to your artwork</p>
+                    </div>
+                    <button class="btn btn-copy" id="copyLinkBtn">Copy</button>
+                </div>
+                <div class="share-option">
+                    <i class="fas fa-code"></i>
+                    <div>
+                        <h4>Embed Code</h4>
+                        <p>Embed in your website</p>
+                    </div>
+                    <button class="btn btn-copy" id="copyEmbedBtn">Copy</button>
+                </div>
+                <div class="share-option">
+                    <i class="fas fa-image"></i>
+                    <div>
+                        <h4>Export Image</h4>
+                        <p>Download as PNG or SVG</p>
+                    </div>
+                    <button class="btn btn-download" id="exportImageBtn">Download</button>
+                </div>
+            </div>
+            <button class="btn btn-close" id="closeShareModal">Close</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

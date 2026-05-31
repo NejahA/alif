@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+@theme {
+  --color-war-bg: #1a1a1a;
+  --color-war-accent: #8b0000;
+  --color-flower-bg: #fdf6e3;
+  --color-flower-accent: #e91e63;
+  
+  --font-serif: 'Playfair Display', serif;
+  --font-sans: 'Inter', sans-serif;
+}
+
+:root {
+  transition: all 0.5s ease;
+}
+
+body {
+  margin: 0;
+  overflow-x: hidden;
+}
+
+.war-mode {
+  background-color: var(--color-war-bg);
+  color: #d1d1d1;
+}
+
+.flower-mode {
+  background-color: var(--color-flower-bg);
+  color: #5c5c5c;
+}
+
+.parallax-container {
+  perspective: 1000px;
+}
+
+.grain-overlay {
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.05;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.war-gradient {
+  background: linear-gradient(to bottom, transparent, rgba(139, 0, 0, 0.2));
+}
+
+.flower-gradient {
+  background: linear-gradient(to bottom, transparent, rgba(233, 30, 99, 0.1));
+}
+
+@keyframes sway {
+  0%, 100% { transform: rotate(-2deg); }
+  50% { transform: rotate(2deg); }
+}
+
+.animate-sway {
+  animation: sway 4s ease-in-out infinite;
+}

@@ -1,0 +1,14 @@
+{
+  "name": "ai-electron-ai",
+  "private": true,
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "concurrently -n API,WEB,ELECTRON -c green,blue,magenta \"npm --prefix services/api run dev\" \"npm --prefix apps/renderer run dev\" \"wait-on http://localhost:5173 && npm --prefix apps/desktop run dev\"",
+    "lint": "npm --prefix apps/renderer run lint",
+    "build": "npm --prefix apps/renderer run build"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "wait-on": "^8.0.4"
+  }
+}

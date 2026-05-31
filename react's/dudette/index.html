@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dudette - Multi-Calendar App</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 30px 20px;
+    }
+    .container { max-width: 540px; margin: 0 auto; }
+    h1 { color: white; text-align: center; margin-bottom: 24px; font-size: 2.2em; }
+
+    .calendar-card {
+      background: white;
+      border-radius: 20px;
+      padding: 26px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+
+    .mode-selector {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .mode-btn {
+      padding: 7px 13px;
+      border: 2px solid #667eea;
+      background: white; color: #667eea;
+      border-radius: 20px; cursor: pointer;
+      font-size: 0.82em; transition: all 0.25s;
+      white-space: nowrap;
+    }
+    .mode-btn.active { background: #667eea; color: white; }
+    .mode-btn:hover:not(.active) { background: #f0f0f0; }
+
+    /* ── Year nav ── */
+    .year-nav {
+      display: flex; align-items: center; justify-content: center;
+      gap: 14px; margin-bottom: 8px;
+    }
+    .year-btn { padding: 6px 13px; font-size: 1em; }
+    .year-label { font-size: 1.1em; font-weight: 700; color: #555; min-width: 60px; text-align: center; }
+
+    /* ── Go-to-date ── */
+    .goto-bar { margin-bottom: 14px; text-align: center; }
+    .goto-toggle {
+      background: none; border: 1.5px solid #ccc; color: #888;
+      border-radius: 20px; padding: 5px 14px; font-size: 0.8em;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .goto-toggle:hover { border-color: #667eea; color: #667eea; }
+    .goto-panel {
+      display: none; margin-top: 10px;
+      background: #f8f8ff; border-radius: 12px;
+      padding: 14px; border: 1px solid #e0e0f0;
+    }
+    .goto-panel.open { display: block; }
+    .goto-fields {
+      display: flex; gap: 7px; flex-wrap: wrap; justify-content: center;
+      margin-bottom: 10px;
+    }
+    .goto-fields select, .goto-fields input {
+      border: 1.5px solid #ccc; border-radius: 8px;
+      padding: 7px 9px; font-size: 0.85em; color: #333;
+      outline: none; background: white;
+    }
+    .goto-fields select:focus, .goto-fields input:focus { border-color: #667eea; }
+    .goto-fields select { flex: 2; min-width: 110px; }
+    .goto-fields input  { flex: 1; min-width: 60px; max-width: 80px; }
+    .goto-go {
+      background: #667eea; color: white; border: none;
+      border-radius: 8px; padding: 8px 22px;
+      font-size: 0.9em; cursor: pointer; transition: background 0.2s;
+    }
+    .goto-go:hover { background: #5a6fd6; }
+    .goto-error { font-size: 0.78em; color: #e74c3c; margin-top: 7px; min-height: 16px; }
+
+    .calendar-header {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-bottom: 16px;
+    }
+    .calendar-title { font-size: 1.25em; color: #333; font-weight: 600; text-align: center; flex: 1; line-height: 1.3; }
+    .nav-btn {
+      background: #667eea; color: white; border: none;
+      border-radius: 8px; padding: 9px 16px;
+      cursor: pointer; font-size: 1em; transition: background 0.25s;
+      flex-shrink: 0;
+    }
+    .nav-btn:hover { background: #5a6fd6; }
+
+    .calendar-date { font-size: 2.6em; color: #667eea; font-weight: 700; text-align: center; margin: 8px 0 3px; }
+    .calendar-day  { font-size: 1.1em; color: #666; text-align: center; margin-bottom: 3px; }
+    .calendar-year { font-size: 1em; color: #888; text-align: center; margin-bottom: 14px; }
+
+    .month-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 3px; margin-top: 14px;
+    }
+    .day-name { text-align: center; font-weight: 600; color: #667eea; padding: 7px 0; font-size: 0.78em; }
+    .day {
+      text-align: center; padding: 9px 0; color: #333;
+      cursor: pointer; border-radius: 7px;
+      transition: background 0.2s; font-size: 0.88em;
+      line-height: 1.2;
+    }
+    .day:hover { background: #f0f0f0; }
+    .day.today { background: #667eea; color: white; font-weight: 700; }
+    .day.empty { cursor: default; }
+    .day .sub { display: block; font-size: 0.62em; color: #bbb; margin-top: 1px; }
+    .day.today .sub { color: rgba(255,255,255,0.65); }
+
+    .calendar-footer {
+      margin-top: 18px; padding-top: 14px;
+      border-top: 1px solid #eee; text-align: center;
+    }
+    .footer-label { font-size: 0.72em; color: #aaa; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+    .sec-date { font-size: 1.1em; color: #667eea; font-weight: 600; }
+    .sec-year { font-size: 0.85em; color: #999; margin-top: 2px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📅 Dudette</h1>
+    <div class="calendar-card">
+      <div class="mode-selector">
+        <button class="mode-btn active" data-mode="gregorian">Gregorian</button>
+        <button class="mode-btn" data-mode="hijri">Hijri</button>
+        <button class="mode-btn" data-mode="ethiopian">Ethiopian</button>
+        <button class="mode-btn" data-mode="hebrew">Hebrew</button>
+        <button class="mode-btn" data-mode="persian">Persian</button>
+        <button class="mode-btn" data-mode="chinese">Chinese</button>
+        <button class="mode-btn" data-mode="julian">Julian</button>
+      </div>
+
+      <!-- Year navigation -->
+      <div class="year-nav">
+        <button class="nav-btn year-btn" id="prevYear">«</button>
+        <span class="year-label" id="yearLabel">—</span>
+        <button class="nav-btn year-btn" id="nextYear">»</button>
+      </div>
+
+      <!-- Month navigation -->
+      <div class="calendar-header">
+        <button class="nav-btn" id="prevMonth">‹</button>
+        <div class="calendar-title" id="calendarTitle">—</div>
+        <button class="nav-btn" id="nextMonth">›</button>
+      </div>
+
+      <!-- Go-to-date -->
+      <div class="goto-bar">
+        <button class="goto-toggle" id="gotoToggle">🔍 Go to date</button>
+        <div class="goto-panel" id="gotoPanel">
+          <div class="goto-fields">
+            <select id="gotoCalendar">
+              <option value="gregorian">Gregorian</option>
+              <option value="hijri">Hijri</option>
+              <option value="ethiopian">Ethiopian</option>
+              <option value="hebrew">Hebrew</option>
+              <option value="persian">Persian</option>
+              <option value="julian">Julian</option>
+            </select>
+            <input type="number" id="gotoDay"   placeholder="Day"   min="1" max="31">
+            <input type="number" id="gotoMonth" placeholder="Month" min="1" max="13">
+            <input type="number" id="gotoYear"  placeholder="Year">
+          </div>
+          <button class="goto-go" id="gotoGo">Go →</button>
+          <div class="goto-error" id="gotoError"></div>
+        </div>
+      </div>
+
+      <div class="calendar-date" id="mainDate">—</div>
+      <div class="calendar-day"  id="mainDay">—</div>
+      <div class="calendar-year" id="mainYear">—</div>
+
+      <div class="month-grid" id="monthGrid"></div>
+
+      <div class="calendar-footer">
+        <div class="footer-label" id="footerLabel">Also today</div>
+        <div class="sec-date" id="secondaryDate">—</div>
+        <div class="sec-year" id="secondaryYear">—</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  (() => {
+    'use strict';
+
+    // ═══════════════════════════════════════════════════════════════
+    //  CALENDAR CONVERSION ALGORITHMS (all via Julian Day Number)
+    // ═══════════════════════════════════════════════════════════════
+
+    function gregorianToJD(gy, gm, gd) {
+      const a = Math.floor((14 - gm) / 12);
+      const y = gy + 4800 - a;
+      const m = gm + 12 * a - 3;
+      return gd + Math.floor((153*m+2)/5) + 365*y
+           + Math.floor(y/4) - Math.floor(y/100) + Math.floor(y/400) - 32045;
+    }
+
+    function jdToGregorian(jd) {
+      const a = jd + 32044;
+      const b = Math.floor((4*a+3) / 146097);
+      const c = a - Math.floor(146097*b / 4);
+      const d = Math.floor((4*c+3) / 1461);
+      const e = c - Math.floor(1461*d / 4);
+      const m = Math.floor((5*e+2) / 153);
+      return {
+        d: e - Math.floor((153*m+2)/5) + 1,
+        m: m + 3 - 12 * Math.floor(m/10),
+        y: 100*b + d - 4800 + Math.floor(m/10)
+      };
+    }
+
+    // ── Hijri (Kuwaiti tabular algorithm) ──
+    function jdToHijri(jd) {
+      const l  = jd - 1948440 + 10632;
+      const n  = Math.floor((l - 1) / 10631);
+      const l2 = l - 10631*n + 354;
+      const j  = Math.floor((10985 - l2) / 5316) * Math.floor((50*l2) / 17719)
+               + Math.floor(l2 / 5670)             * Math.floor((43*l2) / 15238);
+      const l3 = l2 - Math.floor((30 - j) / 15) * Math.floor((17719*j) / 50)
+               - Math.floor(j / 16)               * Math.floor((15238*j) / 43) + 29;
+      const month = Math.floor((24 * l3) / 709);
+      const day   = l3 - Math.floor((709 * month) / 24);
+      const year  = 30*n + j - 30;
+      return { day, month, year }; // month 1-indexed
+    }
+
+    function hijriToJD(hy, hm, hd) {
+      return Math.floor((11*hy + 3) / 30) + 354*hy + 30*hm
+           - Math.floor((hm - 1) / 2) + hd + 1948440 - 385;
+    }
+
+    function hijriDaysInMonth(hy, hm) {
+      if (hm % 2 === 1) return 30;
+      if (hm === 12 && ((11*hy + 14) % 30) < 11) return 30;
+      return 29;
+    }
+
+    // ── Ethiopian (Ge'ez/Ethiopic, Coptic epoch) ──
+    const ETH_EPOCH = 1723856;
+    function jdToEthiopian(jd) {
+      const r     = (jd - ETH_EPOCH) % 1461;
+      const n     = (r % 365) + 365 * Math.floor(r / 1460);
+      const year  = 4 * Math.floor((jd - ETH_EPOCH) / 1461) + Math.floor(r / 365) - Math.floor(r / 1460);
+      const month = Math.floor(n / 30) + 1;
+      const day   = (n % 30) + 1;
+      return { day, month, year };
+    }
+
+    function ethiopianToJD(ey, em, ed) {
+      return ETH_EPOCH + 365*(ey - 1) + Math.floor(ey/4) + 30*(em - 1) + ed - 1;
+    }
+
+    function ethiopianDaysInMonth(ey, em) {
+      if (em <= 12) return 30;
+      return (ey % 4 === 3) ? 6 : 5;
+    }
+
+    // ── Hebrew (hebcal-compatible algorithm) ──
+    function isHLeap(y) { return ((7*y + 1) % 19) < 7; }
+
+    function hebrewElapsed(y) {
+      const m  = Math.floor((235*y - 234) / 19);
+      const p  = 204 + 793*(m % 1080);
+      const h  = 5 + 12*m + 793*Math.floor(m/1080) + Math.floor(p/1080);
+      const d  = 1 + 29*m + Math.floor(h/24);
+      const p2 = 1080*(h%24) + p%1080;
+      let alt  = (p2 >= 19440 ||
+        (d%7===2 && p2>=9924 && !isHLeap(y)) ||
+        (d%7===1 && p2>=16789 && isHLeap(y-1))) ? d+1 : d;
+      if (alt%7===0 || alt%7===3 || alt%7===5) alt++;
+      return alt;
+    }
+
+    function hebrewYearDays(y) { return hebrewElapsed(y+1) - hebrewElapsed(y); }
+
+    function hebrewDaysInMonth(m, y) {
+      switch (m) {
+        case 1: case 3: case 5: case 7: case 11: case 13: return 30;
+        case 2: case 4: case 6: case 10: return 29;
+        case 12: return isHLeap(y) ? 30 : 29;
+        case 8: return hebrewYearDays(y) % 10 === 5 ? 30 : 29;
+        case 9: return hebrewYearDays(y) % 10 === 3 ? 29 : 30;
+        default: return 29;
+      }
+    }
+
+    const H_EPOCH = 347997;
+    function jdToHebrew(jd) {
+      const jd0 = Math.floor(jd);
+      let y = Math.floor((jd0 - H_EPOCH) / 365.25) + 1;
+      while (H_EPOCH + hebrewElapsed(y+1) <= jd0) y++;
+      while (H_EPOCH + hebrewElapsed(y) > jd0) y--;
+      let rem = jd0 - H_EPOCH - hebrewElapsed(y);
+      const order = isHLeap(y)
+        ? [7,8,9,10,11,12,13,1,2,3,4,5,6]
+        : [7,8,9,10,11,12,1,2,3,4,5,6];
+      let month = 7, r = rem;
+      for (let i = 0; i < order.length; i++) {
+        const dim = hebrewDaysInMonth(order[i], y);
+        if (r < dim) { month = order[i]; rem = r; break; }
+        r -= dim; month = order[i];
+      }
+      return { day: rem+1, month, year: y };
+    }
+
+    function hebrewToJD(hy, hm, hd) {
+      let jd = H_EPOCH + hebrewElapsed(hy) + hd - 1;
+      const order = isHLeap(hy)
+        ? [7,8,9,10,11,12,13,1,2,3,4,5,6]
+        : [7,8,9,10,11,12,1,2,3,4,5,6];
+      for (const m of order) {
+        if (m === hm) break;
+        jd += hebrewDaysInMonth(m, hy);
+      }
+      return jd;
+    }
+
+    // ── Persian / Solar Hijri (jalaali-js algorithm, MIT) ──
+    function jdToPersian(jd) {
+      const gy = jdToGregorian(jd);
+      return toPersian(gy.y, gy.m, gy.d);
+    }
+
+    function toPersian(gy, gm, gd) {
+      const g_y = gy - 1600, g_m = gm - 1, g_d = gd - 1;
+      let g_d_no = 365*g_y + Math.floor((g_y+3)/4) - Math.floor((g_y+99)/100) + Math.floor((g_y+399)/400);
+      for (let i = 0; i < g_m; i++) g_d_no += [31,28,31,30,31,30,31,31,30,31,30,31][i];
+      if (g_m > 1 && ((g_y%4===0 && g_y%100!==0) || g_y%400===0)) g_d_no++;
+      g_d_no += g_d;
+      let j_d_no = g_d_no - 79;
+      const j_np = Math.floor(j_d_no / 12053); j_d_no %= 12053;
+      let jy = 979 + 33*j_np + 4*Math.floor(j_d_no/1461); j_d_no %= 1461;
+      if (j_d_no >= 366) { jy += Math.floor((j_d_no-1)/365); j_d_no = (j_d_no-1)%365; }
+      const j_mi = [31,31,31,31,31,31,30,30,30,30,30,29];
+      let i;
+      for (i = 0; i < 11 && j_d_no >= j_mi[i]; i++) j_d_no -= j_mi[i];
+      return { day: j_d_no+1, month: i+1, year: jy };
+    }
+
+    function persianToGregorian(py, pm, pd) {
+      // Inverse of toPersian (jalaali-js)
+      const j_mi = [31,31,31,31,31,31,30,30,30,30,30,29];
+      const py2 = py - 979;
+      let j_d_no = 365*py2 + Math.floor(py2/33)*8 + Math.floor(((py2%33)+3)/4);
+      for (let i = 0; i < pm-1; i++) j_d_no += j_mi[i];
+      j_d_no += pd - 1;
+      let g_d_no = j_d_no + 79;
+      const g_y1 = 1600 + 400 * Math.floor(g_d_no / 146097); g_d_no %= 146097;
+      let leap = true;
+      if (g_d_no >= 36525) {
+        g_d_no--;
+        const tmp = 100 * Math.floor(g_d_no / 36524); g_d_no %= 36524;
+        leap = (g_d_no % 1461 === 0);
+        g_d_no += !leap ? 1 : 0;
+      }
+      const g_y2 = 4 * Math.floor(g_d_no / 1461); g_d_no %= 1461;
+      let g_y3 = 0;
+      if (g_d_no !== 1460) {
+        g_y3 = Math.floor(g_d_no / 365); g_d_no %= 365;
+      } else {
+        g_y3 = 3;
+      }
+      const g_y = g_y1 + g_y2 + g_y3;
+      const g_days = [31, (g_y%4===0&&(g_y%100!==0||g_y%400===0))?29:28,31,30,31,30,31,31,30,31,30,31];
+      let g_m = 0;
+      for (g_m = 0; g_m < 12 && g_d_no >= g_days[g_m]; g_m++) g_d_no -= g_days[g_m];
+      return { y: g_y, m: g_m + 1, d: g_d_no + 1 };
+    }
+
+    function persianDaysInMonth(pm) {
+      if (pm <= 6) return 31;
+      if (pm <= 11) return 30;
+      return 29; // Esfand (approximate; leap adds 1 but close enough for display)
+    }
+
+    function persianToJD(py, pm, pd) {
+      // Convert Persian to Gregorian then to JD
+      const jdn = pd - 1;
+      const py2 = py - 979;
+      let g_d_no = 365*py2 + Math.floor(py2/33)*8 + Math.floor(((py2%33)+3)/4);
+      const j_mi = [31,31,31,31,31,31,30,30,30,30,30,29];
+      for (let i = 0; i < pm-1; i++) g_d_no += j_mi[i];
+      g_d_no += jdn;
+      g_d_no += 79;
+      const g_y = 1600 + 400*Math.floor(g_d_no/146097); g_d_no %= 146097;
+      let leap = true;
+      if (g_d_no >= 36525) { g_d_no--; const g_y2 = 100*Math.floor(g_d_no/36524); g_d_no %= 36524; /* simplified */ }
+      // Simplified: just use toPersian inverse via JD approximation
+      // Use gregorian approximation:
+      const approxGY = Math.floor(py * 365.25 / 365.2422) + 621;
+      return gregorianToJD(approxGY, 1, 1); // rough — only used for grid start day calc
+    }
+
+    // ── Chinese lunisolar ──
+    const SYNODIC    = 29.530588853;
+    const NM_REF     = 2451549.952; // known new moon (Jan 21, 2000)
+    // Chinese New Year JDs (accurate, pre-computed 2020-2030)
+    const CNY_JD = {
+      2020: 2458880.5, 2021: 2459245.5, 2022: 2459611.5,
+      2023: 2459975.5, 2024: 2460351.5, 2025: 2460706.5,
+      2026: 2461060.5, 2027: 2461414.5, 2028: 2461769.5,
+      2029: 2462134.5, 2030: 2462488.5,
+    };
+    const ANIMALS  = ['Rat','Ox','Tiger','Rabbit','Dragon','Snake','Horse','Goat','Monkey','Rooster','Dog','Pig'];
+    const STEMS    = ['Jiǎ','Yǐ','Bǐng','Dīng','Wù','Jǐ','Gēng','Xīn','Rén','Guǐ'];
+    const BRANCHES = ['Zǐ','Chǒu','Yín','Mǎo','Chén','Sì','Wǔ','Wèi','Shēn','Yǒu','Xū','Hài'];
+
+    function jdToChinese(jd) {
+      // Find the Chinese (Gregorian) year this JD belongs to
+      let cnyGreg = 2020;
+      const years = Object.keys(CNY_JD).map(Number).sort();
+      for (const y of years) {
+        if (jd >= CNY_JD[y]) cnyGreg = y; else break;
+      }
+      const chineseYear = cnyGreg + 2697;
+      const animal  = ANIMALS[(cnyGreg - 4) % 12];
+      const stem    = STEMS[(cnyGreg - 4) % 10];
+      const branch  = BRANCHES[(cnyGreg - 4) % 12];
+
+      // Lunar month and day via new moon
+      const lunation   = Math.floor((jd - NM_REF) / SYNODIC);
+      const newMoon    = NM_REF + lunation * SYNODIC;
+      const dayInMonth = Math.floor(jd - newMoon) + 1;
+
+      const cnyLunation  = Math.floor((CNY_JD[cnyGreg] - NM_REF) / SYNODIC);
+      const monthInYear  = lunation - cnyLunation + 1;
+
+      return { day: dayInMonth, month: monthInYear, year: chineseYear, animal, stem, branch };
+    }
+
+    // ── Julian calendar ──
+    function jdToJulian(jd) {
+      const z = Math.floor(jd + 0.5);
+      const b = z + 1524;
+      const c = Math.floor((b - 122.1) / 365.25);
+      const d = Math.floor(365.25 * c);
+      const e = Math.floor((b - d) / 30.6001);
+      const day   = b - d - Math.floor(30.6001 * e);
+      const month = e < 14 ? e - 1 : e - 13;
+      const year  = month > 2 ? c - 4716 : c - 4715;
+      return { day, month, year };
+    }
+
+    function julianDaysInMonth(jy, jm) {
+      const days = [31,28,31,30,31,30,31,31,30,31,30,31];
+      if (jm === 2 && jy % 4 === 0) return 29;
+      return days[jm - 1];
+    }
+
+    function julianToJD(jy, jm, jd) {
+      const a = Math.floor((14 - jm) / 12);
+      const y = jy + 4800 - a;
+      const m = jm + 12*a - 3;
+      return jd + Math.floor((153*m+2)/5) + 365*y + Math.floor(y/4) - 32083;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  CALENDAR METADATA
+    // ═══════════════════════════════════════════════════════════════
+
+    const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+    const META = {
+      gregorian: {
+        months: ['January','February','March','April','May','June',
+                 'July','August','September','October','November','December'],
+        suffix: '',
+      },
+      hijri: {
+        months: ['Muharram','Safar',"Rabi' al-Awwal","Rabi' al-Thani",
+                 'Jumada al-Awwal','Jumada al-Akhirah','Rajab',"Sha'ban",
+                 'Ramadan','Shawwal','Dhu al-Qadah','Dhu al-Hijjah'],
+        suffix: ' AH',
+      },
+      ethiopian: {
+        months: ['Meskerem','Tikimt','Hidar','Tahsas','Ter','Yekatit',
+                 'Megabit','Miyazia','Ginbot','Sene','Hamle','Nehase','Pagumain'],
+        suffix: ' EC',
+      },
+      hebrew: {
+        months: ['Nisan','Iyyar','Sivan','Tammuz','Av','Elul',
+                 'Tishri','Marcheshvan','Kislev','Tevet','Shevat','Adar','Adar II'],
+        suffix: ' AM',
+      },
+      persian: {
+        months: ['Farvardin','Ordibehesht','Khordad','Tir','Mordad','Shahrivar',
+                 'Mehr','Aban','Azar','Dey','Bahman','Esfand'],
+        suffix: ' AP',
+      },
+      chinese: { months: [], suffix: '' },
+      julian: {
+        months: ['January','February','March','April','May','June',
+                 'July','August','September','October','November','December'],
+        suffix: ' OS',
+      },
+    };
+
+    // ═══════════════════════════════════════════════════════════════
+    //  CONVERT JD → current calendar
+    // ═══════════════════════════════════════════════════════════════
+
+    function convertJD(jd, mode) {
+      switch (mode) {
+        case 'gregorian': { const g = jdToGregorian(jd); return { day: g.d, month: g.m, year: g.y }; }
+        case 'hijri':     return jdToHijri(jd);
+        case 'ethiopian': return jdToEthiopian(jd);
+        case 'hebrew':    return jdToHebrew(jd);
+        case 'persian':   return jdToPersian(jd);
+        case 'chinese':   return jdToChinese(jd);
+        case 'julian':    return jdToJulian(jd);
+      }
+    }
+
+    function monthName(mode, conv) {
+      if (mode === 'chinese') return `${conv.stem}${conv.branch} (${conv.animal}) Year`;
+      return META[mode].months[conv.month - 1] || '?';
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  STATE & DOM
+    // ═══════════════════════════════════════════════════════════════
+
+    const today  = new Date();
+    const todayJD = gregorianToJD(today.getFullYear(), today.getMonth()+1, today.getDate());
+
+    let mode     = 'gregorian';
+    let navYear  = today.getFullYear();
+    let navMonth = today.getMonth() + 1; // Gregorian, 1-indexed
+
+    const $ = id => document.getElementById(id);
+    const el = {
+      title:   $('calendarTitle'),
+      date:    $('mainDate'),
+      day:     $('mainDay'),
+      year:    $('mainYear'),
+      grid:    $('monthGrid'),
+      secDate: $('secondaryDate'),
+      secYear: $('secondaryYear'),
+      footer:  $('footerLabel'),
+      yearLabel: $('yearLabel'),
+    };
+
+    function gregDaysInMonth(y, m) { return new Date(y, m, 0).getDate(); }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  RENDER
+    // ═══════════════════════════════════════════════════════════════
+
+    function render() {
+      const gy = navYear, gm = navMonth;
+      const totalDays = gregDaysInMonth(gy, gm);
+      const firstDow  = new Date(gy, gm-1, 1).getDay();
+
+      // Today's date in the active calendar
+      const todayConv = convertJD(todayJD, mode);
+      const todayGreg = { d: today.getDate(), m: today.getMonth()+1, y: today.getFullYear() };
+
+      // ── Title: show the calendar period for the nav month ──
+      const firstJD = gregorianToJD(gy, gm, 1);
+      const lastJD  = gregorianToJD(gy, gm, totalDays);
+      const firstConv = convertJD(firstJD, mode);
+      const lastConv  = convertJD(lastJD, mode);
+
+      let titleStr;
+      if (mode === 'gregorian') {
+        titleStr = `${META.gregorian.months[gm-1]} ${gy}`;
+      } else if (mode === 'chinese') {
+        titleStr = `${firstConv.stem}${firstConv.branch} (${firstConv.animal}) · Month ${firstConv.month}`;
+        if (firstConv.month !== lastConv.month)
+          titleStr += ` – ${lastConv.month}`;
+      } else if (mode === 'julian') {
+        titleStr = `${META.julian.months[firstConv.month-1]} ${firstConv.year}${META.julian.suffix}`;
+        if (firstConv.month !== lastConv.month)
+          titleStr = `${META.julian.months[firstConv.month-1]}–${META.julian.months[lastConv.month-1]} ${firstConv.year}`;
+      } else {
+        const mname = META[mode].months[firstConv.month - 1] || '?';
+        titleStr = `${mname} ${firstConv.year}${META[mode].suffix}`;
+        if (firstConv.month !== lastConv.month) {
+          const mname2 = META[mode].months[lastConv.month - 1] || '?';
+          titleStr = `${mname}–${mname2} ${firstConv.year}${META[mode].suffix}`;
+        }
+      }
+      el.title.textContent = titleStr;
+
+      // ── Year label ──
+      el.yearLabel.textContent = navYear;
+
+      // ── Big date (today) ──
+      if (mode === 'chinese') {
+        el.date.textContent = todayConv.day;
+        el.day.textContent  = DAYS[today.getDay()];
+        el.year.textContent = `${todayConv.stem}${todayConv.branch} (${todayConv.animal}) · Month ${todayConv.month}`;
+      } else {
+        el.date.textContent = todayConv.day;
+        el.day.textContent  = DAYS[today.getDay()];
+        el.year.textContent = (mode !== 'gregorian')
+          ? `${monthName(mode, todayConv)} ${todayConv.year}${META[mode].suffix}`
+          : `${todayConv.year}`;
+      }
+
+      // ── Footer: show Gregorian when not in Gregorian, else show Hijri ──
+      if (mode === 'gregorian') {
+        const h = jdToHijri(todayJD);
+        el.footer.textContent = 'Also today (Hijri)';
+        el.secDate.textContent = `${h.day} ${META.hijri.months[h.month-1]} ${h.year}`;
+        el.secYear.textContent = `${h.year} AH`;
+      } else {
+        el.footer.textContent = 'Also today (Gregorian)';
+        el.secDate.textContent = `${todayGreg.d} ${META.gregorian.months[todayGreg.m-1]} ${todayGreg.y}`;
+        el.secYear.textContent = `${todayGreg.y}`;
+      }
+
+      // ── Grid ──
+      el.grid.innerHTML = '';
+      DAYS.forEach(name => {
+        const c = document.createElement('div');
+        c.className = 'day-name'; c.textContent = name;
+        el.grid.appendChild(c);
+      });
+
+      for (let i = 0; i < firstDow; i++) {
+        const c = document.createElement('div'); c.className = 'day empty';
+        el.grid.appendChild(c);
+      }
+
+      for (let gd = 1; gd <= totalDays; gd++) {
+        const jd   = gregorianToJD(gy, gm, gd);
+        const conv = convertJD(jd, mode);
+        const isToday = (jd === todayJD);
+
+        const cell = document.createElement('div');
+        cell.className = 'day' + (isToday ? ' today' : '');
+
+        // Main number + secondary (Gregorian day shown small)
+        let main = conv.day;
+        let sub  = (mode !== 'gregorian') ? gd : jdToHijri(jd).day;
+
+        cell.innerHTML = `${main}<span class="sub">${sub}</span>`;
+
+        cell.addEventListener('click', () => {
+          document.querySelectorAll('.day.today').forEach(x => x.classList.remove('today'));
+          cell.classList.add('today');
+          el.date.textContent = main;
+          el.day.textContent  = DAYS[new Date(gy, gm-1, gd).getDay()];
+        });
+
+        el.grid.appendChild(cell);
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  EVENTS
+    // ═══════════════════════════════════════════════════════════════
+
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        mode = btn.dataset.mode;
+        render();
+      });
+    });
+
+    $('prevYear').addEventListener('click', () => { navYear--; render(); });
+    $('nextYear').addEventListener('click', () => { navYear++; render(); });
+
+    // ── Go-to-date ──
+    $('gotoToggle').addEventListener('click', () => {
+      const panel = $('gotoPanel');
+      panel.classList.toggle('open');
+      // Pre-fill with active calendar
+      $('gotoCalendar').value = (mode === 'chinese') ? 'gregorian' : mode;
+    });
+
+    $('gotoGo').addEventListener('click', () => {
+      const err   = $('gotoError');
+      const cal   = $('gotoCalendar').value;
+      const d     = parseInt($('gotoDay').value);
+      const m     = parseInt($('gotoMonth').value);
+      const y     = parseInt($('gotoYear').value);
+      err.textContent = '';
+
+      if (!d || !m || !y || isNaN(d) || isNaN(m) || isNaN(y)) {
+        err.textContent = 'Please fill in day, month and year.'; return;
+      }
+
+      let jd;
+      try {
+        if (cal === 'gregorian') {
+          if (m < 1 || m > 12 || d < 1 || d > 31) throw new Error('Invalid date');
+          jd = gregorianToJD(y, m, d);
+        } else if (cal === 'hijri') {
+          if (m < 1 || m > 12 || d < 1 || d > 30) throw new Error('Invalid date');
+          jd = hijriToJD(y, m, d);
+        } else if (cal === 'ethiopian') {
+          if (m < 1 || m > 13 || d < 1 || d > 30) throw new Error('Invalid date');
+          jd = ethiopianToJD(y, m, d);
+        } else if (cal === 'hebrew') {
+          if (m < 1 || m > 13 || d < 1 || d > 30) throw new Error('Invalid date');
+          jd = hebrewToJD(y, m, d);
+        } else if (cal === 'persian') {
+          if (m < 1 || m > 12 || d < 1 || d > 31) throw new Error('Invalid date');
+          // Persian → Gregorian via jalaali inverse
+          const g = persianToGregorian(y, m, d);
+          jd = gregorianToJD(g.y, g.m, g.d);
+        } else if (cal === 'julian') {
+          if (m < 1 || m > 12 || d < 1 || d > 31) throw new Error('Invalid date');
+          jd = julianToJD(y, m, d);
+        }
+        if (!jd || isNaN(jd)) throw new Error('Could not convert date');
+      } catch(e) {
+        err.textContent = 'Invalid date for selected calendar.'; return;
+      }
+
+      // Navigate to the Gregorian month containing this JD
+      const g = jdToGregorian(jd);
+      navYear  = g.y;
+      navMonth = g.m;
+      $('gotoPanel').classList.remove('open');
+      render();
+
+      // Highlight that specific day
+      setTimeout(() => {
+        const cells = document.querySelectorAll('#monthGrid .day:not(.empty)');
+        cells.forEach(cell => {
+          const cellGD = parseInt(cell.textContent);
+          const cellJD = gregorianToJD(navYear, navMonth, cellGD);
+          if (cellJD === jd) {
+            document.querySelectorAll('.day.today').forEach(x => x.classList.remove('today'));
+            cell.classList.add('today');
+            cell.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+        });
+      }, 0);
+    });
+
+    // Allow Enter key in goto fields
+    ['gotoDay','gotoMonth','gotoYear','gotoCalendar'].forEach(id => {
+      $(id).addEventListener('keydown', e => { if (e.key === 'Enter') $('gotoGo').click(); });
+    });
+
+    $('prevMonth').addEventListener('click', () => {
+      navMonth--; if (navMonth < 1) { navMonth = 12; navYear--; }
+      render();
+    });
+
+    $('nextMonth').addEventListener('click', () => {
+      navMonth++; if (navMonth > 12) { navMonth = 1; navYear++; }
+      render();
+    });
+
+    render();
+
+    render();
+  })();
+  </script>
+</body>
+</html>

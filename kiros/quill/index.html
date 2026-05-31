@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quill - Daily Writing</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <h1>Quill</h1>
+                <div class="stats">
+                    <span class="streak">🔥 <span id="streak">0</span> days</span>
+                    <span class="word-count">📝 <span id="wordCount">0</span> words</span>
+                </div>
+            </div>
+            <div class="date-display">
+                <span id="currentDate"></span>
+            </div>
+        </header>
+
+        <main>
+            <textarea id="editor" placeholder="Start writing your daily thoughts..."></textarea>
+        </main>
+
+        <footer>
+            <div class="footer-content">
+                <button id="exportMarkdown" title="Export to Markdown">📄 Markdown</button>
+                <button id="exportPdf" title="Export to PDF">📄 PDF</button>
+                <button id="toggleDistraction" title="Toggle Distraction-Free Mode">👁️ Focus</button>
+            </div>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

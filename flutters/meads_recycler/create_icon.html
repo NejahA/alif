@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Icon</title>
+</head>
+<body>
+    <canvas id="canvas" width="48" height="48"></canvas>
+    <a id="download" href="#" download="ic_launcher.png">Download</a>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Yellow background
+        ctx.fillStyle = '#FFC107';
+        ctx.fillRect(0, 0, 48, 48);
+        
+        // White recycling icon
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = '32px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('↻', 24, 24);
+        
+        // Download
+        document.getElementById('download').href = canvas.toDataURL();
+    </script>
+</body>
+</html>

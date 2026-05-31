@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CONvEYS - Conversation Starter</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>CONvEYS</h1>
+            <p class="tagline">Deepen Your Conversations</p>
+        </header>
+
+        <main id="main-content">
+            <!-- Mode Selection Screen -->
+            <div id="mode-selection" class="screen active">
+                <h2>Choose Your Mode</h2>
+                <div class="mode-buttons">
+                    <button class="mode-btn" data-mode="solo">
+                        <span class="icon">💭</span>
+                        <span class="label">Solo Mode</span>
+                        <span class="description">Browse questions at your own pace</span>
+                    </button>
+                    <button class="mode-btn" data-mode="live">
+                        <span class="icon">🤝</span>
+                        <span class="label">Live Mode</span>
+                        <span class="description">Sync with someone for real-time questions</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Category Selection Screen -->
+            <div id="category-selection" class="screen">
+                <button class="back-btn" id="back-to-mode">← Back</button>
+                <h2>Choose a Category</h2>
+                <div class="category-grid">
+                    <button class="category-btn" data-category="fun">
+                        <span class="icon">🎉</span>
+                        <span class="label">Fun & Light</span>
+                    </button>
+                    <button class="category-btn" data-category="philosophical">
+                        <span class="icon">🤔</span>
+                        <span class="label">Philosophical</span>
+                    </button>
+                    <button class="category-btn" data-category="past">
+                        <span class="icon">📖</span>
+                        <span class="label">About Your Past</span>
+                    </button>
+                    <button class="category-btn" data-category="dreams">
+                        <span class="icon">✨</span>
+                        <span class="label">Dreams & Future</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Question Card Screen -->
+            <div id="question-screen" class="screen">
+                <button class="back-btn" id="back-to-category">← Back</button>
+                <div class="card-container">
+                    <div class="question-card">
+                        <div class="category-badge" id="current-category"></div>
+                        <div class="question-text" id="question-text"></div>
+                        <div class="question-counter" id="question-counter"></div>
+                    </div>
+                </div>
+                <div class="swipe-controls">
+                    <button class="swipe-btn" id="prev-btn">← Previous</button>
+                    <button class="swipe-btn primary" id="next-btn">Next →</button>
+                </div>
+            </div>
+
+            <!-- Live Mode Screen -->
+            <div id="live-mode-screen" class="screen">
+                <button class="back-btn" id="back-from-live">← Back</button>
+                <h2>Live Mode</h2>
+                <div class="live-container">
+                    <div class="sync-status" id="sync-status">
+                        <span class="icon">🔗</span>
+                        <p>Share this code with your conversation partner:</p>
+                        <div class="room-code" id="room-code">DEMO</div>
+                        <p class="note">In a full version, this would sync in real-time</p>
+                    </div>
+                    <div class="live-question-card">
+                        <div class="question-text" id="live-question-text"></div>
+                        <button class="primary-btn" id="next-live-question">Next Question</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

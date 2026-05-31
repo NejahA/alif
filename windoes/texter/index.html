@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document – Word-style Editor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Georgia:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400&family=Merriweather:wght@400;700&family=Noto+Sans+Arabic:wght@400;500;600;700&family=Amiri:ital,wght@0,400;0,700;1,400&family=Cairo:wght@400;500;600;700&family=Tajawal:wght@400;500;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+  <div class="app">
+    <!-- Reading Progress Bar -->
+    <div id="reading-progress" style="position:sticky; top:0; width:0%; height:3px; background:var(--accent); z-index:9999; transition:width 0.1s linear;"></div>
+    <!-- Top bar: File + title -->
+    <header class="top-bar">
+      <div class="top-bar-left">
+        <button type="button" class="btn btn-top icon-btn" id="btn-new" title="New Document / Clear (Ctrl+N)"><i data-lucide="trash-2"></i> Clear</button>
+        <button type="button" class="btn btn-top icon-btn" id="btn-open" title="Open (Ctrl+O)"><i data-lucide="folder-open"></i> Open</button>
+        <button type="button" class="btn btn-top icon-btn" id="btn-save" title="Save HTML (Ctrl+S)"><i data-lucide="save"></i> Save</button>
+        <button type="button" class="btn btn-top" id="btn-save-txt" title="Save as plain text">Save as TXT</button>
+        <button type="button" class="btn btn-top" id="btn-save-md" title="Save as Markdown (.md)">Save as MD</button>
+        <button type="button" class="btn btn-top" id="btn-save-docx" title="Save as DOC (Word format)">Save as DOC</button>
+        <button type="button" class="btn btn-top" id="btn-save-pdf" title="Save as PDF">Save as PDF</button>
+        <button type="button" class="btn btn-top" id="btn-save-png" title="Save as PNG Image">Save as PNG</button>
+        <button type="button" class="btn btn-top" id="btn-import-md" title="Import Markdown (.md)">Import MD</button>
+        <button type="button" class="btn btn-top icon-btn" id="btn-print" title="Print document (Ctrl+P)"><i data-lucide="printer"></i> Print</button>
+        <button type="button" class="btn btn-top icon-btn" id="btn-encrypt" title="Encrypt Document (AES-256)"><i data-lucide="shield-lock"></i> Lock</button>
+        <input type="file" id="file-input" accept=".html,.htm,.txt,.doc,.docx,.md,text/*" hidden>
+        <input type="file" id="md-import-input" accept=".md,.markdown,text/markdown" hidden>
+      </div>
+      <div class="top-bar-center" style="display:flex; align-items:center;">
+        <span class="filename" id="filename" title="Click to rename" style="margin-right:1rem;">Untitled</span>
+        <input type="text" class="filename-input" id="filename-input" value="Untitled" hidden>
+        
+        <div id="todo-widget" style="display:flex; align-items:center; background:var(--bg-ribbon); padding:0.25rem 0.5rem; border-radius:1rem; font-size:0.8rem; margin-right:0.5rem; color:var(--text);" title="Checkbox Progress">
+          <i data-lucide="check-circle" style="width:1rem; height:1rem; margin-right:0.25rem;"></i>
+          <span id="todo-text">0/0</span>
+          <div style="width:50px; height:6px; background:var(--border); margin-left:0.5rem; border-radius:3px; overflow:hidden;">
+            <div id="todo-progress-bar" style="width:0%; height:100%; background:var(--accent); transition:width 0.2s;"></div>
+          </div>
+        </div>
+
+        <div id="pomodoro-widget" style="display:flex; align-items:center; background:var(--bg-ribbon); padding:0.25rem 0.5rem; border-radius:1rem; cursor:pointer; font-family:monospace; font-weight:bold; color:var(--text);" title="Start Pomodoro (25m)">
+          <i data-lucide="timer" style="width:1rem; height:1rem; margin-right:0.25rem;"></i>
+          <span id="pomo-time">25:00</span>
+        </div>
+      </div>
+      <div class="top-bar-right">
+        <button type="button" class="btn btn-top icon-btn" id="btn-lock" title="Toggle Read-Only Mode (Lock)"><i data-lucide="lock-open"></i></button>
+        <button type="button" class="btn btn-top icon-btn" id="btn-history" title="Version History"><i data-lucide="history"></i></button>
+        <button type="button" class="btn btn-top icon-btn" id="btn-sidebar" title="Toggle Document Outline"><i data-lucide="list"></i></button>
+        <button type="button" class="btn btn-top icon-btn" id="btn-typewriter" title="Toggle Typewriter Scrolling"><i data-lucide="align-vertical-space-around"></i></button>
+        <div style="position:relative; display:inline-block;">
+          <button type="button" class="btn btn-top icon-btn" id="btn-ambient" title="Ambient Focus Sounds"><i data-lucide="headphones"></i></button>
+          <div id="ambient-dropdown" hidden style="position:absolute; top:100%; right:0; background:var(--bg-editor); border:1px solid var(--border); border-radius:var(--radius); padding:0.5rem; z-index:50; width:150px; box-shadow:0 4px 6px rgba(0,0,0,0.1);">
+            <div style="font-size:0.8rem; font-weight:bold; margin-bottom:0.5rem; color:var(--text);">Focus Audio</div>
+            <button class="btn-top" style="width:100%; text-align:left; margin-bottom:0.2rem;" onclick="playAmbient('rain')">🌧️ Heavy Rain</button>
+            <button class="btn-top" style="width:100%; text-align:left; margin-bottom:0.2rem;" onclick="playAmbient('cafe')">☕ Cafe</button>
+            <button class="btn-top" style="width:100%; text-align:left; margin-bottom:0.2rem;" onclick="playAmbient('space')">🌌 Deep Space</button>
+            <button class="btn-top" style="width:100%; text-align:left; color:red; margin-top:0.5rem;" onclick="playAmbient('stop')">Stop Audio</button>
+          </div>
+        </div>
+        <button type="button" class="btn btn-top icon-btn" id="btn-focus" title="Toggle Focus Mode (Esc to exit)"><i data-lucide="eye"></i></button>
+        <button type="button" class="btn btn-top icon-btn" id="btn-fullscreen" title="Toggle Fullscreen (F11)"><i data-lucide="maximize"></i></button>
+        <button type="button" class="btn btn-top icon-btn" id="btn-bookmark" title="Toggle Bookmark (Ctrl+M)"><i data-lucide="bookmark"></i></button>
+        <button type="button" class="btn btn-top icon-btn" id="btn-reading-mode" title="Reading Mode (Ctrl+Shift+R)"><i data-lucide="book-open-check"></i></button>
+        <button type="button" class="btn btn-top icon-btn" id="btn-todo-agg" title="Show All Checklists"><i data-lucide="list-checks"></i></button>
+        <button type="button" class="btn btn-top icon-btn" id="btn-line-focus" title="Toggle Line Focus (Zen Gutter)"><i data-lucide="eye-off"></i></button>
+        <button type="button" class="btn btn-top icon-btn" id="btn-split-view" title="Toggle Markdown Split Preview"><i data-lucide="columns-2"></i></button>
+        <button type="button" class="btn btn-top icon-btn" id="btn-line-nums" title="Toggle Line Numbers"><i data-lucide="hash"></i></button>
+        <button type="button" class="btn btn-top icon-btn" id="btn-invisibles" title="Toggle Invisibles (spaces/tabs/¶)"><i data-lucide="pilcrow"></i></button>
+        <button type="button" class="btn btn-top icon-btn" id="btn-journal" title="Daily Journal Entry"><i data-lucide="notebook-pen"></i></button>
+        <button type="button" class="btn btn-top icon-btn" id="btn-scratchpad" title="Toggle Scratchpad Notes"><i data-lucide="sticky-note"></i></button>
+        <button type="button" class="btn btn-top icon-btn" id="btn-date" title="Insert Date/Time (Ctrl+D)"><i data-lucide="calendar"></i></button>
+        <button type="button" class="btn btn-top icon-btn" id="btn-voice" title="Voice Commands Manager"><i data-lucide="mic"></i></button>
+        <button type="button" class="btn btn-top icon-btn" id="btn-sounds" title="Toggle Mechanical Keyboard Sounds"><i data-lucide="volume-1"></i></button>
+        <button type="button" class="btn btn-top icon-btn" id="btn-theme" title="Toggle light/dark mode"><i data-lucide="moon"></i></button>
+        <button type="button" class="btn btn-top icon-btn" id="btn-kanban" title="Toggle Project Task Board"><i data-lucide="trello"></i></button>
+        <span class="status" id="status">—</span>
+      </div>
+    </header>
+
+    <!-- Ribbon: formatting controls -->
+    <div class="ribbon">
+      <div class="ribbon-group">
+        <label class="ribbon-label">History</label>
+        <div class="ribbon-buttons">
+          <button type="button" class="btn-ribbon icon-btn" id="cmd-undo" title="Undo (Ctrl+Z)"><i data-lucide="undo"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="cmd-redo" title="Redo (Ctrl+Y)"><i data-lucide="redo"></i></button>
+        </div>
+      </div>
+
+      <div class="ribbon-divider"></div>
+
+      <div class="ribbon-group">
+        <label class="ribbon-label">Font</label>
+        <select id="font-family" class="ribbon-select" title="Font">
+          <option value="Inter, system-ui, sans-serif">Inter</option>
+          <option value="Georgia, serif">Georgia</option>
+          <option value="Merriweather, serif">Merriweather</option>
+          <option value="'JetBrains Mono', monospace">JetBrains Mono</option>
+          <option value="Arial, sans-serif">Arial</option>
+          <option value="'Times New Roman', serif">Times New Roman</option>
+          <option value="'Noto Sans Arabic', sans-serif">Noto Sans Arabic</option>
+          <option value="Amiri, serif">Amiri</option>
+          <option value="Cairo, sans-serif">Cairo</option>
+          <option value="Tajawal, sans-serif">Tajawal</option>
+          <option value="'IBM Plex Sans Arabic', sans-serif">IBM Plex Sans Arabic</option>
+        </select>
+        <button type="button" class="btn-ribbon icon-btn" id="btn-load-font" title="Load Custom Font File (.ttf, .woff2)"><i data-lucide="plus"></i></button>
+        <input type="file" id="font-loader-input" accept=".ttf,.woff,.woff2" hidden>
+        <select id="font-size" class="ribbon-select ribbon-select-narrow" title="Size">
+          <option value="1">8pt</option>
+          <option value="2">10pt</option>
+          <option value="3" selected>12pt</option>
+          <option value="4">14pt</option>
+          <option value="5">18pt</option>
+          <option value="6">24pt</option>
+          <option value="7">36pt</option>
+        </select>
+      </div>
+
+      <div class="ribbon-divider"></div>
+
+      <div class="ribbon-group">
+        <label class="ribbon-label">Format</label>
+        <div class="ribbon-buttons">
+          <button type="button" class="btn-ribbon icon-btn" id="cmd-bold" title="Bold (Ctrl+B)"><i data-lucide="bold"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="cmd-italic" title="Italic (Ctrl+I)"><i data-lucide="italic"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="cmd-underline" title="Underline (Ctrl+U)"><i data-lucide="underline"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="cmd-strike" title="Strikethrough"><i data-lucide="strikethrough"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="cmd-subscript" title="Subscript"><i data-lucide="subscript"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="cmd-superscript" title="Superscript"><i data-lucide="superscript"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="cmd-blockquote" title="Blockquote"><i data-lucide="quote"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="cmd-codeblock" title="Code Block"><i data-lucide="code"></i></button>
+        </div>
+      </div>
+
+      <div class="ribbon-divider"></div>
+
+      <div class="ribbon-group">
+        <label class="ribbon-label">Color</label>
+        <div class="ribbon-buttons">
+          <input type="color" id="bg-color" class="ribbon-color" value="#ffffff" title="Paper background">
+          <label class="btn-ribbon icon-btn" style="cursor:pointer; margin:0;" title="Background Texture Image">
+            <i data-lucide="image"></i>
+            <input type="file" id="bg-image-input" accept="image/*" hidden>
+          </label>
+          <input type="color" id="font-color" class="ribbon-color" value="#e4e4e7" title="Text color">
+          <div style="display:flex; align-items:center; background:var(--bg-editor); border-radius:var(--radius); border:1px solid var(--border); overflow:hidden;">
+            <input type="color" id="highlight-color" title="Highlight Color" value="#fef08a" style="border:none; padding:0; width:24px; height:24px; background:transparent; cursor:pointer;">
+            <button type="button" class="btn-ribbon icon-btn" id="cmd-highlight" title="Apply Highlight" style="border-radius:0; border:none;"><i data-lucide="highlighter"></i></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="ribbon-divider"></div>
+
+      <div class="ribbon-group">
+        <label class="ribbon-label">Paragraph</label>
+        <div class="ribbon-buttons">
+          <select id="format-block" class="ribbon-select" title="Style">
+            <option value="p">Paragraph</option>
+            <option value="h1">Heading 1</option>
+            <option value="h2">Heading 2</option>
+            <option value="h3">Heading 3</option>
+          </select>
+          <select id="line-spacing" class="ribbon-select ribbon-select-narrow" title="Line Spacing">
+            <option value="1.0">1.0</option>
+            <option value="1.15">1.15</option>
+            <option value="1.5">1.5</option>
+            <option value="2.0">2.0</option>
+          </select>
+          <button type="button" class="btn-ribbon icon-btn" id="cmd-ul" title="Bullet list"><i data-lucide="list"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="cmd-ol" title="Numbered list"><i data-lucide="list-ordered"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="cmd-dropcap" title="Drop Cap / Initial Letter"><i data-lucide="text-cursor"></i></button>
+        </div>
+      </div>
+
+      <div class="ribbon-divider"></div>
+
+      <div class="ribbon-group">
+        <label class="ribbon-label">Align</label>
+        <div class="ribbon-buttons">
+          <button type="button" class="btn-ribbon icon-btn" id="cmd-justifyLeft" title="Align left"><i data-lucide="align-left"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="cmd-justifyCenter" title="Center"><i data-lucide="align-center"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="cmd-justifyRight" title="Align right"><i data-lucide="align-right"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="cmd-justifyFull" title="Justify"><i data-lucide="align-justify"></i></button>
+        </div>
+      </div>
+
+      <div class="ribbon-divider"></div>
+
+      <div class="ribbon-group">
+        <label class="ribbon-label">Indent</label>
+        <div class="ribbon-buttons">
+          <button type="button" class="btn-ribbon icon-btn" id="cmd-outdent" title="Decrease indent"><i data-lucide="outdent"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="cmd-indent" title="Increase indent"><i data-lucide="indent"></i></button>
+        </div>
+      </div>
+
+      <div class="ribbon-divider"></div>
+
+      <div class="ribbon-group">
+        <label class="ribbon-label">Insert</label>
+        <div class="ribbon-buttons">
+          <button type="button" class="btn-ribbon icon-btn" id="cmd-insertLink" title="Insert Link"><i data-lucide="link"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="cmd-insertImage" title="Insert Image"><i data-lucide="image"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="cmd-insertEmbed" title="Embed Video"><i data-lucide="video"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="cmd-insertDraw" title="Draw / Signature"><i data-lucide="pen-tool"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="cmd-insertSticky" title="Insert Sticky Note"><i data-lucide="sticky-note"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="cmd-insertToC" title="Insert Table of Contents"><i data-lucide="list-ordered"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="cmd-insertTable" title="Insert Table"><i data-lucide="table"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="cmd-insertHR" title="Horizontal Line"><i data-lucide="minus"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="cmd-insertCheckbox" title="Insert Checkbox"><i data-lucide="check-square"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="cmd-insertDate" title="Insert Date & Time"><i data-lucide="clock"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="btn-templates" title="Document Templates"><i data-lucide="layout"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="btn-emoji" title="Insert Emoji"><i data-lucide="smile-plus"></i></button>
+        </div>
+      </div>
+
+      <div class="ribbon-divider"></div>
+
+      <div class="ribbon-group">
+        <label class="ribbon-label">Table</label>
+        <div class="ribbon-buttons">
+          <button type="button" class="btn-ribbon icon-btn" id="cmd-table-addRow" title="Add Row Below"><i data-lucide="plus-square"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="cmd-table-addCol" title="Add Column Right"><i data-lucide="plus-circle"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="cmd-table-delRow" title="Delete Row"><i data-lucide="minus-square"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="cmd-table-delCol" title="Delete Column"><i data-lucide="minus-circle"></i></button>
+        </div>
+      </div>
+
+      <div class="ribbon-divider"></div>
+
+      <div class="ribbon-group">
+        <label class="ribbon-label">Text Case</label>
+        <div class="ribbon-buttons">
+          <button type="button" class="btn-ribbon icon-btn" id="cmd-uppercase" title="Uppercase"><i data-lucide="case-upper"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="cmd-lowercase" title="Lowercase"><i data-lucide="case-lower"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="cmd-titlecase" title="Title Case"><i data-lucide="text-cursor-input"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="cmd-snakecase" title="snake_case"><i data-lucide="square-code"></i></button>
+        </div>
+      </div>
+
+      <div class="ribbon-divider"></div>
+
+      <div class="ribbon-group">
+        <button type="button" class="btn-ribbon icon-btn" id="cmd-removeFormat" title="Clear formatting"><i data-lucide="eraser"></i></button>
+      </div>
+
+      <div class="ribbon-divider"></div>
+
+      <div class="ribbon-group">
+        <label class="ribbon-label">Margins (mm)</label>
+        <div class="ribbon-buttons">
+          <input type="number" id="margin-top" class="ribbon-select ribbon-select-narrow" title="Top margin" min="0" step="1" value="20">
+          <input type="number" id="margin-right" class="ribbon-select ribbon-select-narrow" title="Right margin" min="0" step="1" value="25">
+          <input type="number" id="margin-bottom" class="ribbon-select ribbon-select-narrow" title="Bottom margin" min="0" step="1" value="20">
+          <input type="number" id="margin-left" class="ribbon-select ribbon-select-narrow" title="Left margin" min="0" step="1" value="25">
+          <input type="number" id="page-gap" class="ribbon-select ribbon-select-narrow" title="Page gap" min="0" step="1" value="8" style="width:50px;">
+        </div>
+      </div>
+
+      <div class="ribbon-divider"></div>
+
+      <div class="ribbon-group">
+        <label class="ribbon-label">Tools</label>
+        <div class="ribbon-buttons">
+          <button type="button" class="btn-ribbon icon-btn" id="btn-highlight-code" title="Highlight Code Blocks"><i data-lucide="file-code"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="btn-spellcheck" title="Toggle Spellcheck"><i data-lucide="spell-check"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="btn-dictate" title="Voice Dictation (Speech to Text)"><i data-lucide="mic"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="btn-quick-calc" title="Quick Calculator (select expression)"><i data-lucide="calculator"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="btn-smart-format" title="Toggle Smart Formatting (quotes, dashes)"><i data-lucide="wand-2"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="btn-save-epub" title="Export as EPUB"><i data-lucide="book"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="btn-read-aloud" title="Read Aloud (Text to Speech)"><i data-lucide="volume-2"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="btn-copy-all" title="Copy Document to Clipboard"><i data-lucide="clipboard-copy"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="btn-find-replace" title="Find & Replace"><i data-lucide="search"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="btn-regex-open" title="Regex Find & Replace"><i data-lucide="regex"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="btn-word-freq" title="Word Frequency Analyzer"><i data-lucide="bar-chart-3"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="btn-dictionary" title="Writer's Dictionary"><i data-lucide="book-open"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="btn-snippets" title="Smart Snippets Editor"><i data-lucide="cpu"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="btn-deep-history-search" title="Deep History Search"><i data-lucide="search"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="btn-grammar" title="Grammar & Style Checker"><i data-lucide="check-check"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="btn-clipboard-mgr" title="Clipboard History Manager"><i data-lucide="clipboard-list"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="btn-columns" title="Wrap Selection in Columns"><i data-lucide="columns-3"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="btn-export-stats" title="Export Document Statistics"><i data-lucide="file-chart-column"></i></button>
+          <div style="position:relative; display:inline-block;">
+            <button type="button" class="btn-ribbon icon-btn" id="btn-copy-special" title="Copy Special"><i data-lucide="clipboard-copy"></i></button>
+            <div id="copy-special-dropdown" hidden style="position:absolute; top:100%; right:0; background:var(--bg-editor); border:1px solid var(--border); border-radius:var(--radius); padding:0.25rem; z-index:50; width:180px; box-shadow:0 4px 6px rgba(0,0,0,0.1);">
+              <button class="slash-item" onclick="copySpecial('text')">📝 Copy as Plain Text</button>
+              <button class="slash-item" onclick="copySpecial('html')">🔤 Copy as HTML</button>
+              <button class="slash-item" onclick="copySpecial('md')">📄 Copy as Markdown</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ribbon-group">
+        <label class="ribbon-label">AI Toolkit</label>
+        <div class="ribbon-buttons">
+          <button type="button" class="btn-ribbon icon-btn" id="btn-ai-rewrite" title="Smart Rewrite Assistant"><i data-lucide="sparkles"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="btn-ai-summarize" title="Smart Summarizer"><i data-lucide="align-left"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="btn-ai-outline" title="Generate AI Outline"><i data-lucide="subtitles"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="btn-ai-style" title="AI Style & Tone Analyzer"><i data-lucide="gauge"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="btn-ai-translate" title="Multi-Language Translator"><i data-lucide="languages"></i></button>
+        </div>
+      </div>
+
+      <div class="ribbon-divider"></div>
+
+      <div class="ribbon-group">
+        <label class="ribbon-label">Scholar</label>
+        <div class="ribbon-buttons">
+          <button type="button" class="btn-ribbon icon-btn" id="btn-cite" title="Smart Citation Manager"><i data-lucide="book-open"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="btn-math" title="Math & Equation Editor"><i data-lucide="sigma"></i></button>
+        </div>
+      </div>
+
+      <div class="ribbon-divider"></div>
+
+      <div class="ribbon-group">
+        <label class="ribbon-label">Aesthetics</label>
+        <div class="ribbon-buttons">
+          <select id="mood-theme" class="ribbon-select" title="Mood Theme" style="width:100px;">
+            <option value="default">Default</option>
+            <option value="midnight">Midnight</option>
+            <option value="sepia">Sepia</option>
+            <option value="eucalyptus">Eucalyptus</option>
+            <option value="lavender">Lavender</option>
+            <option value="solar">Solar</option>
+          </select>
+          <button type="button" class="btn-ribbon icon-btn" id="btn-watermark" title="Integrated Watermarking"><i data-lucide="stamp"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="btn-icon-search" title="Search & Insert Lucide Icons"><i data-lucide="component"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="btn-theme-builder" title="Custom Theme Builder"><i data-lucide="palette"></i></button>
+          <div style="position:relative; display:inline-block;">
+            <button type="button" class="btn-ribbon icon-btn" id="btn-quick-colors" title="Quick Color Presets"><i data-lucide="swatch-book"></i></button>
+            <div id="quick-colors-dropdown" hidden style="position:absolute; top:100%; left:0; background:var(--bg-editor); border:1px solid var(--border); border-radius:var(--radius); padding:0.5rem; z-index:100; width:220px; box-shadow:0 4px 12px rgba(0,0,0,0.15);">
+              <div style="font-size:0.7rem; font-weight:bold; margin-bottom:0.4rem; color:var(--text-muted);">Text Colors</div>
+              <div id="quick-text-colors" style="display:grid; grid-template-columns:repeat(7,1fr); gap:3px; margin-bottom:0.5rem;"></div>
+              <div style="font-size:0.7rem; font-weight:bold; margin-bottom:0.4rem; color:var(--text-muted);">Highlight Colors</div>
+              <div id="quick-hl-colors" style="display:grid; grid-template-columns:repeat(7,1fr); gap:3px;"></div>
+            </div>
+          </div>
+          <button type="button" class="btn-ribbon icon-btn" id="btn-writing-sprint" title="Writing Sprint Timer"><i data-lucide="stopwatch"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="btn-highlight-occ" title="Toggle Highlight All Occurrences"><i data-lucide="search-code"></i></button>
+          <button type="button" class="btn-ribbon icon-btn" id="btn-focus-blocks" title="Focus Blocks / Deep Work Timer"><i data-lucide="brain"></i></button>
+        </div>
+      </div>
+
+      <div class="ribbon-divider"></div>
+
+      <div class="ribbon-group">
+        <label class="ribbon-label">Direction</label>
+        <div class="ribbon-buttons">
+          <button type="button" class="btn-ribbon" id="cmd-ltr" title="Left to Right">LTR</button>
+          <button type="button" class="btn-ribbon" id="cmd-rtl" title="Right to Left">RTL</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Document area -->
+    <div class="main-content" style="display:flex; flex:1; overflow:hidden;">
+      <aside id="sidebar-nav" class="sidebar-nav" hidden style="width: 250px; border-right: 1px solid var(--border); background: var(--bg-top); display: flex; flex-direction: column;">
+        <div class="sidebar-header" style="display:flex; justify-content:space-between; align-items:center; padding: 1rem; border-bottom: 1px solid var(--border);">
+          <h3 style="margin:0; font-size:1rem; color: var(--text);">Outline</h3>
+          <button type="button" id="btn-close-sidebar" class="icon-btn btn-ribbon" style="padding:0.25rem;"><i data-lucide="x"></i></button>
+        </div>
+        <div id="sidebar-content" class="sidebar-content" style="overflow-y:auto; padding:1rem; font-size:0.9rem; flex:1;"></div>
+      </aside>
+      <div class="editor-container" id="editor-container" style="flex: 1; display: flex; flex-direction: column; overflow-y: auto; background: var(--bg-app); position:relative;">
+        <div id="editor-canvas" style="padding: 2rem 0; display:flex; flex-direction:column; align-items:center; gap:2rem;">
+          <div id="editor" class="doc-page page-a4" contenteditable="true" data-placeholder="Start typing..." spellcheck="true"></div>
+        </div>
+        <!-- Floating Selection Toolbar -->
+        <div id="selection-toolbar" class="floating-toolbar" hidden>
+          <button type="button" onclick="document.execCommand('bold')"><i data-lucide="bold"></i></button>
+          <button type="button" onclick="document.execCommand('italic')"><i data-lucide="italic"></i></button>
+          <button type="button" onclick="document.execCommand('underline')"><i data-lucide="underline"></i></button>
+          <button type="button" id="btn-add-comment-sel"><i data-lucide="message-square-plus"></i></button>
+          <div class="toolbar-divider"></div>
+          <button type="button" id="btn-sel-ai-rewrite" title="AI Rewrite Selection"><i data-lucide="sparkles"></i></button>
+        </div>
+        <aside id="kanban-sidebar" class="sidebar-nav" hidden style="position:fixed; right:0; top:50%; transform:translateY(-50%); width:320px; height:70vh; max-height:500px; background:var(--bg-editor); border:1px solid var(--border); border-right:none; border-radius:var(--radius) 0 0 var(--radius); display:flex; flex-direction:column; z-index:300; box-shadow:-4px 0 20px rgba(0,0,0,0.15);">
+          <div class="sidebar-header" id="kanban-header" style="display:flex; justify-content:space-between; align-items:center; padding:0.75rem 1rem; border-bottom:1px solid var(--border); background:var(--bg-ribbon); border-radius:var(--radius) 0 0 0; cursor:grab; user-select:none;">
+            <h3 style="margin:0; font-size:0.9rem; color:var(--text);">Task Board <span id="kanban-stats" style="font-weight:normal;font-size:0.6rem;opacity:0.4;"></span></h3>
+            <div style="display:flex; gap:0.5rem; align-items:center;">
+              <span id="kanban-trash-btn" title="Trash (recently deleted)" style="cursor:pointer; opacity:0.3; font-size:0.65rem;">🗑</span>
+              <span id="kanban-reset-btn" title="Reset board" style="cursor:pointer; opacity:0.3; font-size:0.6rem;">⟳</span>
+              <span id="kanban-toggle-width" title="Toggle width" style="cursor:pointer; opacity:0.4; font-size:0.65rem;">⊞</span>
+              <span id="kanban-export-btn" title="Export tasks as text" style="cursor:pointer; opacity:0.4; font-size:0.7rem;">⤓</span>
+            </div>
+          </div>
+          <div id="kanban-progress-wrap" style="padding:0.25rem 1rem 0; display:none;">
+            <div style="height:3px; background:var(--border); border-radius:2px; overflow:hidden;">
+              <div id="kanban-progress-bar" style="height:100%; width:0%; background:var(--accent); transition:width 0.3s;"></div>
+            </div>
+          </div>
+          <div style="padding:0.4rem 1rem; border-bottom:1px solid var(--border); display:flex; gap:0.4rem; align-items:center;">
+            <input id="kanban-search" placeholder="🔍 Filter tasks..." style="flex:1; box-sizing:border-box; padding:0.35rem 0.5rem; border:1px solid var(--border); border-radius:4px; background:transparent; color:var(--text); font-size:0.75rem; outline:none;">
+            <span id="kanban-focus-mode" title="Focus mode: show one column" style="cursor:pointer; opacity:0.3; font-size:0.65rem; flex-shrink:0;">⊟</span>
+            <span id="kanban-hide-done" title="Toggle hide done" style="cursor:pointer; opacity:0.3; font-size:0.7rem; flex-shrink:0;">👁</span>
+          </div>
+          <div style="padding:0 1rem 0.3rem; display:flex; gap:0.3rem; align-items:center;">
+            <span class="prio-filter" data-level="" style="cursor:pointer; opacity:0.5; font-size:0.6rem; border:1px solid var(--border); border-radius:3px; padding:0.1rem 0.3rem;">All</span>
+            <span class="prio-filter" data-level="priority-high" style="cursor:pointer; opacity:0.3; font-size:0.6rem; border:1px solid #e74c3c; border-radius:3px; padding:0.1rem 0.3rem; color:#e74c3c;">High</span>
+            <span class="prio-filter" data-level="priority-medium" style="cursor:pointer; opacity:0.3; font-size:0.6rem; border:1px solid #f39c12; border-radius:3px; padding:0.1rem 0.3rem; color:#f39c12;">Med</span>
+            <span class="prio-filter" data-level="priority-low" style="cursor:pointer; opacity:0.3; font-size:0.6rem; border:1px solid #2ecc71; border-radius:3px; padding:0.1rem 0.3rem; color:#2ecc71;">Low</span>
+          </div>
+          <div id="kanban-container" style="overflow-y:auto; padding:1rem; flex:1; display:flex; flex-direction:column; gap:1rem;">
+            <div class="kanban-column" id="kanban-todo">
+              <div class="kanban-col-header" style="font-size:0.7rem; font-weight:bold; opacity:0.5; margin-bottom:0.5rem; text-transform:uppercase; display:flex; justify-content:space-between; align-items:center;cursor:pointer;"><span class="kanban-column-header">To Do <span class="kanban-count"></span></span> <div style="display:flex; gap:0.3rem;"><span class="sort-by-prio" data-column="kanban-todo" title="Sort by priority" style="cursor:pointer; opacity:0.3; font-size:0.6rem;">⇕</span><span class="mark-all-done" data-column="kanban-todo" title="Mark all done" style="cursor:pointer; opacity:0.3; font-size:0.6rem;">✓ all</span><span class="move-all-next" data-column="kanban-todo" title="Move all to In Progress" style="cursor:pointer; opacity:0.3; font-size:0.6rem;">→</span><span class="clear-col-done" data-column="kanban-todo" title="Clear done" style="cursor:pointer; opacity:0.3; font-size:0.6rem;">✕</span><span class="clear-col-btn" data-column="kanban-todo" title="Clear all" style="cursor:pointer; opacity:0.3; font-size:0.6rem;">✕✕</span></div></div>
+              <div class="kanban-col-body">
+                <input class="kanban-input" data-column="kanban-todo" placeholder="+ Add task, press Enter" style="width:100%; box-sizing:border-box; padding:0.4rem 0.5rem; border:1px dashed var(--border); border-radius:4px; background:transparent; color:var(--text); font-size:0.75rem; outline:none; margin-bottom:0.4rem;">
+                <div class="kanban-list" style="display:flex; flex-direction:column; gap:0.4rem;"></div>
+              </div>
+            </div>
+            <div class="kanban-column" id="kanban-doing">
+              <div class="kanban-col-header" style="font-size:0.7rem; font-weight:bold; opacity:0.5; margin-bottom:0.5rem; text-transform:uppercase; display:flex; justify-content:space-between; align-items:center;cursor:pointer;"><span class="kanban-column-header">In Progress <span class="kanban-count"></span></span> <div style="display:flex; gap:0.3rem;"><span class="sort-by-prio" data-column="kanban-doing" title="Sort by priority" style="cursor:pointer; opacity:0.3; font-size:0.6rem;">⇕</span><span class="mark-all-done" data-column="kanban-doing" title="Mark all done" style="cursor:pointer; opacity:0.3; font-size:0.6rem;">✓ all</span><span class="move-all-next" data-column="kanban-doing" title="Move all to Done" style="cursor:pointer; opacity:0.3; font-size:0.6rem;">→</span><span class="clear-col-done" data-column="kanban-doing" title="Clear done" style="cursor:pointer; opacity:0.3; font-size:0.6rem;">✕</span><span class="clear-col-btn" data-column="kanban-doing" title="Clear all" style="cursor:pointer; opacity:0.3; font-size:0.6rem;">✕✕</span></div></div>
+              <div class="kanban-col-body">
+                <input class="kanban-input" data-column="kanban-doing" placeholder="+ Add task, press Enter" style="width:100%; box-sizing:border-box; padding:0.4rem 0.5rem; border:1px dashed var(--border); border-radius:4px; background:transparent; color:var(--text); font-size:0.75rem; outline:none; margin-bottom:0.4rem;">
+                <div class="kanban-list" style="display:flex; flex-direction:column; gap:0.4rem;"></div>
+              </div>
+            </div>
+            <div class="kanban-column" id="kanban-done">
+              <div class="kanban-col-header" style="font-size:0.7rem; font-weight:bold; opacity:0.5; margin-bottom:0.5rem; text-transform:uppercase; display:flex; justify-content:space-between; align-items:center;cursor:pointer;"><span class="kanban-column-header">Done <span class="kanban-count"></span></span> <div style="display:flex; gap:0.3rem;"><span class="sort-by-prio" data-column="kanban-done" title="Sort by priority" style="cursor:pointer; opacity:0.3; font-size:0.6rem;">⇕</span><span class="clear-col-done" data-column="kanban-done" title="Clear done" style="cursor:pointer; opacity:0.3; font-size:0.6rem;">✕</span><span class="clear-col-btn" data-column="kanban-done" title="Clear all" style="cursor:pointer; opacity:0.3; font-size:0.6rem;">✕✕</span></div></div>
+              <div class="kanban-col-body">
+                <input class="kanban-input" data-column="kanban-done" placeholder="+ Add task, press Enter" style="width:100%; box-sizing:border-box; padding:0.4rem 0.5rem; border:1px dashed var(--border); border-radius:4px; background:transparent; color:var(--text); font-size:0.75rem; outline:none; margin-bottom:0.4rem;">
+                <div class="kanban-list" style="display:flex; flex-direction:column; gap:0.4rem;"></div>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+      <!-- Split Preview for Markdown -->
+      <div id="split-preview" style="flex:1; width:0; background:var(--bg-editor); border-left:1px solid var(--border); overflow-y:auto; padding:2rem;" hidden></div>
+      <!-- Margin Annotations sidebar -->
+      <div id="margin-comments" style="width:250px; border-left:1px solid var(--border); background:var(--bg-app); overflow-y:auto; padding:1rem; display:flex; flex-direction:column; gap:1rem;" hidden>
+        <div style="font-size:0.75rem; font-weight:bold; opacity:0.5; text-transform:uppercase; margin-bottom:0.5rem;">Annotations</div>
+        <div id="comments-list" style="display:flex; flex-direction:column; gap:0.75rem;"></div>
+      </div>
+    </div>
+
+    <footer class="status-bar">
+      <div style="display:flex; gap: 1.25rem; align-items:center;">
+        <span id="word-count" style="cursor: pointer; text-decoration: underline; text-decoration-style: dotted;" title="Click for detailed stats">0 words</span>
+        <span id="sel-word-count" style="padding-left:0.5rem; color:var(--text-muted); font-size:0.7rem;" hidden>Sel: 0 words</span>
+        <span id="goal-tracker" style="cursor: pointer; border-left: 1px solid var(--border); padding-left:0.5rem; color:var(--text);" title="Set Writing Goal">🎯 Goal: ---</span>
+        <span id="streak-tracker" style="padding-left:0.5rem; color:var(--text);" title="Writing Streak">🔥 0 days</span>
+        <span id="session-timer" style="padding-left:0.5rem; color:var(--text); font-size:0.7rem;" title="Session time">⏱ 0:00</span>
+        <span id="session-timer" style="padding-left:0.5rem; font-family:monospace; color:var(--text-muted);">⏱ 00:00</span>
+        <span id="char-count">0 characters</span>
+        <span id="reading-time">1 min read</span>
+        <span id="page-label">Page 1</span>
+        <span id="backup-indicator" style="padding-left:0.5rem; font-size:0.7rem; color:var(--text-muted);" title="Auto-Backup Status"></span>
+        <span id="save-status" style="padding-left:0.5rem; font-size:0.7rem; color:var(--accent); font-weight:600;" title="Document Save Status"></span>
+        <span id="readability-score" style="padding-left:0.5rem; font-size:0.7rem; color:var(--text-muted);" title="Flesch Reading Ease">📖 --</span>
+        <span id="last-saved" style="padding-left:0.5rem; font-size:0.7rem; color:var(--text-muted);" title="Last saved"></span>
+      </div>
+      <div style="display:flex; align-items:center; gap:0.5rem; margin-left:auto;">
+        <button type="button" class="btn-ribbon icon-btn" id="btn-zoom-out" style="padding:0.1rem;" title="Zoom Out"><i data-lucide="minus-circle"></i></button>
+        <span id="zoom-label">100%</span>
+        <button type="button" class="btn-ribbon icon-btn" id="btn-zoom-in" style="padding:0.1rem;" title="Zoom In"><i data-lucide="plus-circle"></i></button>
+      </div>
+    </footer>
+
+    <!-- Find & Replace Modal -->
+    <div id="find-modal" class="modal" hidden>
+      <div class="modal-content" style="max-width: 400px; padding:1.5rem;">
+        <div class="modal-header">
+          <h3>Find & Replace</h3>
+          <button type="button" class="icon-btn btn-ribbon" id="btn-close-find" style="padding:0.25rem;"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body" style="display:flex; flex-direction:column; gap:1rem;">
+          <input type="text" id="find-input" placeholder="Find..." style="width:100%; padding:0.5rem; border:1px solid var(--border); background:transparent; color:var(--text); border-radius:var(--radius);">
+          <input type="text" id="replace-input" placeholder="Replace with..." style="width:100%; padding:0.5rem; border:1px solid var(--border); background:transparent; color:var(--text); border-radius:var(--radius);">
+          <div style="display:flex; justify-content:space-between; gap:0.5rem;">
+            <button id="btn-find-next" class="btn-ribbon" style="flex:1;">Find Next</button>
+            <button id="btn-replace" class="btn-ribbon" style="flex:1;">Replace</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Watermark Modal -->
+    <div id="watermark-modal" class="modal" hidden>
+      <div class="modal-content" style="max-width: 400px; padding:1.5rem;">
+        <div class="modal-header">
+          <h3>Page Branding</h3>
+          <button type="button" class="icon-btn btn-ribbon" id="btn-close-watermark" style="padding:0.25rem;"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body" style="display:flex; flex-direction:column; gap:1rem;">
+          <div class="form-group">
+            <label style="font-size:0.8rem; margin-bottom:0.25rem; display:block;">Watermark Text</label>
+            <input type="text" id="watermark-text-input" placeholder="e.g. DRAFT" style="width:100%; padding:0.5rem; border:1px solid var(--border); background:transparent; color:var(--text); border-radius:var(--radius);">
+          </div>
+          <div class="form-group">
+            <label style="font-size:0.8rem; margin-bottom:0.25rem; display:block;">Opacity</label>
+            <input type="range" id="watermark-opacity" min="0.05" max="0.3" step="0.01" value="0.1" style="width:100%;">
+          </div>
+          <button id="btn-apply-watermark" class="btn-top" style="background:var(--accent); color:#fff; border:none; margin-top:0.5rem;">Apply Watermark</button>
+          <button id="btn-remove-watermark" class="btn-top" style="background:transparent; border:1px solid var(--border); color:var(--text); margin-top:0.25rem;">Remove Watermark</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- History Modal -->
+    <div id="history-modal" class="modal" hidden>
+      <div class="modal-content" style="max-width: 800px; width:95%;">
+        <div class="modal-header">
+          <h3>Version History</h3>
+          <button type="button" class="icon-btn btn-ribbon" id="btn-close-history" style="padding:0.25rem;"><i data-lucide="x"></i></button>
+        </div>
+        <div style="display:flex; gap:1rem; height:400px;">
+          <div id="history-list" style="width:250px; overflow-y:auto; border-right:1px solid var(--border); padding-right:0.5rem;">
+            <p style="color:var(--text); opacity:0.5;">No history recorded yet.</p>
+          </div>
+          <div id="history-diff-container" style="flex:1; display:flex; flex-direction:column; overflow:hidden;" hidden>
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:0.5rem; background:var(--bg-ribbon); border-radius:var(--radius) var(--radius) 0 0;">
+              <span id="diff-meta" style="font-size:0.8rem; font-weight:bold;">Comparison Mode</span>
+              <button id="btn-exit-diff" class="btn-top" style="font-size:0.7rem; padding:0.2rem 0.5rem;">Back to List</button>
+            </div>
+            <div style="display:flex; flex:1; overflow:hidden; border:1px solid var(--border); border-top:none;">
+              <div id="diff-past" style="flex:1; padding:1rem; overflow-y:auto; background:var(--bg-editor); opacity:0.7; border-right:1px solid var(--border);" title="Past Snapshot"></div>
+              <div id="diff-current" style="flex:1; padding:1rem; overflow-y:auto; background:var(--bg-editor);" title="Current Content (Changes Highlighted)"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Voice Assist Modal -->
+    <div id="voice-modal" class="modal" hidden>
+      <div class="modal-content" style="max-width: 400px; padding:1.5rem;">
+        <div class="modal-header">
+          <h3>Voice Command Center</h3>
+          <button type="button" class="icon-btn btn-ribbon" id="btn-close-voice" style="padding:0.25rem;"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body" style="text-align:center; padding:1rem 0;">
+          <div id="voice-indicator" style="width:60px; height:60px; border-radius:50%; background:var(--border); margin:0 auto 1.5rem; display:flex; align-items:center; justify-content:center; transition: all 0.3s;">
+            <i data-lucide="mic" style="width:30px; height:30px; color:var(--text);"></i>
+          </div>
+          <p id="voice-status" style="font-weight:bold; margin-bottom:0.5rem;">Ready</p>
+          <p style="font-size:0.8rem; opacity:0.6; line-height:1.4;">Try saying: "Save document", "Toggle fullscreen", "Bold text", or "New paragraph".</p>
+          <button id="btn-listen-toggle" class="btn-top" style="margin-top:1.5rem; width:100%; background:var(--accent); color:#fff; border:none;">Start Listening</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Writer's Dictionary Modal -->
+    <div id="dict-modal" class="modal" hidden>
+      <div class="modal-content" style="max-width: 500px; width:100%; padding:1.5rem;">
+        <div class="modal-header">
+          <h3>Writer's Dictionary</h3>
+          <button type="button" class="icon-btn btn-ribbon" id="btn-close-dict" style="padding:0.25rem;"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body" style="display:flex; flex-direction:column; gap:1rem;">
+          <form id="dict-form" style="display:flex; gap:0.5rem;" onsubmit="event.preventDefault();">
+            <input type="text" id="dict-input" placeholder="Type a word..." required style="flex:1; padding:0.5rem; border:1px solid var(--border); background:transparent; color:var(--text); border-radius:var(--radius); outline:none;">
+            <button type="submit" id="btn-dict-search" class="btn-ribbon" style="padding:0.5rem 1rem;">Search</button>
+          </form>
+          <div id="dict-results" style="max-height: 300px; overflow-y:auto; padding-top:0.5rem; font-size: 0.9rem; line-height: 1.5;">
+            <p style="opacity:0.5;">Enter a word to find synonyms, antonyms, and rhymes.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Command Palette Modal -->
+    <div id="cmd-palette-modal" class="modal" hidden style="align-items: flex-start; padding-top: 10vh;">
+      <div class="modal-content" style="max-width: 600px; width:100%; padding: 0.5rem;">
+        <div style="display:flex; align-items:center; border-bottom:1px solid var(--border); padding-bottom:0.5rem;">
+          <i data-lucide="search" style="color:var(--text); opacity:0.5; margin:0 0.5rem;"></i>
+          <input type="text" id="cmd-palette-input" style="width:100%; padding:0.5rem; font-size:1.2rem; background:transparent; border:none; outline:none; color:var(--text);" placeholder="Type a command... (Save, Print, Theme)">
+        </div>
+        <div id="cmd-palette-list" style="max-height: 400px; overflow-y:auto; padding-top:0.5rem;">
+          <!-- Items will be generated by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Drawing Modal -->
+    <div id="draw-modal" class="modal" hidden>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Drawing / Signature</h3>
+          <button type="button" class="icon-btn btn-ribbon" id="btn-close-draw" style="padding:0.25rem;"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body">
+          <canvas id="draw-canvas" width="500" height="300" style="border: 1px solid var(--border); background: #fff; cursor: crosshair;"></canvas>
+        </div>
+        <div class="modal-footer" style="display:flex; gap:0.5rem; justify-content:flex-end; margin-top:1rem;">
+          <button type="button" class="btn-top" id="btn-clear-draw">Clear</button>
+          <button type="button" class="btn-top" id="btn-save-draw" style="background: var(--accent); color: #fff;">Insert</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Smart Snippets Modal -->
+    <div id="snippets-modal" class="modal" hidden>
+      <div class="modal-content" style="max-width: 500px; width:100%;">
+        <div class="modal-header">
+          <h3>Smart Snippets</h3>
+          <button type="button" class="icon-btn btn-ribbon" id="btn-close-snippets" style="padding:0.25rem;"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body">
+          <p style="font-size:0.85rem; opacity:0.7; margin-bottom:1rem;">Type triggers like <code>;sig</code>. When you hit space after typing the trigger, it will expand instantly.</p>
+          <div id="snippets-list" style="max-height: 200px; overflow-y:auto; margin-bottom:1rem; border:1px solid var(--border); border-radius:var(--radius); padding:0.5rem;">
+            <!-- list of snippets -->
+          </div>
+          <div style="display:flex; flex-direction:column; gap:0.5rem;">
+            <input type="text" id="snippet-trigger" placeholder="Trigger (e.g. ;sig)" style="padding:0.5rem; background:transparent; border:1px solid var(--border); color:var(--text); border-radius:var(--radius);">
+            <textarea id="snippet-expansion" placeholder="Expansion text..." style="padding:0.5rem; background:transparent; border:1px solid var(--border); color:var(--text); border-radius:var(--radius); min-height:60px;"></textarea>
+            <button type="button" id="btn-add-snippet" class="btn-top" style="background:var(--accent); color:#fff; border:none;">Add Snippet</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Templates Modal -->
+    <div id="templates-modal" class="modal" hidden>
+      <div class="modal-content" style="max-width: 600px; width:100%;">
+        <div class="modal-header">
+          <h3>Layout Templates</h3>
+          <button type="button" class="icon-btn btn-ribbon" id="btn-close-templates" style="padding:0.25rem;"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body" style="display:grid; grid-template-columns: repeat(3, 1fr); gap:1rem;">
+          <button class="template-card" onclick="loadTemplate('letter')" style="background:var(--bg-editor); border:1px solid var(--border); border-radius:var(--radius); padding:1rem; cursor:pointer; color:var(--text); text-align:left;">
+            <i data-lucide="mail"></i>
+            <h4 style="margin:0.5rem 0 0.2rem;">Formal Letter</h4>
+            <p style="font-size:0.7rem; opacity:0.6;">Sender, Recipient, Body, Closing.</p>
+          </button>
+          <button class="template-card" onclick="loadTemplate('minutes')" style="background:var(--bg-editor); border:1px solid var(--border); border-radius:var(--radius); padding:1rem; cursor:pointer; color:var(--text); text-align:left;">
+            <i data-lucide="users"></i>
+            <h4 style="margin:0.5rem 0 0.2rem;">Meeting Minutes</h4>
+            <p style="font-size:0.7rem; opacity:0.6;">Date, Attendees, Agenda, Actions.</p>
+          </button>
+          <button class="template-card" onclick="loadTemplate('essay')" style="background:var(--bg-editor); border:1px solid var(--border); border-radius:var(--radius); padding:1rem; cursor:pointer; color:var(--text); text-align:left;">
+            <i data-lucide="graduation-cap"></i>
+            <h4 style="margin:0.5rem 0 0.2rem;">Standard Essay</h4>
+            <p style="font-size:0.7rem; opacity:0.6;">Introduction, Arguments, Conclusion.</p>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Citation Modal -->
+    <div id="citation-modal" class="modal" hidden>
+      <div class="modal-content" style="max-width: 450px; padding:1.5rem;">
+        <div class="modal-header">
+          <h3>Smart Citation Manager</h3>
+          <button type="button" class="icon-btn btn-ribbon" id="btn-close-citation" style="padding:0.25rem;"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body" style="display:flex; flex-direction:column; gap:1rem;">
+          <input type="text" id="cite-author" placeholder="Author (e.g. Smith, John)" style="width:100%; padding:0.5rem; border:1px solid var(--border); background:transparent; color:var(--text); border-radius:var(--radius);">
+          <input type="text" id="cite-title" placeholder="Title of Work" style="width:100%; padding:0.5rem; border:1px solid var(--border); background:transparent; color:var(--text); border-radius:var(--radius);">
+          <input type="text" id="cite-year" placeholder="Year" style="width:100%; padding:0.5rem; border:1px solid var(--border); background:transparent; color:var(--text); border-radius:var(--radius);">
+          <div class="form-group">
+            <label style="font-size:0.8rem; margin-bottom:0.25rem; display:block;">Style</label>
+            <select id="cite-style" class="ribbon-select" style="width:100%;">
+              <option value="mla">MLA (9th Ed.)</option>
+              <option value="apa">APA (7th Ed.)</option>
+              <option value="chicago">Chicago</option>
+            </select>
+          </div>
+          <button id="btn-insert-citation" class="btn-top" style="background:var(--accent); color:#fff; border:none; margin-top:0.5rem;">Insert Citation</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Math Editor Modal -->
+    <div id="math-modal" class="modal" hidden>
+      <div class="modal-content" style="max-width: 500px; padding:1.5rem;">
+        <div class="modal-header">
+          <h3>Equation Editor (LaTeX)</h3>
+          <button type="button" class="icon-btn btn-ribbon" id="btn-close-math" style="padding:0.25rem;"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body" style="display:flex; flex-direction:column; gap:1rem;">
+          <textarea id="math-input" placeholder="Enter LaTeX (e.g. E = mc^2 or \frac{-b \pm \sqrt{b^2-4ac}}{2a})" style="width:100%; height:100px; padding:0.5rem; border:1px solid var(--border); background:transparent; color:var(--text); border-radius:var(--radius); font-family:monospace; resize:none;"></textarea>
+          <div id="math-preview" style="min-height:60px; background:var(--bg-ribbon); border-radius:var(--radius); display:flex; align-items:center; justify-content:center; font-size:1.5rem; color:var(--text);">Preview will appear here</div>
+          <button id="btn-insert-math" class="btn-top" style="background:var(--accent); color:#fff; border:none; margin-top:0.5rem;">Insert Equation</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Translation Modal -->
+    <div id="translate-modal" class="modal" hidden>
+      <div class="modal-content" style="max-width: 400px; padding:1.5rem;">
+        <div class="modal-header">
+          <h3>Multi-Language Translator</h3>
+          <button type="button" class="icon-btn btn-ribbon" id="btn-close-translate" style="padding:0.25rem;"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body" style="display:flex; flex-direction:column; gap:1rem;">
+          <div id="translate-original" style="font-size:0.85rem; padding:0.5rem; background:var(--bg-ribbon); border-radius:var(--radius); max-height:100px; overflow-y:auto;"></div>
+          <div class="form-group">
+            <label style="font-size:0.8rem; margin-bottom:0.25rem; display:block;">Target Language</label>
+            <select id="translate-lang" class="ribbon-select" style="width:100%;">
+              <option value="es">Spanish</option>
+              <option value="fr">French</option>
+              <option value="de">German</option>
+              <option value="jp">Japanese</option>
+              <option value="ar">Arabic</option>
+            </select>
+          </div>
+          <div id="translate-result" style="font-size:0.9rem; font-weight:bold; color:var(--accent); min-height:40px;">Result will appear here...</div>
+          <button id="btn-run-translate" class="btn-top" style="background:var(--accent); color:#fff; border:none; margin-top:0.5rem;">Translate Selection</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Statistics Modal -->
+    <div id="stats-modal" class="modal" hidden>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Detailed Statistics</h3>
+          <button type="button" class="icon-btn btn-ribbon" id="btn-close-stats" style="padding:0.25rem;"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body">
+          <table class="stats-table" style="width:100%; border-collapse: collapse;">
+            <tbody>
+              <tr><td style="padding:0.5rem; border-bottom:1px solid var(--border);">Words</td><td id="stat-words" style="text-align:right; padding:0.5rem; border-bottom:1px solid var(--border);">0</td></tr>
+              <tr><td style="padding:0.5rem; border-bottom:1px solid var(--border);">Characters (no spaces)</td><td id="stat-chars-no-space" style="text-align:right; padding:0.5rem; border-bottom:1px solid var(--border);">0</td></tr>
+              <tr><td style="padding:0.5rem; border-bottom:1px solid var(--border);">Characters (with spaces)</td><td id="stat-chars" style="text-align:right; padding:0.5rem; border-bottom:1px solid var(--border);">0</td></tr>
+              <tr><td style="padding:0.5rem; border-bottom:1px solid var(--border);">Sentences</td><td id="stat-sentences" style="text-align:right; padding:0.5rem; border-bottom:1px solid var(--border);">0</td></tr>
+              <tr><td style="padding:0.5rem; border-bottom:1px solid var(--border);">Paragraphs</td><td id="stat-paragraphs" style="text-align:right; padding:0.5rem; border-bottom:1px solid var(--border);">0</td></tr>
+              <tr><td style="padding:0.5rem; border-bottom:1px solid var(--border);">Pages</td><td id="stat-pages" style="text-align:right; padding:0.5rem; border-bottom:1px solid var(--border);">1</td></tr>
+              <tr><td style="padding:0.5rem; border-bottom:1px solid var(--border);">Reading Time (~200 wpm)</td><td id="stat-read-time" style="text-align:right; padding:0.5rem; border-bottom:1px solid var(--border);">0 min</td></tr>
+              <tr><td style="padding:0.5rem; border-bottom:1px solid var(--border);">Speaking Time (~130 wpm)</td><td id="stat-speak-time" style="text-align:right; padding:0.5rem; border-bottom:1px solid var(--border);">0 min</td></tr>
+              <tr><td style="padding:0.5rem; border-bottom:1px solid var(--border);">Readability (Grade Level)</td><td id="stat-readability" style="text-align:right; padding:0.5rem; border-bottom:1px solid var(--border);">---</td></tr>
+              <tr><td style="padding:0.5rem;">Document Sentiment</td><td id="stat-sentiment" style="text-align:right; padding:0.5rem;">---</td></tr>
+            </tbody>
+          </table>
+          <div style="margin-top:1.5rem;">
+            <label style="font-size:0.8rem; font-weight:bold; margin-bottom:0.5rem; display:block; color:var(--accent);">Interactive Word Cloud</label>
+            <div id="word-cloud-container" style="height:150px; background:var(--bg-editor); border:1px solid var(--border); border-radius:var(--radius); position:relative; overflow:hidden; display:flex; flex-wrap:wrap; align-items:center; justify-content:center; padding:1rem;">
+              <p style="opacity:0.3; font-size:0.75rem;">Cloud data will appear as you write...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Encrypt Modal -->
+    <div id="encrypt-modal" class="modal" hidden>
+      <div class="modal-content" style="max-width: 400px; padding:1.5rem;">
+        <div class="modal-header">
+          <h3>AES-256 Encryption</h3>
+          <button type="button" class="icon-btn btn-ribbon" id="btn-close-encrypt" style="padding:0.25rem;"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body" style="display:flex; flex-direction:column; gap:1rem;">
+          <input type="password" id="encrypt-pass" placeholder="Enter password..." style="width:100%; padding:0.5rem; border:1px solid var(--border); background:transparent; color:var(--text); border-radius:var(--radius);">
+          <div style="display:flex; gap:0.5rem;">
+            <button id="btn-do-encrypt" class="btn-top" style="flex:1; background:var(--accent); color:#fff; border:none;">Encrypt & Lock</button>
+            <button id="btn-do-decrypt" class="btn-top" style="flex:1; border:1px solid var(--border);" hidden>Decrypt</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PDF Settings Modal -->
+    <div id="pdf-settings-modal" class="modal" hidden>
+      <div class="modal-content" style="max-width: 400px; padding:1.5rem;">
+        <div class="modal-header">
+          <h3>PDF Export Settings</h3>
+          <button type="button" class="icon-btn btn-ribbon" id="btn-close-pdf-settings" style="padding:0.25rem;"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body" style="display:flex; flex-direction:column; gap:1rem;">
+          <div class="form-group">
+            <label style="font-size:0.8rem; display:block; margin-bottom:0.25rem;">Page Size</label>
+            <select id="pdf-page-size" class="ribbon-select" style="width:100%;">
+              <option value="A4">A4</option>
+              <option value="Letter">Letter</option>
+              <option value="Legal">Legal</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label style="font-size:0.8rem; display:block; margin-bottom:0.25rem;">Margins</label>
+            <select id="pdf-margins" class="ribbon-select" style="width:100%;">
+              <option value="normal">Normal</option>
+              <option value="narrow">Narrow</option>
+              <option value="wide">Wide</option>
+            </select>
+          </div>
+          <label style="font-size:0.8rem; display:flex; align-items:center; gap:0.5rem;">
+            <input type="checkbox" id="pdf-show-pagenum" checked> Show page numbers
+          </label>
+          <label style="font-size:0.8rem; display:flex; align-items:center; gap:0.5rem;">
+            <input type="checkbox" id="pdf-show-watermark"> Include watermark
+          </label>
+          <button id="btn-final-export-pdf" class="btn-top" style="background:var(--accent); color:#fff; border:none; margin-top:0.5rem;">Export PDF</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Style Report Modal -->
+    <div id="style-report-modal" class="modal" hidden>
+      <div class="modal-content" style="max-width: 500px; padding:1.5rem;">
+        <div class="modal-header">
+          <h3>Style & Tone Report</h3>
+          <button type="button" class="icon-btn btn-ribbon" id="btn-close-style-report" style="padding:0.25rem;"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body" style="display:flex; flex-direction:column; gap:0.75rem;">
+          <div><strong>Tone:</strong> <span id="style-tone-label">—</span></div>
+          <div><strong>Clarity:</strong> <span id="style-clarity-score">—</span></div>
+          <div><strong>Feedback:</strong> <span id="style-feedback">—</span></div>
+          <div id="style-bars" style="margin-top:1rem;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Icon Search Modal -->
+    <div id="icon-search-modal" class="modal" hidden>
+      <div class="modal-content" style="max-width: 500px; padding:1.5rem;">
+        <div class="modal-header">
+          <h3>Search & Insert Icons</h3>
+          <button type="button" class="icon-btn btn-ribbon" id="btn-close-icon-search" style="padding:0.25rem;"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body" style="display:flex; flex-direction:column; gap:0.75rem;">
+          <input type="text" id="icon-search-input" placeholder="Search icons..." style="width:100%; padding:0.5rem; border:1px solid var(--border); background:transparent; color:var(--text); border-radius:var(--radius);">
+          <div id="icon-grid" style="display:grid; grid-template-columns:repeat(6,1fr); gap:0.5rem; max-height:300px; overflow-y:auto;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Deep History Search Modal -->
+    <div id="deep-search-modal" class="modal" hidden>
+      <div class="modal-content" style="max-width: 500px; padding:1.5rem;">
+        <div class="modal-header">
+          <h3>Deep History Search</h3>
+          <button type="button" class="icon-btn btn-ribbon" id="btn-close-deep-search" style="padding:0.25rem;"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body" style="display:flex; flex-direction:column; gap:0.75rem;">
+          <input type="text" id="deep-search-input" placeholder="Search all saved versions..." style="width:100%; padding:0.5rem; border:1px solid var(--border); background:transparent; color:var(--text); border-radius:var(--radius);">
+          <button id="btn-run-deep-search" class="btn-top" style="background:var(--accent); color:#fff; border:none;">Search History</button>
+          <div id="deep-search-results" style="max-height:300px; overflow-y:auto;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slash Command Menu -->
+    <div id="slash-menu" class="modal" hidden style="position:fixed; width:250px; padding:0.5rem; background:var(--bg-editor); border:1px solid var(--border); border-radius:var(--radius); box-shadow:0 8px 16px rgba(0,0,0,0.2); z-index:2000;">
+      <div style="font-size:0.7rem; font-weight:bold; opacity:0.5; margin-bottom:0.5rem; text-transform:uppercase;">Commands</div>
+      <button class="slash-item" onclick="execSlash('insertTable')"><i data-lucide="table"></i> Table</button>
+      <button class="slash-item" onclick="execSlash('insertImage')"><i data-lucide="image"></i> Image</button>
+      <button class="slash-item" onclick="execSlash('insertCheckbox')"><i data-lucide="check-square"></i> Checkbox</button>
+      <button class="slash-item" onclick="execSlash('formatBlock','blockquote')"><i data-lucide="quote"></i> Blockquote</button>
+      <button class="slash-item" onclick="execSlash('insertHTML','<hr>')"><i data-lucide="minus"></i> Horizontal Line</button>
+    </div>
+
+    <!-- Table Context Menu -->
+    <div id="table-context-menu" class="modal" hidden style="position:fixed; width:180px; padding:0.5rem; background:var(--bg-editor); border:1px solid var(--border); border-radius:var(--radius); box-shadow:0 8px 16px rgba(0,0,0,0.2); z-index:2000; gap:0.25rem; display:flex; flex-direction:column;">
+      <button class="slash-item" onclick="tableAction('addRowBelow')"><i data-lucide="plus-square"></i> Row Below</button>
+      <button class="slash-item" onclick="tableAction('addRowAbove')"><i data-lucide="plus-square"></i> Row Above</button>
+      <button class="slash-item" onclick="tableAction('addColRight')"><i data-lucide="plus-circle"></i> Column Right</button>
+      <button class="slash-item" onclick="tableAction('addColLeft')"><i data-lucide="plus-circle"></i> Column Left</button>
+      <button class="slash-item" onclick="tableAction('deleteRow')"><i data-lucide="minus-square"></i> Delete Row</button>
+      <button class="slash-item" onclick="tableAction('deleteTable')" style="color:red;"><i data-lucide="trash-2"></i> Delete Table</button>
+    </div>
+
+    <!-- Navigation Radar -->
+    <div id="nav-radar-panel" style="position:fixed; right:0; top:50%; transform:translateY(-50%); width:60px; background:var(--bg-ribbon); border:1px solid var(--border); border-right:none; border-radius:var(--radius) 0 0 var(--radius); padding:0.5rem; z-index:100; display:flex; flex-direction:column; gap:0.25rem; max-height:40vh; overflow-y:auto;" title="Navigation Radar">
+      <div id="nav-radar-items" style="display:flex; flex-direction:column; gap:0.2rem;">
+        <p style="font-size:0.5rem; opacity:0.3;">Empty</p>
+      </div>
+    </div>
+
+    <!-- Emoji Picker Modal -->
+    <div id="emoji-modal" class="modal" hidden>
+      <div class="modal-content" style="max-width: 450px; padding:1.25rem;">
+        <div class="modal-header">
+          <h3>Insert Emoji</h3>
+          <button type="button" class="icon-btn btn-ribbon" id="btn-close-emoji" style="padding:0.25rem;"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body">
+          <input type="text" id="emoji-search" placeholder="Search..." style="width:100%; padding:0.4rem; border:1px solid var(--border); background:transparent; color:var(--text); border-radius:var(--radius); margin-bottom:0.75rem;">
+          <div id="emoji-grid" style="display:grid; grid-template-columns:repeat(8,1fr); gap:0.25rem; max-height:260px; overflow-y:auto; font-size:1.4rem;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Definition Tooltip -->
+    <div id="def-tooltip" hidden style="position:fixed; z-index:3000; background:var(--bg-editor); border:1px solid var(--border); border-radius:var(--radius); padding:0.75rem; max-width:300px; box-shadow:0 8px 20px rgba(0,0,0,0.2); font-size:0.85rem; line-height:1.5; pointer-events:none;">
+      <div id="def-content" style="color:var(--text);"></div>
+    </div>
+
+    <!-- Bookmarks Panel -->
+    <div id="bookmark-panel" hidden style="position:fixed; right:65px; top:50%; transform:translateY(-50%); width:200px; background:var(--bg-ribbon); border:1px solid var(--border); border-radius:var(--radius); padding:0.5rem; z-index:100; max-height:50vh; overflow-y:auto; box-shadow:0 4px 12px rgba(0,0,0,0.15);">
+      <div style="font-size:0.65rem; font-weight:bold; opacity:0.5; margin-bottom:0.5rem; text-transform:uppercase;">Bookmarks <span id="bookmark-count">(0)</span></div>
+      <div id="bookmark-list" style="display:flex; flex-direction:column; gap:0.3rem;"></div>
+    </div>
+
+    <!-- Todo Aggregator Panel -->
+    <div id="todo-aggregator" hidden style="position:fixed; left:0; top:50%; transform:translateY(-50%); width:220px; background:var(--bg-ribbon); border:1px solid var(--border); border-left:none; border-radius:0 var(--radius) var(--radius) 0; padding:0.75rem; z-index:100; max-height:50vh; overflow-y:auto; box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+      <div style="font-size:0.65rem; font-weight:bold; opacity:0.5; margin-bottom:0.5rem; text-transform:uppercase;">Checklist <span id="todo-agg-count">0</span></div>
+      <div id="todo-agg-list" style="display:flex; flex-direction:column; gap:0.4rem;"></div>
+    </div>
+
+    <!-- Grammar Check Modal -->
+    <div id="grammar-modal" class="modal" hidden>
+      <div class="modal-content" style="max-width: 550px; width:100%; padding:1.5rem;">
+        <div class="modal-header">
+          <h3>Grammar & Style Check</h3>
+          <button type="button" class="icon-btn btn-ribbon" id="btn-close-grammar" style="padding:0.25rem;"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body" id="grammar-results" style="font-size:0.9rem; line-height:1.6; max-height:400px; overflow-y:auto;">
+          <p style="opacity:0.5;">Click "Check Grammar" to scan your document.</p>
+        </div>
+        <div class="modal-footer" style="display:flex; gap:0.5rem; justify-content:flex-end; margin-top:1rem;">
+          <button type="button" class="btn-top" id="btn-run-grammar" style="background:var(--accent); color:#fff; border:none;">Check Grammar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Clipboard Manager Modal -->
+    <div id="clipboard-modal" class="modal" hidden>
+      <div class="modal-content" style="max-width: 400px; width:100%; padding:1.5rem;">
+        <div class="modal-header">
+          <h3>Clipboard History</h3>
+          <button type="button" class="icon-btn btn-ribbon" id="btn-close-clipboard" style="padding:0.25rem;"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body">
+          <input id="clipboard-search" placeholder="🔍 Search clipboard..." style="width:100%; box-sizing:border-box; padding:0.4rem; border:1px solid var(--border); border-radius:4px; background:transparent; color:var(--text); font-size:0.75rem; outline:none; margin-bottom:0.5rem;">
+          <div id="clipboard-list" style="max-height:350px; overflow-y:auto; display:flex; flex-direction:column; gap:0.5rem;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reading Mode Overlay -->
+    <div id="reading-mode-overlay" hidden style="position:fixed; inset:0; z-index:500; background:var(--bg-app); overflow-y:auto; padding:2rem 0;">
+      <div style="max-width:700px; margin:0 auto; padding:1rem 2rem; font-size:1.1rem; line-height:1.8; color:var(--text);">
+        <div style="position:sticky; top:0; z-index:10; background:var(--bg-app); padding-bottom:0.5rem; display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+          <span id="reading-progress" style="font-size:0.65rem; opacity:0.4; flex:1;">0%</span>
+          <select id="reading-fontsize" style="font-size:0.7rem; background:var(--bg-ribbon); border:1px solid var(--border); color:var(--text); border-radius:4px; padding:0.2rem 0.4rem;">
+            <option value="1">Small</option>
+            <option value="1.1" selected>Normal</option>
+            <option value="1.3">Large</option>
+            <option value="1.6">X-Large</option>
+          </select>
+          <select id="reading-theme" style="font-size:0.7rem; background:var(--bg-ribbon); border:1px solid var(--border); color:var(--text); border-radius:4px; padding:0.2rem 0.4rem;">
+            <option value="default">Default</option>
+            <option value="sepia">Sepia</option>
+            <option value="dark">Dark</option>
+          </select>
+          <button type="button" class="btn-top" id="btn-close-reading" style="background:var(--accent); color:#fff; border:none; font-size:0.75rem; padding:0.25rem 0.75rem;">✕ Close</button>
+        </div>
+        <div style="text-align:center; margin-bottom:2rem;">
+          <h1 id="reading-title" style="margin:0 0 0.5rem;">Untitled</h1>
+          <p style="opacity:0.5; font-size:0.9rem;" id="reading-meta">0 words</p>
+        </div>
+        <div id="reading-content" style="border-top:1px solid var(--border); padding-top:2rem;" class="reading-body"></div>
+      </div>
+    </div>
+
+    <!-- Scratchpad Panel -->
+    <div id="scratchpad-panel" hidden style="position:fixed; right:65px; top:55px; width:260px; height:300px; background:var(--bg-editor); border:1px solid var(--border); border-radius:var(--radius); box-shadow:0 8px 20px rgba(0,0,0,0.2); z-index:200; display:flex; flex-direction:column; overflow:hidden;">
+      <div id="scratchpad-header" style="display:flex; justify-content:space-between; align-items:center; padding:0.4rem 0.6rem; border-bottom:1px solid var(--border); background:var(--bg-ribbon); cursor:grab; user-select:none;">
+        <span style="font-size:0.7rem; font-weight:bold; opacity:0.6;">Quick Notes</span>
+      </div>
+      <input id="scratchpad-title" placeholder="Note title..." style="border:none; border-bottom:1px solid var(--border); padding:0.4rem 0.6rem; font-size:0.75rem; background:transparent; color:var(--text); outline:none; width:100%; box-sizing:border-box;">
+      <textarea id="scratchpad-textarea" style="flex:1; padding:0.6rem; border:none; background:transparent; color:var(--text); font-size:0.85rem; line-height:1.5; resize:none; outline:none; font-family:inherit;" placeholder="Type quick notes here... (auto-saved)"></textarea>
+    </div>
+
+    <!-- Focus History Modal -->
+    <div id="focus-history-modal" class="modal" hidden>
+      <div class="modal-content" style="max-width: 400px; width:100%; padding:1.5rem;">
+        <div class="modal-header">
+          <h3>Focus Session History</h3>
+          <button type="button" class="icon-btn btn-ribbon" id="btn-close-focus-history" style="padding:0.25rem;"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body">
+          <div id="focus-history-list" style="max-height:300px; overflow-y:auto; font-size:0.85rem; line-height:1.8;"></div>
+          <div style="margin-top:1rem; padding-top:1rem; border-top:1px solid var(--border); display:flex; justify-content:space-between;">
+            <span id="focus-total-sessions">Total: 0</span>
+            <span id="focus-total-minutes">Minutes: 0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Line Numbers styling -->
+      <style>
+        .editor-with-lines { display:flex; flex-direction:row; width:100%; }
+        .line-numbers-gutter { padding: 20mm 0.5rem 20mm 0.5rem; text-align:right; font-family:monospace; font-size:0.75rem; line-height:1.6; color:var(--text-muted); opacity:0.4; user-select:none; border-right:1px solid var(--border); margin-right:0.5rem; min-width:2.5rem; overflow:hidden; }
+      </style>
+
+    <!-- Document Map Panel -->
+    <div id="doc-map-panel" hidden style="position:fixed; left:0; top:50%; transform:translateY(-50%); width:180px; background:var(--bg-ribbon); border:1px solid var(--border); border-left:none; border-radius:0 var(--radius) var(--radius) 0; padding:0.5rem; z-index:100; max-height:60vh; overflow-y:auto; box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+      <div style="font-size:0.65rem; font-weight:bold; opacity:0.5; margin-bottom:0.5rem; text-transform:uppercase; display:flex; justify-content:space-between;">
+        <span>Document Map</span>
+        <span id="btn-close-doc-map" style="cursor:pointer;">✕</span>
+      </div>
+      <div id="doc-map-content" style="display:flex; flex-direction:column; gap:2px;"></div>
+    </div>
+
+    <!-- Word Frequency Panel -->
+    <div id="word-freq-panel" class="modal" hidden>
+      <div class="modal-content" style="max-width:400px; padding:1rem;">
+        <div class="modal-header">
+          <h3>Word Frequency</h3>
+          <button type="button" class="icon-btn btn-ribbon" id="btn-close-wordfreq" style="padding:0.25rem;"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body" style="display:flex; flex-direction:column; gap:0.75rem;">
+          <div style="display:flex; gap:0.5rem;">
+            <input type="number" id="wf-min-words" value="3" min="1" max="20" style="width:60px; padding:0.25rem; border:1px solid var(--border); background:transparent; color:var(--text); border-radius:var(--radius);">
+            <span style="font-size:0.85rem; align-self:center;">min length</span>
+            <button type="button" id="btn-analyze-wf" class="btn-top" style="background:var(--accent); color:#fff; border:none; margin-left:auto;">Analyze</button>
+          </div>
+          <div id="wf-results" style="max-height:300px; overflow-y:auto; font-family:monospace; font-size:0.85rem; line-height:1.6;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Regex Find & Replace Modal -->
+    <div id="regex-modal" class="modal" hidden>
+      <div class="modal-content" style="max-width:480px; padding:1rem;">
+        <div class="modal-header">
+          <h3>Regex Find &amp; Replace</h3>
+          <button type="button" class="icon-btn btn-ribbon" id="btn-close-regex" style="padding:0.25rem;"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body" style="display:flex; flex-direction:column; gap:0.75rem;">
+          <input type="text" id="regex-pattern" placeholder="Pattern (e.g. \d+|hello\s*world)" style="width:100%; padding:0.5rem; border:1px solid var(--border); background:transparent; color:var(--text); border-radius:var(--radius); font-family:monospace;">
+          <div style="display:flex; gap:0.5rem; align-items:center;">
+            <label style="font-size:0.8rem;"><input type="checkbox" id="regex-flag-g" checked> global</label>
+            <label style="font-size:0.8rem;"><input type="checkbox" id="regex-flag-i"> ignore case</label>
+            <label style="font-size:0.8rem;"><input type="checkbox" id="regex-flag-m"> multiline</label>
+          </div>
+          <input type="text" id="regex-replace" placeholder="Replacement text (use $1, $2 for groups)" style="width:100%; padding:0.5rem; border:1px solid var(--border); background:transparent; color:var(--text); border-radius:var(--radius); font-family:monospace;">
+          <div style="display:flex; gap:0.5rem;">
+            <button type="button" id="btn-regex-find" class="btn-top" style="flex:1;">Find All</button>
+            <button type="button" id="btn-regex-replace" class="btn-top" style="flex:1; background:var(--accent); color:#fff; border:none;">Replace All</button>
+          </div>
+          <div id="regex-count" style="font-size:0.8rem; opacity:0.7;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Focus Blocks Modal -->
+    <div id="focus-blocks-modal" class="modal" hidden>
+      <div class="modal-content" style="max-width:400px; padding:1.5rem;">
+        <div class="modal-header">
+          <h3>Focus Blocks</h3>
+          <button type="button" class="icon-btn btn-ribbon" id="btn-close-focusblocks" style="padding:0.25rem;"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body" style="display:flex; flex-direction:column; gap:1rem;">
+          <p style="font-size:0.85rem; opacity:0.7;">Enter a focused writing session. Auto-enables focus mode and blocks distractions.</p>
+          <div style="display:flex; gap:0.5rem;">
+            <button class="btn-top focus-duration" data-minutes="15" style="flex:1;">15 min</button>
+            <button class="btn-top focus-duration" data-minutes="25" style="flex:1; background:var(--accent); color:#fff; border-color:var(--accent);">25 min</button>
+            <button class="btn-top focus-duration" data-minutes="45" style="flex:1;">45 min</button>
+            <button class="btn-top focus-duration" data-minutes="60" style="flex:1;">60 min</button>
+          </div>
+          <div id="focus-blocks-progress" hidden>
+            <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:0.3rem;">
+              <span id="fb-timer">25:00</span>
+              <span id="fb-status">Focus mode active</span>
+            </div>
+            <div style="width:100%; height:6px; background:var(--border); border-radius:3px; overflow:hidden;">
+              <div id="fb-bar" style="width:100%; height:100%; background:#10b981; transition:width 0.5s;"></div>
+            </div>
+          </div>
+          <button type="button" id="btn-start-focus-block" class="btn-top" style="background:var(--accent); color:#fff; border:none;">Start Focus Block</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Writing Sprint Modal -->
+    <div id="sprint-modal" class="modal" hidden>
+      <div class="modal-content" style="max-width: 380px; padding:1.5rem;">
+        <div class="modal-header">
+          <h3>Writing Sprint</h3>
+          <button type="button" class="icon-btn btn-ribbon" id="btn-close-sprint" style="padding:0.25rem;"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body" style="display:flex; flex-direction:column; gap:1rem;">
+          <div style="display:flex; gap:0.5rem;">
+            <button class="btn-top sprint-duration" data-minutes="5" style="flex:1;">5 min</button>
+            <button class="btn-top sprint-duration" data-minutes="10" style="flex:1;">10 min</button>
+            <button class="btn-top sprint-duration" data-minutes="25" style="flex:1; background:var(--accent); color:#fff; border-color:var(--accent);">25 min</button>
+          </div>
+          <div class="form-group">
+            <label style="font-size:0.8rem; display:block; margin-bottom:0.25rem;">Word Target</label>
+            <input type="number" id="sprint-target" value="500" min="10" step="10" style="width:100%; padding:0.5rem; border:1px solid var(--border); background:transparent; color:var(--text); border-radius:var(--radius);">
+          </div>
+          <div id="sprint-progress" hidden>
+            <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:0.3rem;">
+              <span id="sprint-timer">25:00</span>
+              <span id="sprint-words">0 / 500</span>
+            </div>
+            <div style="width:100%; height:8px; background:var(--border); border-radius:4px; overflow:hidden;">
+              <div id="sprint-bar" style="width:0%; height:100%; background:var(--accent); transition:width 0.3s;"></div>
+            </div>
+          </div>
+          <button type="button" id="btn-start-sprint" class="btn-top" style="background:var(--accent); color:#fff; border:none;">Start Sprint</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Theme Builder Modal -->
+    <div id="theme-builder-modal" class="modal" hidden>
+      <div class="modal-content" style="max-width: 400px; padding:1.5rem;">
+        <div class="modal-header">
+          <h3>Custom Theme</h3>
+          <button type="button" class="icon-btn btn-ribbon" id="btn-close-theme-builder" style="padding:0.25rem;"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body" style="display:flex; flex-direction:column; gap:0.75rem;">
+          <div class="form-group"><label style="font-size:0.75rem;">Accent Color</label><input type="color" id="tb-accent" value="#a78bfa" style="width:100%;"></div>
+          <div class="form-group"><label style="font-size:0.75rem;">Background (app)</label><input type="color" id="tb-bg-app" value="#0f0f12" style="width:100%;"></div>
+          <div class="form-group"><label style="font-size:0.75rem;">Background (editor)</label><input type="color" id="tb-bg-editor" value="#16161b" style="width:100%;"></div>
+          <div class="form-group"><label style="font-size:0.75rem;">Border Color</label><input type="color" id="tb-border" value="#2a2a32" style="width:100%;"></div>
+          <div class="form-group"><label style="font-size:0.75rem;">Text Color</label><input type="color" id="tb-text" value="#e4e4e7" style="width:100%;"></div>
+          <div style="display:flex; gap:0.5rem; margin-top:0.5rem;">
+            <button id="btn-apply-theme" class="btn-top" style="flex:1; background:var(--accent); color:#fff; border:none;">Apply Theme</button>
+            <button id="btn-reset-theme" class="btn-top" style="flex:1; border:1px solid var(--border);">Reset</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pizzip/3.1.6/pizzip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+  <script src="https://unpkg.com/turndown/dist/turndown.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="script.js"></script>
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+</html>

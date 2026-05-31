@@ -1,0 +1,17 @@
+{
+  "name": "ai-electron-ai-desktop",
+  "private": true,
+  "version": "0.0.1",
+  "main": "main.cjs",
+  "scripts": {
+    "dev": "set ELECTRON_RENDERER_URL=http://localhost:5173&& electron .",
+    "start": "electron ."
+  },
+  "dependencies": {
+    "ai-electron-ai": "file:../..",
+    "electron": "^37.5.1"
+  },
+  "devDependencies": {
+    "cross-env": "^10.1.0"
+  }
+}

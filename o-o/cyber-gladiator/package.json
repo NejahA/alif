@@ -1,0 +1,12 @@
+{
+  "name": "cyber-gladiator-workspace",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "concurrently -n API,WEB -c magenta,cyan \"npm --prefix services/api run dev\" \"npm --prefix apps/web run dev\"",
+    "install:all": "npm install && npm --prefix services/api install && npm --prefix apps/web install"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

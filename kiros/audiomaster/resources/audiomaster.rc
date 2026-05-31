@@ -1,0 +1,302 @@
+#include "resource.h"
+#include <windows.h>
+#include <commctrl.h>
+
+// Icons
+IDI_AUDIOMASTER_ICON       ICON    "app.ico"
+IDI_VOLUME_ICON            ICON    "volume.ico"
+IDI_MUTE_ICON              ICON    "mute.ico"
+IDI_DEVICE_ICON            ICON    "device.ico"
+IDI_EQUALIZER_ICON         ICON    "equalizer.ico"
+IDI_PEAKMETER_ICON         ICON    "peakmeter.ico"
+
+// Cursors
+IDC_VOLUME_CURSOR          CURSOR  "volume.cur"
+
+// Bitmaps
+IDB_MAIN_BACKGROUND        BITMAP  "background.bmp"
+IDB_PEAK_METER             BITMAP  "peakmeter.bmp"
+IDB_VOLUME_SLIDER          BITMAP  "slider.bmp"
+IDB_EQUALIZER_BANDS        BITMAP  "equalizer.bmp"
+
+// Version information
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION     1,0,0,0
+PRODUCTVERSION  1,0,0,0
+FILEFLAGSMASK   0x3fL
+FILEFLAGS       0x0L
+FILEOS          VOS_NT_WINDOWS32
+FILETYPE        VFT_APP
+FILESUBTYPE     VFT2_UNKNOWN
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "CompanyName", "AudioMaster Project"
+            VALUE "FileDescription", "AudioMaster - Windows Audio Control Panel"
+            VALUE "FileVersion", "1.0.0.0"
+            VALUE "InternalName", "AudioMaster"
+            VALUE "LegalCopyright", "Copyright (C) 2024"
+            VALUE "OriginalFilename", "AudioMaster.exe"
+            VALUE "ProductName", "AudioMaster"
+            VALUE "ProductVersion", "1.0.0.0"
+            VALUE "Comments", "Complete Windows audio control application"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END
+
+// Main menu
+IDR_MAIN_MENU MENU
+BEGIN
+    POPUP "&File"
+    BEGIN
+        MENUITEM "&New Profile",                  ID_FILE_NEW_PROFILE
+        MENUITEM "&Load Profile",                 ID_FILE_LOAD_PROFILE
+        MENUITEM "&Save Profile",                 ID_FILE_SAVE_PROFILE
+        MENUITEM SEPARATOR
+        MENUITEM "&Import Settings",              ID_FILE_IMPORT
+        MENUITEM "&Export Settings",              ID_FILE_EXPORT
+        MENUITEM SEPARATOR
+        MENUITEM "E&xit",                         ID_FILE_EXIT
+    END
+    POPUP "&View"
+    BEGIN
+        MENUITEM "&Always on Top",                ID_VIEW_ALWAYSONTOP, CHECKED
+        MENUITEM "&Show Peak Meters",             ID_VIEW_SHOWPEAKS, CHECKED
+        MENUITEM "&Show Device Panel",            ID_VIEW_SHOWDEVICES, CHECKED
+        MENUITEM "&Show Session Panel",           ID_VIEW_SHOWSESSIONS, CHECKED
+        MENUITEM SEPARATOR
+        MENUITEM "&Compact Mode",                 ID_VIEW_COMPACT
+        MENUITEM "&Full Mode",                    ID_VIEW_FULL
+        MENUITEM SEPARATOR
+        MENUITEM "&Refresh",                      ID_VIEW_REFRESH
+    END
+    POPUP "&Devices"
+    BEGIN
+        MENUITEM "&Playback Devices",             ID_DEVICES_PLAYBACK
+        MENUITEM "&Recording Devices",            ID_DEVICES_RECORDING
+        MENUITEM SEPARATOR
+        MENUITEM "&Set Default Device",           ID_DEVICES_SETDEFAULT
+        MENUITEM "&Device Properties",            ID_DEVICES_PROPERTIES
+        MENUITEM "&Audio Enhancements",           ID_DEVICES_ENHANCEMENTS
+    END
+    POPUP "&Effects"
+    BEGIN
+        MENUITEM "&Equalizer",                    ID_EFFECTS_EQUALIZER
+        MENUITEM "&Compressor",                   ID_EFFECTS_COMPRESSOR
+        MENUITEM "&Reverb",                       ID_EFFECTS_REVERB
+        MENUITEM "&Bass Boost",                   ID_EFFECTS_BASSBOOST
+        MENUITEM "&Virtual Surround",             ID_EFFECTS_SURROUND
+        MENUITEM SEPARATOR
+        MENUITEM "&Noise Suppression",            ID_EFFECTS_NOISESUPPRESSION
+        MENUITEM "&Echo Cancellation",            ID_EFFECTS_ECHOCANCELLATION
+        MENUITEM "&Room Correction",              ID_EFFECTS_ROOMCORRECTION
+    END
+    POPUP "&Routing"
+    BEGIN
+        MENUITEM "&Application Routing",          ID_ROUTING_APPLICATIONS
+        MENUITEM "&Device Routing",               ID_ROUTING_DEVICES
+        MENUITEM SEPARATOR
+        MENUITEM "&Create Routing Rule",          ID_ROUTING_CREATE
+        MENUITEM "&Manage Rules",                 ID_ROUTING_MANAGE
+    END
+    POPUP "&Tools"
+    BEGIN
+        MENUITEM "&Audio Mixer",                  ID_TOOLS_MIXER
+        MENUITEM "&Audio Recorder",               ID_TOOLS_RECORDER
+        MENUITEM "&Audio Player",                 ID_TOOLS_PLAYER
+        MENUITEM "&Audio Converter",              ID_TOOLS_CONVERTER
+        MENUITEM SEPARATOR
+        MENUITEM "&Audio Analyzer",               ID_TOOLS_ANALYZER
+        MENUITEM "&Silence Detector",             ID_TOOLS_SILENCEDETECTOR
+        MENUITEM "&Audio Normalizer",             ID_TOOLS_NORMALIZER
+    END
+    POPUP "&Settings"
+    BEGIN
+        MENUITEM "&General",                      ID_SETTINGS_GENERAL
+        MENUITEM "&Hotkeys",                      ID_SETTINGS_HOTKEYS
+        MENUITEM "&Notifications",                ID_SETTINGS_NOTIFICATIONS
+        MENUITEM "&Audio Quality",                ID_SETTINGS_QUALITY
+        MENUITEM SEPARATOR
+        MENUITEM "&Backup Settings",              ID_SETTINGS_BACKUP
+        MENUITEM "&Restore Settings",             ID_SETTINGS_RESTORE
+    END
+    POPUP "&Help"
+    BEGIN
+        MENUITEM "&User Guide",                   ID_HELP_GUIDE
+        MENUITEM "&Keyboard Shortcuts",           ID_HELP_SHORTCUTS
+        MENUITEM SEPARATOR
+        MENUITEM "&Check for Updates",            ID_HELP_UPDATES
+        MENUITEM SEPARATOR
+        MENUITEM "&About AudioMaster",            ID_HELP_ABOUT
+    END
+END
+
+// Accelerators
+IDR_MAIN_ACCELERATORS ACCELERATORS
+BEGIN
+    "^N",           ID_FILE_NEW_PROFILE,      VIRTKEY, CONTROL
+    "^O",           ID_FILE_LOAD_PROFILE,     VIRTKEY, CONTROL
+    "^S",           ID_FILE_SAVE_PROFILE,     VIRTKEY, CONTROL
+    VK_F5,          ID_VIEW_REFRESH,          VIRTKEY
+    VK_F1,          ID_HELP_GUIDE,            VIRTKEY
+    VK_F12,         ID_HELP_ABOUT,            VIRTKEY
+END
+
+// String table
+STRINGTABLE
+BEGIN
+    IDS_APP_TITLE           "AudioMaster - Windows Audio Control"
+    IDS_DEVICE_PLAYBACK     "Playback Devices"
+    IDS_DEVICE_RECORDING    "Recording Devices"
+    IDS_VOLUME              "Volume"
+    IDS_MUTE                "Mute"
+    IDS_PEAK_METER          "Peak Meter"
+    IDS_EQUALIZER           "Equalizer"
+    IDS_COMPRESSOR          "Compressor"
+    IDS_REVERB              "Reverb"
+    IDS_BASS_BOOST          "Bass Boost"
+    IDS_VIRTUAL_SURROUND    "Virtual Surround"
+    IDS_NOISE_SUPPRESSION   "Noise Suppression"
+    IDS_ECHO_CANCELLATION   "Echo Cancellation"
+    IDS_ROOM_CORRECTION     "Room Correction"
+    IDS_AUDIO_MIXER         "Audio Mixer"
+    IDS_AUDIO_RECORDER      "Audio Recorder"
+    IDS_AUDIO_PLAYER        "Audio Player"
+    IDS_AUDIO_CONVERTER     "Audio Converter"
+    IDS_AUDIO_ANALYZER      "Audio Analyzer"
+    IDS_SILENCE_DETECTOR    "Silence Detector"
+    IDS_AUDIO_NORMALIZER    "Audio Normalizer"
+    IDS_HOTKEYS             "Hotkeys"
+    IDS_NOTIFICATIONS       "Notifications"
+    IDS_AUDIO_QUALITY       "Audio Quality"
+    IDS_BACKUP_SETTINGS     "Backup Settings"
+    IDS_RESTORE_SETTINGS    "Restore Settings"
+    IDS_USER_GUIDE          "User Guide"
+    IDS_KEYBOARD_SHORTCUTS  "Keyboard Shortcuts"
+    IDS_CHECK_UPDATES       "Check for Updates"
+    IDS_ABOUT_AUDIOMASTER   "About AudioMaster"
+END
+
+// Dialogs
+
+// About dialog
+IDD_ABOUT_DIALOG DIALOGEX 0, 0, 300, 200
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "About AudioMaster"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    ICON            IDI_AUDIOMASTER_ICON,IDC_STATIC,14,14,32,32
+    LTEXT           "AudioMaster",IDC_STATIC,60,14,200,20,SS_CENTER
+    LTEXT           "Version 1.0.0",IDC_STATIC,60,34,200,20,SS_CENTER
+    LTEXT           "Complete Windows Audio Control Application",IDC_STATIC,14,60,272,40,SS_CENTER
+    LTEXT           "Copyright (C) 2024 AudioMaster Project",IDC_STATIC,14,100,272,20,SS_CENTER
+    DEFPUSHBUTTON   "OK",IDOK,120,170,60,14
+END
+
+// Equalizer dialog
+IDD_EQUALIZER_DIALOG DIALOGEX 0, 0, 400, 300
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Equalizer"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    GROUPBOX        "Equalizer Bands",IDC_STATIC,10,10,380,180
+    CONTROL         "",IDC_EQUALIZER_SLIDER1,"msctls_trackbar32",TBS_AUTOTICKS | TBS_BOTH | TBS_NOTIFY | WS_TABSTOP,20,30,360,30
+    CONTROL         "",IDC_EQUALIZER_SLIDER2,"msctls_trackbar32",TBS_AUTOTICKS | TBS_BOTH | TBS_NOTIFY | WS_TABSTOP,20,70,360,30
+    CONTROL         "",IDC_EQUALIZER_SLIDER3,"msctls_trackbar32",TBS_AUTOTICKS | TBS_BOTH | TBS_NOTIFY | WS_TABSTOP,20,110,360,30
+    CONTROL         "",IDC_EQUALIZER_SLIDER4,"msctls_trackbar32",TBS_AUTOTICKS | TBS_BOTH | TBS_NOTIFY | WS_TABSTOP,20,150,360,30
+    GROUPBOX        "Presets",IDC_STATIC,10,200,200,90
+    COMBOBOX        IDC_PRESET_COMBO,20,220,180,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "Load Preset",IDC_LOAD_PRESET,20,250,80,14
+    PUSHBUTTON      "Save Preset",IDC_SAVE_PRESET,120,250,80,14
+    GROUPBOX        "Settings",IDC_STATIC,220,200,170,90
+    CHECKBOX        "Enable Equalizer",IDC_ENABLE_EQUALIZER,230,220,150,10
+    CHECKBOX        "Auto Gain",IDC_AUTO_GAIN,230,240,150,10
+    DEFPUSHBUTTON   "OK",IDOK,300,280,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,360,280,50,14
+END
+
+// Device properties dialog
+IDD_DEVICE_PROPERTIES DIALOGEX 0, 0, 350, 400
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Device Properties"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    LTEXT           "Device:",IDC_STATIC,10,10,50,10
+    LTEXT           "",IDC_DEVICE_NAME,70,10,270,10
+    LTEXT           "Status:",IDC_STATIC,10,25,50,10
+    LTEXT           "",IDC_DEVICE_STATUS,70,25,270,10
+    LTEXT           "Format:",IDC_STATIC,10,40,50,10
+    LTEXT           "",IDC_DEVICE_FORMAT,70,40,270,10
+    GROUPBOX        "Volume",IDC_STATIC,10,60,330,60
+    LTEXT           "Master Volume:",IDC_STATIC,20,80,80,10
+    CONTROL         "",IDC_VOLUME_SLIDER,"msctls_trackbar32",TBS_AUTOTICKS | TBS_HORZ | TBS_BOTH | WS_TABSTOP,110,80,200,20
+    CHECKBOX        "Mute",IDC_MUTE_CHECKBOX,110,105,50,10
+    GROUPBOX        "Enhancements",IDC_STATIC,10,130,330,150
+    CHECKBOX        "Loudness Equalization",IDC_ENHANCE_LOUDNESS,20,150,150,10
+    CHECKBOX        "Virtual Surround",IDC_ENHANCE_SURROUND,20,170,150,10
+    CHECKBOX        "Room Correction",IDC_ENHANCE_ROOMCORRECTION,20,190,150,10
+    CHECKBOX        "Bass Management",IDC_ENHANCE_BASSMANAGEMENT,20,210,150,10
+    CHECKBOX        "Speaker Fill",IDC_ENHANCE_SPEAKERFILL,20,230,150,10
+    CHECKBOX        "Disable All Enhancements",IDC_ENHANCE_DISABLEALL,20,250,150,10
+    GROUPBOX        "Advanced",IDC_STATIC,10,290,330,60
+    PUSHBUTTON      "Advanced Settings",IDC_ADVANCED_SETTINGS,20,310,100,14
+    PUSHBUTTON      "Test",IDC_TEST_BUTTON,130,310,100,14
+    DEFPUSHBUTTON   "OK",IDOK,240,360,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,300,360,50,14
+    PUSHBUTTON      "Apply",IDC_APPLY_BUTTON,180,360,50,14
+END
+
+// Hotkey settings dialog
+IDD_HOTKEYS_DIALOG DIALOGEX 0, 0, 400, 300
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Hotkey Settings"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    LISTBOX         IDC_HOTKEY_LIST,10,10,380,200,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Action:",IDC_STATIC,10,220,40,10
+    COMBOBOX        IDC_ACTION_COMBO,60,220,150,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Hotkey:",IDC_STATIC,10,240,40,10
+    HOTKEY          IDC_HOTKEY_EDIT,60,240,150,14
+    PUSHBUTTON      "Add",IDC_ADD_BUTTON,220,220,80,14
+    PUSHBUTTON      "Remove",IDC_REMOVE_BUTTON,220,240,80,14
+    PUSHBUTTON      "Modify",IDC_MODIFY_BUTTON,310,220,80,14
+    PUSHBUTTON      "Clear All",IDC_CLEAR_BUTTON,310,240,80,14
+    DEFPUSHBUTTON   "OK",IDOK,300,280,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,360,280,50,14
+END
+
+// Audio mixer dialog
+IDD_MIXER_DIALOG DIALOGEX 0, 0, 500, 400
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Audio Mixer"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    GROUPBOX        "Input Files",IDC_STATIC,10,10,480,150
+    LISTBOX         IDC_INPUT_LIST,20,30,460,100,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "Add Files",IDC_ADD_FILES,20,140,80,14
+    PUSHBUTTON      "Remove",IDC_REMOVE_FILE,110,140,80,14
+    PUSHBUTTON      "Clear All",IDC_CLEAR_FILES,200,140,80,14
+    GROUPBOX        "Mix Settings",IDC_STATIC,10,170,480,150
+    LTEXT           "Output File:",IDC_STATIC,20,190,60,10
+    EDITTEXT        IDC_OUTPUT_FILE,90,190,300,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "Browse",IDC_BROWSE_OUTPUT,400,190,60,14
+    LTEXT           "Format:",IDC_STATIC,20,220,60,10
+    COMBOBOX        IDC_FORMAT_COMBO,90,220,150,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Bitrate:",IDC_STATIC,20,250,60,10
+    COMBOBOX        IDC_BITRATE_COMBO,90,250,150,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    CHECKBOX        "Normalize Volume",IDC_NORMALIZE_CHECK,260,220,150,10
+    CHECKBOX        "Fade In/Out",IDC_FADE_CHECK,260,240,150,10
+    CHECKBOX        "Remove Silence",IDC_REMOVE_SILENCE_CHECK,260,260,150,10
+    GROUPBOX        "Processing",IDC_STATIC,10,330,480,60
+    PUSHBUTTON      "Start Mixing",IDC_START_MIXING,20,350,100,14
+    PUSHBUTTON      "Stop",IDC_STOP_MIXING,130,350,100,14
+    LTEXT           "Progress:",IDC_STATIC,240,350,50,10
+    CONTROL         "",IDC_PROGRESS_BAR,"msctls_progress32",WS_BORDER,300,350,180,14
+    DEFPUSHBUTTON   "Close",IDOK,400,330,80,14
+END

@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "rémi",
+  "version": "1.0.0",
+  "description": "A premium, minimalist adblocker with glassmorphic design.",
+  "permissions": [
+    "declarativeNetRequest",
+    "storage"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "128": "icon.png"
+    }
+  },
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "remi_ruleset",
+        "enabled": true,
+        "path": "rules.json"
+      }
+    ]
+  },
+  "icons": {
+    "128": "icon.png"
+  }
+}

@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Canvas Fix</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+            background: #f0f0f0;
+        }
+        .tools {
+            margin: 10px 0;
+        }
+        button {
+            margin: 5px;
+            padding: 5px 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Canvas Clearing Fix</h1>
+    <div class="tools">
+        <button id="brush">Brush</button>
+        <button id="line">Line</button>
+        <button id="circle">Circle</button>
+        <button id="rectangle">Rectangle</button>
+    </div>
+    <canvas id="testCanvas" width="400" height="300"></canvas>
+    <div>
+        <p>Instructions:</p>
+        <ol>
+            <li>Draw something with brush tool</li>
+            <li>Switch to line tool (click button)</li>
+            <li>Draw a line - canvas should NOT clear</li>
+            <li>Switch back to brush tool</li>
+            <li>Draw more - previous drawings should still be there</li>
+        </ol>
+    </div>
+    
+    <script>
+        const canvas = document.getElementById('testCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let isDrawing = false;
+        let lastX = 0, lastY = 0;
+        let startX = 0, startY = 0;
+        let currentTool = 'brush';
+        
+        // Buffer canvas for shape previews
+        let tempCanvas = null;
+        let tempCtx = null;
+        let bufferCanvas = null;
+        let bufferCtx = null;
+        
+        // Tool buttons
+        document.getElementById('brush').addEventListener('click', () => {
+            console.log('Switched to brush tool');
+            currentTool = 'brush';
+        });
+        
+        document.getElementById('line').addEventListener('click', () => {
+            console.log('Switched to line tool');
+            currentTool = 'line';
+        });
+        
+        document.getElementById('circle').addEventListener('click', () => {
+            console.log('Switched to circle tool');
+            currentTool = 'circle';
+        });
+        
+        document.getElementById('rectangle').addEventListener('click', () => {
+            console.log('Switched to rectangle tool');
+            currentTool = 'rectangle';
+        });
+        
+        function startDrawing(e) {
+            isDrawing = true;
+            [lastX, lastY] = getMousePos(canvas, e);
+            [startX, startY] = [lastX, lastY];
+            
+            console.log(`Start drawing with ${currentTool} at (${startX}, ${startY})`);
+            
+            // Create temporary canvas for preview if needed
+            if (currentTool !== 'brush') {
+                if (!tempCanvas) {
+                    tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = canvas.width;
+                    tempCanvas.height = canvas.height;
+                    tempCtx = tempCanvas.getContext('2d');
+                }
+                
+                // Create buffer canvas to save current canvas state
+                if (!bufferCanvas) {
+                    bufferCanvas = document.createElement('canvas');
+                    bufferCanvas.width = canvas.width;
+                    bufferCanvas.height = canvas.height;
+                    bufferCtx = bufferCanvas.getContext('2d');
+                }
+                
+                // Save current canvas content to buffer
+                bufferCtx.clearRect(0, 0, bufferCanvas.width, bufferCanvas.height);
+                bufferCtx.drawImage(canvas, 0, 0);
+                console.log('Saved canvas to buffer');
+            }
+        }
+        
+        function draw(e) {
+            if (!isDrawing) return;
+            
+            e.preventDefault();
+            const [x, y] = getMousePos(canvas, e);
+            
+            ctx.strokeStyle = '#000';
+            ctx.fillStyle = '#000';
+            ctx.lineWidth = 5;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            // Clear temporary canvas if exists
+            if (tempCanvas && tempCtx) {
+                tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+            }
+            
+            switch(currentTool) {
+                case 'brush':
+                    ctx.beginPath();
+                    ctx.moveTo(lastX, lastY);
+                    ctx.lineTo(x, y);
+                    ctx.stroke();
+                    break;
+                    
+                case 'line':
+                    if (tempCtx && bufferCtx) {
+                        tempCtx.strokeStyle = '#000';
+                        tempCtx.lineWidth = 5;
+                        tempCtx.beginPath();
+                        tempCtx.moveTo(startX, startY);
+                        tempCtx.lineTo(x, y);
+                        tempCtx.stroke();
+                        
+                        // Draw temporary line on main canvas
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        ctx.drawImage(bufferCanvas, 0, 0); // Restore original from buffer
+                        ctx.drawImage(tempCanvas, 0, 0);
+                        console.log('Drawing line preview');
+                    }
+                    break;
+                    
+                case 'circle':
+                    if (tempCtx && bufferCtx) {
+                        const radius = Math.sqrt(Math.pow(x - startX, 2) + Math.pow(y - startY, 2));
+                        tempCtx.strokeStyle = '#000';
+                        tempCtx.lineWidth = 5;
+                        tempCtx.beginPath();
+                        tempCtx.arc(startX, startY, radius, 0, Math.PI * 2);
+                        tempCtx.stroke();
+                        
+                        // Draw temporary circle on main canvas
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        ctx.drawImage(bufferCanvas, 0, 0); // Restore original from buffer
+                        ctx.drawImage(tempCanvas, 0, 0);
+                        console.log('Drawing circle preview');
+                    }
+                    break;
+                    
+                case 'rectangle':
+                    if (tempCtx && bufferCtx) {
+                        const width = x - startX;
+                        const height = y - startY;
+                        tempCtx.strokeStyle = '#000';
+                        tempCtx.lineWidth = 5;
+                        tempCtx.strokeRect(startX, startY, width, height);
+                        
+                        // Draw temporary rectangle on main canvas
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        ctx.drawImage(bufferCanvas, 0, 0); // Restore original from buffer
+                        ctx.drawImage(tempCanvas, 0, 0);
+                        console.log('Drawing rectangle preview');
+                    }
+                    break;
+            }
+            
+            [lastX, lastY] = [x, y];
+        }
+        
+        function stopDrawing() {
+            if (!isDrawing) return;
+            
+            const [x, y] = [lastX, lastY];
+            console.log(`Stop drawing at (${x}, ${y})`);
+            
+            // Finalize the drawing based on tool
+            switch(currentTool) {
+                case 'line':
+                    ctx.beginPath();
+                    ctx.moveTo(startX, startY);
+                    ctx.lineTo(x, y);
+                    ctx.stroke();
+                    break;
+                    
+                case 'circle':
+                    const radius = Math.sqrt(Math.pow(x - startX, 2) + Math.pow(y - startY, 2));
+                    ctx.beginPath();
+                    ctx.arc(startX, startY, radius, 0, Math.PI * 2);
+                    ctx.stroke();
+                    break;
+                    
+                case 'rectangle':
+                    const width = x - startX;
+                    const height = y - startY;
+                    ctx.strokeRect(startX, startY, width, height);
+                    break;
+            }
+            
+            isDrawing = false;
+            ctx.beginPath();
+            
+            // Clear temporary canvas
+            if (tempCanvas && tempCtx) {
+                tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+            }
+            
+            // Clear buffer canvas
+            if (bufferCanvas && bufferCtx) {
+                bufferCtx.clearRect(0, 0, bufferCanvas.width, bufferCanvas.height);
+            }
+            
+            console.log('Cleared temp and buffer canvases');
+        }
+        
+        function getMousePos(canvas, evt) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            
+            return [
+                (evt.clientX - rect.left) * scaleX,
+                (evt.clientY - rect.top) * scaleY
+            ];
+        }
+        
+        // Event listeners
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+        
+        // Draw initial test pattern
+        ctx.fillStyle = '#f0f0f0';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#ff0000';
+        ctx.fillRect(50, 50, 50, 50);
+        ctx.fillStyle = '#00ff00';
+        ctx.fillRect(150, 50, 50, 50);
+        ctx.fillStyle = '#0000ff';
+        ctx.fillRect(250, 50, 50, 50);
+        
+        console.log('Test page loaded. Draw something with brush, then switch tools.');
+    </script>
+</body>
+</html>

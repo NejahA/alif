@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Touchy - Remote Control</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            overflow: hidden;
+            touch-action: none;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* Android-specific optimizations */
+        body.android {
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        #app {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100vw;
+        }
+        
+        /* Header */
+        #header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            z-index: 100;
+        }
+        
+        #header h1 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        #device-info {
+            font-size: 11px;
+            opacity: 0.9;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .device-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+        }
+        
+        /* Connection Panel */
+        #connection-panel {
+            background: #1a1a1a;
+            padding: 15px;
+            border-bottom: 1px solid #333;
+        }
+        
+        #connection-panel.connected {
+            background: linear-gradient(90deg, #1a1a1a 0%, #1a3a1a 100%);
+        }
+        
+        .input-group {
+            margin-bottom: 10px;
+        }
+        
+        .input-group label {
+            display: block;
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 5px;
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 16px;
+        }
+        
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        #connect-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        
+        #connect-btn:active {
+            transform: scale(0.98);
+        }
+        
+        #connect-btn.connected {
+            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+        }
+        
+        #status {
+            text-align: center;
+            padding: 8px;
+            font-size: 13px;
+            color: #888;
+        }
+        
+        #status.connected {
+            color: #27ae60;
+        }
+        
+        #status.error {
+            color: #e74c3c;
+        }
+        
+        /* Sensitivity Control */
+        #sensitivity-control {
+            background: #1a1a1a;
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid #333;
+        }
+        
+        #sensitivity-control label {
+            font-size: 12px;
+            color: #888;
+            white-space: nowrap;
+        }
+        
+        #sensitivity-slider {
+            flex: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 6px;
+            background: #333;
+            border-radius: 3px;
+            outline: none;
+        }
+        
+        #sensitivity-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #667eea;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        #sensitivity-slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #667eea;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+        
+        #sensitivity-value {
+            font-size: 13px;
+            font-weight: 600;
+            color: #667eea;
+            min-width: 40px;
+            text-align: right;
+        }
+        
+        /* Touchpad */
+        #touchpad-container {
+            flex: 1;
+            position: relative;
+            background: #0a0a0a;
+            overflow: hidden;
+        }
+        
+        #touchpad {
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, #1a1a1a 0%, #0a0a0a 100%);
+            position: relative;
+            cursor: none;
+        }
+        
+        /* Touch indicator */
+        .touch-indicator {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border: 2px solid rgba(102, 126, 234, 0.5);
+            border-radius: 50%;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            transition: opacity 0.2s;
+            background: radial-gradient(circle, rgba(102, 126, 234, 0.2) 0%, transparent 70%);
+        }
+        
+        /* Tab Navigation */
+        #tab-nav {
+            display: flex;
+            background: #1a1a1a;
+            border-bottom: 2px solid #333;
+        }
+        
+        .tab-btn {
+            flex: 1;
+            padding: 15px;
+            background: transparent;
+            border: none;
+            color: #888;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .tab-btn.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
+        
+        .tab-btn:active {
+            transform: scale(0.95);
+        }
+        
+        /* Tab Content */
+        .tab-content {
+            display: none;
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        .tab-content.active {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Mouse Buttons */
+        #button-panel {
+            background: #0a0a0a;
+            padding: 15px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            border-top: 1px solid #333;
+        }
+        
+        .mouse-btn {
+            padding: 20px;
+            background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+            border: 2px solid #444;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.1s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        
+        .mouse-btn:active {
+            transform: scale(0.95);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: #667eea;
+        }
+        
+        /* Android-specific button styling */
+        body.android .mouse-btn {
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        /* Connection indicator */
+        .connection-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #e74c3c;
+            margin-right: 5px;
+            animation: pulse 2s infinite;
+        }
+        
+        .connection-dot.connected {
+            background: #27ae60;
+            animation: none;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        /* Loading spinner */
+        .spinner {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Keyboard Panel */
+        #keyboard-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            gap: 15px;
+            overflow-y: auto;
+        }
+        
+        .keyboard-section {
+            display: flex;
+            gap: 10px;
+        }
+        
+        #text-input {
+            flex: 1;
+            padding: 12px;
+            background: #2a2a2a;
+            border: 2px solid #444;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 16px;
+        }
+        
+        #text-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .send-btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .send-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .shortcuts-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        
+        .shortcut-btn {
+            padding: 15px 10px;
+            background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+            border: 2px solid #444;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.1s;
+        }
+        
+        .shortcut-btn:active {
+            transform: scale(0.95);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: #667eea;
+        }
+        
+        .shortcut-icon {
+            font-size: 20px;
+        }
+        
+        /* Auto-connect message */
+        #auto-connect-msg {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            z-index: 1000;
+            display: none;
+        }
+        
+        #auto-connect-msg.show {
+            display: block;
+        }
+        
+        /* Gesture hints */
+        #gesture-hints {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 11px;
+            color: #888;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        #gesture-hints.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <div id="header">
+            <h1>Touchy</h1>
+            <div id="device-info">
+                <span class="device-badge" id="device-type">Detecting...</span>
+                <span class="device-badge" id="connection-type">WiFi</span>
+            </div>
+        </div>
+        
+        <!-- Connection Panel -->
+        <div id="connection-panel">
+            <div class="input-group">
+                <label for="server-ip">PC IP Address</label>
+                <input type="text" id="server-ip" placeholder="e.g., 192.168.1.100" value="">
+            </div>
+            <div class="input-group">
+                <label for="server-port">Port</label>
+                <input type="number" id="server-port" placeholder="5000" value="5000">
+            </div>
+            <button id="connect-btn">
+                <span class="connection-dot"></span>
+                <span id="connect-text">Connect</span>
+            </button>
+            <div id="status">Ready to connect</div>
+        </div>
+        
+        <!-- Sensitivity Control -->
+        <div id="sensitivity-control">
+            <label>Sensitivity:</label>
+            <input type="range" id="sensitivity-slider" min="0.5" max="5" step="0.5" value="2">
+            <span id="sensitivity-value">2.0x</span>
+        </div>
+        
+        <!-- Touchpad -->
+        <div id="touchpad-container">
+            <div id="touchpad">
+                <div id="gesture-hints">One finger: move • Two fingers: scroll</div>
+            </div>
+        </div>
+        
+        <!-- Tab Navigation -->
+        <div id="tab-nav">
+            <button class="tab-btn active" data-tab="mouse">🖱️ Mouse</button>
+            <button class="tab-btn" data-tab="keyboard">⌨️ Keyboard</button>
+        </div>
+        
+        <!-- Mouse Tab Content -->
+        <div id="mouse-content" class="tab-content active">
+            <div id="button-panel">
+                <button class="mouse-btn" id="left-btn">LEFT</button>
+                <button class="mouse-btn" id="right-btn">RIGHT</button>
+            </div>
+        </div>
+        
+        <!-- Keyboard Tab Content -->
+        <div id="keyboard-content" class="tab-content">
+            <div id="keyboard-panel">
+                <!-- Text Input -->
+                <div class="keyboard-section">
+                    <input type="text" id="text-input" placeholder="Type here..." autocomplete="off">
+                    <button class="send-btn" id="send-text-btn">Send</button>
+                </div>
+                
+                <!-- Shortcuts Grid -->
+                <div class="shortcuts-grid">
+                    <button class="shortcut-btn" data-shortcut="copy">
+                        <span class="shortcut-icon">📋</span>
+                        <span>Copy</span>
+                    </button>
+                    <button class="shortcut-btn" data-shortcut="paste">
+                        <span class="shortcut-icon">📄</span>
+                        <span>Paste</span>
+                    </button>
+                    <button class="shortcut-btn" data-shortcut="cut">
+                        <span class="shortcut-icon">✂️</span>
+                        <span>Cut</span>
+                    </button>
+                    <button class="shortcut-btn" data-shortcut="undo">
+                        <span class="shortcut-icon">↶</span>
+                        <span>Undo</span>
+                    </button>
+                    <button class="shortcut-btn" data-shortcut="redo">
+                        <span class="shortcut-icon">↷</span>
+                        <span>Redo</span>
+                    </button>
+                    <button class="shortcut-btn" data-shortcut="save">
+                        <span class="shortcut-icon">💾</span>
+                        <span>Save</span>
+                    </button>
+                    <button class="shortcut-btn" data-shortcut="find">
+                        <span class="shortcut-icon">🔍</span>
+                        <span>Find</span>
+                    </button>
+                    <button class="shortcut-btn" data-shortcut="select_all">
+                        <span class="shortcut-icon">📝</span>
+                        <span>Select All</span>
+                    </button>
+                    <button class="shortcut-btn" data-shortcut="enter">
+                        <span class="shortcut-icon">↵</span>
+                        <span>Enter</span>
+                    </button>
+                    <button class="shortcut-btn" data-shortcut="backspace">
+                        <span class="shortcut-icon">⌫</span>
+                        <span>Backspace</span>
+                    </button>
+                    <button class="shortcut-btn" data-shortcut="delete">
+                        <span class="shortcut-icon">⌦</span>
+                        <span>Delete</span>
+                    </button>
+                    <button class="shortcut-btn" data-shortcut="escape">
+                        <span class="shortcut-icon">⎋</span>
+                        <span>Escape</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Auto-connect message -->
+    <div id="auto-connect-msg">
+        <div class="spinner"></div>
+        <p style="margin-top: 15px;">Connecting to PC...</p>
+    </div>
+
+    <script>
+        // Device Detection
+        const deviceInfo = {
+            isAndroid: /Android/i.test(navigator.userAgent),
+            isIOS: /iPhone|iPad|iPod/i.test(navigator.userAgent),
+            isMobile: /Android|iPhone|iPad|iPod/i.test(navigator.userAgent),
+            userAgent: navigator.userAgent,
+            platform: navigator.platform,
+            touchPoints: navigator.maxTouchPoints || 0
+        };
+        
+        // Apply Android-specific class
+        if (deviceInfo.isAndroid) {
+            document.body.classList.add('android');
+        }
+        
+        // Update device badge
+        const deviceTypeBadge = document.getElementById('device-type');
+        if (deviceInfo.isAndroid) {
+            deviceTypeBadge.textContent = '🤖 Android';
+            deviceTypeBadge.style.background = 'rgba(164, 198, 57, 0.3)';
+        } else if (deviceInfo.isIOS) {
+            deviceTypeBadge.textContent = '🍎 iOS';
+            deviceTypeBadge.style.background = 'rgba(255, 255, 255, 0.2)';
+        } else if (deviceInfo.isMobile) {
+            deviceTypeBadge.textContent = '📱 Mobile';
+        } else {
+            deviceTypeBadge.textContent = '💻 Desktop';
+        }
+        
+        // App State
+        let connected = false;
+        let socket = null;
+        let lastTouch = { x: 0, y: 0 };
+        let touchStartY = 0;
+        let sensitivity = 2.0;
+        let reconnectAttempts = 0;
+        let reconnectTimer = null;
+        
+        // Elements
+        const serverIpInput = document.getElementById('server-ip');
+        const serverPortInput = document.getElementById('server-port');
+        const connectBtn = document.getElementById('connect-btn');
+        const connectText = document.getElementById('connect-text');
+        const connectionDot = document.querySelector('.connection-dot');
+        const statusDiv = document.getElementById('status');
+        const connectionPanel = document.getElementById('connection-panel');
+        const touchpad = document.getElementById('touchpad');
+        const sensitivitySlider = document.getElementById('sensitivity-slider');
+        const sensitivityValue = document.getElementById('sensitivity-value');
+        const leftBtn = document.getElementById('left-btn');
+        const rightBtn = document.getElementById('right-btn');
+        const gestureHints = document.getElementById('gesture-hints');
+        const autoConnectMsg = document.getElementById('auto-connect-msg');
+        
+        // Auto-detect PC IP from URL or localStorage
+        function autoDetectIP() {
+            // Try to get from URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlIP = urlParams.get('ip');
+            if (urlIP) {
+                serverIpInput.value = urlIP;
+                return urlIP;
+            }
+            
+            // Try localStorage
+            const savedIP = localStorage.getItem('touchmouse_ip');
+            if (savedIP) {
+                serverIpInput.value = savedIP;
+                return savedIP;
+            }
+            
+            // Try to detect from current URL (if hosted on PC)
+            if (window.location.hostname && window.location.hostname !== 'localhost') {
+                const detectedIP = window.location.hostname;
+                serverIpInput.value = detectedIP;
+                return detectedIP;
+            }
+            
+            return null;
+        }
+        
+        // Initialize
+        function init() {
+            const detectedIP = autoDetectIP();
+            
+            // Show gesture hints briefly
+            setTimeout(() => {
+                gestureHints.classList.add('show');
+                setTimeout(() => gestureHints.classList.remove('show'), 3000);
+            }, 1000);
+            
+            // Auto-connect if IP is detected and we're on Android
+            if (detectedIP && deviceInfo.isAndroid) {
+                setTimeout(() => {
+                    autoConnectMsg.classList.add('show');
+                    setTimeout(() => {
+                        connect();
+                        autoConnectMsg.classList.remove('show');
+                    }, 1500);
+                }, 500);
+            }
+        }
+        
+        // Connection Management
+        function connect() {
+            const ip = serverIpInput.value.trim();
+            const port = serverPortInput.value.trim();
+            
+            if (!ip || !port) {
+                updateStatus('Please enter IP and port', 'error');
+                return;
+            }
+            
+            updateStatus('Connecting...', '');
+            connectText.innerHTML = '<span class="spinner"></span> Connecting...';
+            
+            // Save IP for future use
+            localStorage.setItem('touchmouse_ip', ip);
+            
+            // Create persistent connection simulation
+            // Since we can't use WebSocket easily, we'll use repeated fetch calls
+            // and consider it "connected" if the first call succeeds
+            
+            const testCommand = { type: 'sensitivity', value: sensitivity };
+            
+            fetch(`http://${ip}:${port}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(testCommand),
+                mode: 'no-cors',
+                signal: AbortSignal.timeout(3000)
+            })
+            .then(() => {
+                // Connection successful
+                connected = true;
+                reconnectAttempts = 0;
+                updateStatus(`Connected to ${ip}:${port}`, 'connected');
+                connectText.textContent = 'Disconnect';
+                connectBtn.classList.add('connected');
+                connectionPanel.classList.add('connected');
+                connectionDot.classList.add('connected');
+                
+                // Vibrate on Android
+                if (deviceInfo.isAndroid && navigator.vibrate) {
+                    navigator.vibrate(50);
+                }
+                
+                // Start keepalive
+                startKeepalive();
+            })
+            .catch((error) => {
+                connected = false;
+                updateStatus('Connection failed. Check IP and ensure PC server is running.', 'error');
+                connectText.textContent = 'Connect';
+                
+                // Auto-retry on Android
+                if (deviceInfo.isAndroid && reconnectAttempts < 3) {
+                    reconnectAttempts++;
+                    updateStatus(`Retrying... (${reconnectAttempts}/3)`, '');
+                    setTimeout(() => connect(), 2000);
+                }
+            });
+        }
+        
+        let keepaliveInterval = null;
+        
+        function startKeepalive() {
+            // Send periodic ping to keep connection alive
+            if (keepaliveInterval) {
+                clearInterval(keepaliveInterval);
+            }
+            
+            keepaliveInterval = setInterval(() => {
+                if (connected) {
+                    // Send a ping command
+                    sendCommand({ type: 'ping' }, true);
+                }
+            }, 5000); // Every 5 seconds
+        }
+        
+        function disconnect() {
+            connected = false;
+            if (reconnectTimer) {
+                clearTimeout(reconnectTimer);
+            }
+            if (keepaliveInterval) {
+                clearInterval(keepaliveInterval);
+            }
+            updateStatus('Disconnected', '');
+            connectText.textContent = 'Connect';
+            connectBtn.classList.remove('connected');
+            connectionPanel.classList.remove('connected');
+            connectionDot.classList.remove('connected');
+        }
+        
+        function updateStatus(message, type) {
+            statusDiv.textContent = message;
+            statusDiv.className = type;
+        }
+        
+        // Send Command
+        function sendCommand(command, isKeepalive = false) {
+            if (!connected && !isKeepalive) return;
+            
+            const ip = serverIpInput.value.trim();
+            const port = serverPortInput.value.trim();
+            
+            // Use fetch with no-cors mode
+            fetch(`http://${ip}:${port}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(command),
+                mode: 'no-cors',
+                keepalive: true
+            }).catch((error) => {
+                // Connection lost
+                if (connected && !isKeepalive) {
+                    console.log('Send error:', error);
+                    updateStatus('Connection lost. Reconnecting...', 'error');
+                    connected = false;
+                    if (deviceInfo.isAndroid) {
+                        reconnectTimer = setTimeout(() => connect(), 2000);
+                    }
+                }
+            });
+        }
+        
+        // Touch Indicators
+        const touchIndicators = new Map();
+        
+        function showTouchIndicator(touch) {
+            let indicator = touchIndicators.get(touch.identifier);
+            if (!indicator) {
+                indicator = document.createElement('div');
+                indicator.className = 'touch-indicator';
+                touchpad.appendChild(indicator);
+                touchIndicators.set(touch.identifier, indicator);
+            }
+            indicator.style.left = touch.clientX + 'px';
+            indicator.style.top = touch.clientY + 'px';
+            indicator.style.opacity = '1';
+        }
+        
+        function hideTouchIndicator(touch) {
+            const indicator = touchIndicators.get(touch.identifier);
+            if (indicator) {
+                indicator.style.opacity = '0';
+                setTimeout(() => {
+                    if (indicator.parentNode) {
+                        indicator.parentNode.removeChild(indicator);
+                    }
+                    touchIndicators.delete(touch.identifier);
+                }, 200);
+            }
+        }
+        
+        // Touchpad Events
+        touchpad.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            lastTouch = { x: touch.clientX, y: touch.clientY };
+            touchStartY = touch.clientY;
+            
+            // Show touch indicators
+            for (let i = 0; i < e.touches.length; i++) {
+                showTouchIndicator(e.touches[i]);
+            }
+        });
+        
+        touchpad.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (!connected) return;
+            
+            const touch = e.touches[0];
+            const touchCount = e.touches.length;
+            
+            // Update touch indicators
+            for (let i = 0; i < e.touches.length; i++) {
+                showTouchIndicator(e.touches[i]);
+            }
+            
+            // Two-finger scroll
+            if (touchCount >= 2) {
+                const dy = touchStartY - touch.clientY;
+                if (Math.abs(dy) > 10) {
+                    sendCommand({ type: 'scroll', amount: dy > 0 ? 1 : -1 });
+                    touchStartY = touch.clientY;
+                    
+                    // Haptic feedback on Android
+                    if (deviceInfo.isAndroid && navigator.vibrate) {
+                        navigator.vibrate(10);
+                    }
+                }
+            } else {
+                // Single finger move
+                const dx = touch.clientX - lastTouch.x;
+                const dy = touch.clientY - lastTouch.y;
+                
+                sendCommand({ type: 'move', dx, dy });
+                lastTouch = { x: touch.clientX, y: touch.clientY };
+            }
+        });
+        
+        touchpad.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            
+            // Hide touch indicators
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                hideTouchIndicator(e.changedTouches[i]);
+            }
+        });
+        
+        // Button Events
+        leftBtn.addEventListener('click', () => {
+            if (connected) {
+                sendCommand({ type: 'click', button: 'left' });
+                if (deviceInfo.isAndroid && navigator.vibrate) {
+                    navigator.vibrate(30);
+                }
+            }
+        });
+        
+        rightBtn.addEventListener('click', () => {
+            if (connected) {
+                sendCommand({ type: 'click', button: 'right' });
+                if (deviceInfo.isAndroid && navigator.vibrate) {
+                    navigator.vibrate(30);
+                }
+            }
+        });
+        
+        // Tab Navigation
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabName = btn.dataset.tab;
+                
+                // Update active states
+                tabBtns.forEach(b => b.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
+                
+                btn.classList.add('active');
+                document.getElementById(tabName + '-content').classList.add('active');
+                
+                // Hide/show touchpad based on tab
+                if (tabName === 'mouse') {
+                    touchpad.style.display = 'block';
+                } else {
+                    touchpad.style.display = 'none';
+                }
+                
+                // Vibrate on Android
+                if (deviceInfo.isAndroid && navigator.vibrate) {
+                    navigator.vibrate(20);
+                }
+            });
+        });
+        
+        // Keyboard Functionality
+        const textInput = document.getElementById('text-input');
+        const sendTextBtn = document.getElementById('send-text-btn');
+        const shortcutBtns = document.querySelectorAll('.shortcut-btn');
+        
+        // Send text
+        sendTextBtn.addEventListener('click', () => {
+            const text = textInput.value;
+            if (text && connected) {
+                sendCommand({ type: 'type', text: text });
+                textInput.value = '';
+                
+                if (deviceInfo.isAndroid && navigator.vibrate) {
+                    navigator.vibrate(30);
+                }
+            }
+        });
+        
+        // Send on Enter key
+        textInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendTextBtn.click();
+            }
+        });
+        
+        // Keyboard shortcuts
+        shortcutBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const shortcut = btn.dataset.shortcut;
+                if (connected) {
+                    sendCommand({ type: 'keyboard', shortcut: shortcut });
+                    
+                    if (deviceInfo.isAndroid && navigator.vibrate) {
+                        navigator.vibrate(30);
+                    }
+                }
+            });
+        });
+        
+        // Sensitivity Control
+        sensitivitySlider.addEventListener('input', (e) => {
+            sensitivity = parseFloat(e.target.value);
+            sensitivityValue.textContent = sensitivity.toFixed(1) + 'x';
+            if (connected) {
+                sendCommand({ type: 'sensitivity', value: sensitivity });
+            }
+        });
+        
+        // Connect Button
+        connectBtn.addEventListener('click', () => {
+            if (connected) {
+                disconnect();
+            } else {
+                connect();
+            }
+        });
+        
+        // Prevent context menu on long press (Android)
+        document.addEventListener('contextmenu', (e) => {
+            if (deviceInfo.isAndroid) {
+                e.preventDefault();
+            }
+        });
+        
+        // Keep screen awake on Android
+        if ('wakeLock' in navigator && deviceInfo.isAndroid) {
+            let wakeLock = null;
+            async function requestWakeLock() {
+                try {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                } catch (err) {
+                    console.log('Wake Lock error:', err);
+                }
+            }
+            requestWakeLock();
+        }
+        
+        // Initialize app
+        init();
+        
+        // Log device info for debugging
+        console.log('Device Info:', deviceInfo);
+    </script>
+</body>
+</html>

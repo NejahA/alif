@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#2563eb">
+    <title>Resilience - Community Disaster Prep</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header>
+            <h1>🛡️ Resilience</h1>
+            <p class="tagline">Built by communities, backed by engineers</p>
+            <div id="status" class="status-bar">
+                <span id="online-status">●</span>
+                <span id="sync-status"></span>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav id="main-nav">
+            <button class="nav-btn active" data-view="map">🗺️ Map</button>
+            <button class="nav-btn" data-view="alerts">📢 Alerts</button>
+            <button class="nav-btn" data-view="toolkit">🛠️ Toolkit</button>
+            <button class="nav-btn" data-view="emergency">🚨 SOS</button>
+            <button class="nav-btn" data-view="assessment">📊 Assessment</button>
+            <button class="nav-btn" data-view="stories">📖 Stories</button>
+        </nav>
+
+        <!-- Main Content -->
+        <main id="content">
+            <!-- Risk Mapping View -->
+            <section id="map-view" class="view active">
+                <h2>Community Risk Mapping</h2>
+                <div id="map-container">
+                    <div id="map-placeholder">
+                        <p>📍 Map will load here (integrate OpenStreetMap/Leaflet)</p>
+                    </div>
+                </div>
+                <div class="action-buttons">
+                    <button id="add-marker-btn" class="btn-primary">+ Add Risk Marker</button>
+                    <button id="view-markers-btn" class="btn-secondary">View All Markers</button>
+                </div>
+                <div id="markers-list"></div>
+            </section>
+
+            <!-- Early Warnings View -->
+            <section id="alerts-view" class="view">
+                <h2>Early Warnings</h2>
+                <div id="alerts-container">
+                    <div class="alert-card sample">
+                        <span class="alert-icon">⚠️</span>
+                        <div>
+                            <strong>Heavy Rain Alert</strong>
+                            <p>Expected rainfall: 150mm in next 24h</p>
+                            <small>Source: Weather Service • 2 hours ago</small>
+                        </div>
+                    </div>
+                </div>
+                <button id="subscribe-alerts-btn" class="btn-primary">Manage Subscriptions</button>
+            </section>
+
+            <!-- Toolkit View -->
+            <section id="toolkit-view" class="view">
+                <h2>Engineering Toolkit</h2>
+                <div class="toolkit-grid">
+                    <div class="tool-card">
+                        <h3>🏠 Home Reinforcement</h3>
+                        <p>Strengthen structures against storms</p>
+                        <button class="btn-link">View Guide</button>
+                    </div>
+                    <div class="tool-card">
+                        <h3>🛡️ Sandbag Calculator</h3>
+                        <p>Calculate materials needed</p>
+                        <button class="btn-link" id="sandbag-calc">Open Calculator</button>
+                    </div>
+                    <div class="tool-card">
+                        <h3>💧 Drainage Clearing</h3>
+                        <p>Prevent flooding in your area</p>
+                        <button class="btn-link">View Guide</button>
+                    </div>
+                    <div class="tool-card">
+                        <h3>📹 Training Videos</h3>
+                        <p>Offline-ready tutorials</p>
+                        <button class="btn-link">Browse Videos</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Emergency Mode View -->
+            <section id="emergency-view" class="view">
+                <h2>Emergency Mode</h2>
+                <div class="emergency-container">
+                    <button id="sos-btn" class="btn-emergency">
+                        🚨 SEND SOS
+                    </button>
+                    <p class="emergency-note">Your location will be sent to local responders</p>
+                    
+                    <div class="checklist">
+                        <h3>Evacuation Checklist</h3>
+                        <label><input type="checkbox"> Emergency kit packed</label>
+                        <label><input type="checkbox"> Gas/electricity turned off</label>
+                        <label><input type="checkbox"> Family members accounted for</label>
+                        <label><input type="checkbox"> Pets secured</label>
+                        <label><input type="checkbox"> Important documents grabbed</label>
+                    </div>
+
+                    <button id="quick-damage-btn" class="btn-secondary">Quick Damage Report</button>
+                </div>
+            </section>
+
+            <!-- Assessment View -->
+            <section id="assessment-view" class="view">
+                <h2>Post-Disaster Assessment</h2>
+                <form id="assessment-form">
+                    <div class="form-group">
+                        <label>Location</label>
+                        <input type="text" id="assess-location" placeholder="Address or landmark">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Structural Damage</label>
+                        <label><input type="checkbox" name="damage" value="roof"> Roof collapsed/damaged</label>
+                        <label><input type="checkbox" name="damage" value="walls"> Walls cracked</label>
+                        <label><input type="checkbox" name="damage" value="water"> Water contamination</label>
+                        <label><input type="checkbox" name="damage" value="foundation"> Foundation issues</label>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Immediate Needs</label>
+                        <label><input type="checkbox" name="needs" value="food"> Food</label>
+                        <label><input type="checkbox" name="needs" value="water"> Clean water</label>
+                        <label><input type="checkbox" name="needs" value="medical"> Medical aid</label>
+                        <label><input type="checkbox" name="needs" value="shelter"> Shelter</label>
+                    </div>
+
+                    <div class="form-group">
+                        <label>People Affected</label>
+                        <input type="number" id="people-count" placeholder="Number of people">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Photos (optional)</label>
+                        <input type="file" id="damage-photos" accept="image/*" multiple>
+                    </div>
+
+                    <button type="submit" class="btn-primary">Submit Assessment</button>
+                </form>
+            </section>
+
+            <!-- Stories View -->
+            <section id="stories-view" class="view">
+                <h2>Resilience Stories</h2>
+                <button id="add-story-btn" class="btn-primary">+ Share Your Story</button>
+                <div id="stories-container">
+                    <div class="story-card sample">
+                        <div class="story-header">
+                            <strong>Community of Riverside</strong>
+                            <small>3 days ago</small>
+                        </div>
+                        <p>We built sandbag barriers using the app's calculator. When the flood came, our homes stayed dry while neighboring areas flooded. The early warning gave us 6 hours to prepare.</p>
+                        <div class="story-tags">
+                            <span class="tag">Flood</span>
+                            <span class="tag">Preparation</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="modal-overlay" class="modal-overlay hidden">
+        <div id="modal-content" class="modal-content"></div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

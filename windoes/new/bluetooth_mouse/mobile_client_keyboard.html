@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Touchy - Remote Control</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+            overflow: hidden;
+            touch-action: none;
+        }
+        
+        #connection {
+            padding: 15px;
+            background: #2a2a2a;
+            border-bottom: 1px solid #3a3a3a;
+        }
+        
+        #connection input {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            background: #3a3a3a;
+            border: 1px solid #4a4a4a;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 14px;
+        }
+        
+        #connection button {
+            width: 100%;
+            padding: 12px;
+            background: #4A90E2;
+            border: none;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        #connection button:active {
+            background: #357ABD;
+        }
+        
+        #connection button.connected {
+            background: #27ae60;
+        }
+        
+        #status {
+            text-align: center;
+            padding: 8px;
+            font-size: 12px;
+            color: #888;
+        }
+        
+        /* Tab Navigation */
+        #tabs {
+            display: flex;
+            background: #2a2a2a;
+            border-bottom: 2px solid #3a3a3a;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 12px;
+            background: transparent;
+            border: none;
+            color: #888;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .tab.active {
+            color: #4A90E2;
+            border-bottom-color: #4A90E2;
+        }
+        
+        /* Tab Content */
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* Mouse Tab */
+        #mouse-tab {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 200px);
+        }
+        
+        #touchpad {
+            flex: 1;
+            background: #2a2a2a;
+            border-top: 2px solid #4A90E2;
+            cursor: none;
+        }
+        
+        #sensitivity {
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #2a2a2a;
+        }
+        
+        #sensitivity input {
+            flex: 1;
+        }
+        
+        #sensitivity span {
+            font-size: 12px;
+            color: #888;
+        }
+        
+        #buttons {
+            display: flex;
+            gap: 10px;
+            padding: 10px;
+            background: #1a1a1a;
+        }
+        
+        .btn {
+            flex: 1;
+            padding: 18px;
+            background: #3a3a3a;
+            border: 2px solid #4a4a4a;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .btn:active {
+            background: #4A90E2;
+            transform: scale(0.95);
+        }
+        
+        /* Keyboard Tab */
+        #keyboard-tab {
+            padding: 15px;
+            height: calc(100vh - 200px);
+            overflow-y: auto;
+        }
+        
+        .keyboard-section {
+            margin-bottom: 15px;
+        }
+        
+        .keyboard-section h3 {
+            font-size: 14px;
+            color: #888;
+            margin-bottom: 10px;
+        }
+        
+        #text-input-area {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        #text-input {
+            flex: 1;
+            padding: 12px;
+            background: #2a2a2a;
+            border: 2px solid #4a4a4a;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 16px;
+        }
+        
+        #text-input:focus {
+            outline: none;
+            border-color: #4A90E2;
+        }
+        
+        .send-btn {
+            padding: 12px 20px;
+            background: #4A90E2;
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .send-btn:active {
+            background: #357ABD;
+        }
+        
+        .shortcuts-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        
+        .shortcut-btn {
+            padding: 15px 8px;
+            background: #2a2a2a;
+            border: 2px solid #4a4a4a;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .shortcut-btn:active {
+            background: #4A90E2;
+            border-color: #4A90E2;
+        }
+        
+        .shortcut-icon {
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="connection">
+        <input type="text" id="serverIp" placeholder="PC IP Address (e.g., 192.168.1.100)" value="192.168.1.100">
+        <input type="number" id="serverPort" placeholder="Port" value="5000">
+        <button id="connectBtn" onclick="toggleConnection()">Connect</button>
+    </div>
+    
+    <div id="status">Not connected</div>
+    
+    <div id="tabs">
+        <button class="tab active" onclick="switchTab('mouse')">🖱️ Mouse</button>
+        <button class="tab" onclick="switchTab('keyboard')">⌨️ Keyboard</button>
+    </div>
+    
+    <!-- Mouse Tab -->
+    <div id="mouse-tab" class="tab-content active">
+        <div id="sensitivity">
+            <span>Sensitivity:</span>
+            <input type="range" id="sensitivitySlider" min="0.5" max="5" step="0.5" value="2">
+            <span id="sensitivityValue">2.0x</span>
+        </div>
+        
+        <div id="touchpad"></div>
+        
+        <div id="buttons">
+            <button class="btn" id="leftBtn">LEFT</button>
+            <button class="btn" id="rightBtn">RIGHT</button>
+        </div>
+    </div>
+    
+    <!-- Keyboard Tab -->
+    <div id="keyboard-tab" class="tab-content">
+        <div class="keyboard-section">
+            <h3>Text Input</h3>
+            <div id="text-input-area">
+                <input type="text" id="text-input" placeholder="Type here...">
+                <button class="send-btn" id="send-text-btn">Send</button>
+            </div>
+        </div>
+        
+        <div class="keyboard-section">
+            <h3>Quick Shortcuts</h3>
+            <div class="shortcuts-grid">
+                <button class="shortcut-btn" data-shortcut="copy">
+                    <span class="shortcut-icon">📋</span>
+                    <span>Copy</span>
+                </button>
+                <button class="shortcut-btn" data-shortcut="paste">
+                    <span class="shortcut-icon">📄</span>
+                    <span>Paste</span>
+                </button>
+                <button class="shortcut-btn" data-shortcut="cut">
+                    <span class="shortcut-icon">✂️</span>
+                    <span>Cut</span>
+                </button>
+                <button class="shortcut-btn" data-shortcut="undo">
+                    <span class="shortcut-icon">↶</span>
+                    <span>Undo</span>
+                </button>
+                <button class="shortcut-btn" data-shortcut="redo">
+                    <span class="shortcut-icon">↷</span>
+                    <span>Redo</span>
+                </button>
+                <button class="shortcut-btn" data-shortcut="save">
+                    <span class="shortcut-icon">💾</span>
+                    <span>Save</span>
+                </button>
+                <button class="shortcut-btn" data-shortcut="find">
+                    <span class="shortcut-icon">🔍</span>
+                    <span>Find</span>
+                </button>
+                <button class="shortcut-btn" data-shortcut="select_all">
+                    <span class="shortcut-icon">📝</span>
+                    <span>Select All</span>
+                </button>
+                <button class="shortcut-btn" data-shortcut="enter">
+                    <span class="shortcut-icon">↵</span>
+                    <span>Enter</span>
+                </button>
+                <button class="shortcut-btn" data-shortcut="backspace">
+                    <span class="shortcut-icon">⌫</span>
+                    <span>Backspace</span>
+                </button>
+                <button class="shortcut-btn" data-shortcut="delete">
+                    <span class="shortcut-icon">⌦</span>
+                    <span>Delete</span>
+                </button>
+                <button class="shortcut-btn" data-shortcut="escape">
+                    <span class="shortcut-icon">⎋</span>
+                    <span>Escape</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let connected = false;
+        let lastTouch = { x: 0, y: 0 };
+        let touchStartY = 0;
+        
+        const touchpad = document.getElementById('touchpad');
+        const status = document.getElementById('status');
+        const connectBtn = document.getElementById('connectBtn');
+        const sensitivitySlider = document.getElementById('sensitivitySlider');
+        const sensitivityValue = document.getElementById('sensitivityValue');
+        const leftBtn = document.getElementById('leftBtn');
+        const rightBtn = document.getElementById('rightBtn');
+        const textInput = document.getElementById('text-input');
+        const sendTextBtn = document.getElementById('send-text-btn');
+        
+        // Tab switching
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName + '-tab').classList.add('active');
+        }
+        
+        // Touch events
+        touchpad.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            lastTouch = { x: touch.clientX, y: touch.clientY };
+            touchStartY = touch.clientY;
+        });
+        
+        touchpad.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (!connected) return;
+            
+            const touch = e.touches[0];
+            
+            if (e.touches.length >= 2) {
+                const dy = touchStartY - touch.clientY;
+                if (Math.abs(dy) > 10) {
+                    sendCommand({ type: 'scroll', amount: dy > 0 ? 1 : -1 });
+                    touchStartY = touch.clientY;
+                }
+            } else {
+                const dx = touch.clientX - lastTouch.x;
+                const dy = touch.clientY - lastTouch.y;
+                sendCommand({ type: 'move', dx, dy });
+                lastTouch = { x: touch.clientX, y: touch.clientY };
+            }
+        });
+        
+        // Click buttons
+        leftBtn.addEventListener('click', () => {
+            if (connected) sendCommand({ type: 'click', button: 'left' });
+        });
+        
+        rightBtn.addEventListener('click', () => {
+            if (connected) sendCommand({ type: 'click', button: 'right' });
+        });
+        
+        // Sensitivity
+        sensitivitySlider.addEventListener('input', (e) => {
+            const value = parseFloat(e.target.value);
+            sensitivityValue.textContent = value.toFixed(1) + 'x';
+            if (connected) {
+                sendCommand({ type: 'sensitivity', value });
+            }
+        });
+        
+        // Keyboard - Text input
+        sendTextBtn.addEventListener('click', () => {
+            const text = textInput.value;
+            if (text && connected) {
+                sendCommand({ type: 'type', text: text });
+                textInput.value = '';
+            }
+        });
+        
+        textInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendTextBtn.click();
+            }
+        });
+        
+        // Keyboard - Shortcuts
+        document.querySelectorAll('.shortcut-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const shortcut = btn.dataset.shortcut;
+                if (connected) {
+                    sendCommand({ type: 'keyboard', shortcut: shortcut });
+                }
+            });
+        });
+        
+        // Connection
+        function toggleConnection() {
+            if (connected) {
+                disconnect();
+            } else {
+                connect();
+            }
+        }
+        
+        function connect() {
+            const ip = document.getElementById('serverIp').value;
+            const port = document.getElementById('serverPort').value;
+            
+            fetch(`http://${ip}:${port}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type: 'ping' }),
+                mode: 'no-cors'
+            })
+            .then(() => {
+                connected = true;
+                status.textContent = `Connected to ${ip}:${port}`;
+                connectBtn.textContent = 'Disconnect';
+                connectBtn.classList.add('connected');
+            })
+            .catch(() => {
+                status.textContent = 'Connection failed';
+                connected = false;
+            });
+        }
+        
+        function disconnect() {
+            connected = false;
+            status.textContent = 'Disconnected';
+            connectBtn.textContent = 'Connect';
+            connectBtn.classList.remove('connected');
+        }
+        
+        function sendCommand(command) {
+            if (!connected) return;
+            
+            const ip = document.getElementById('serverIp').value;
+            const port = document.getElementById('serverPort').value;
+            
+            fetch(`http://${ip}:${port}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(command),
+                mode: 'no-cors'
+            }).catch(() => {});
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>conVeys Icon Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        canvas {
+            border: 2px solid #ccc;
+            margin: 20px;
+            border-radius: 10px;
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 16px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            background: #1976D2;
+        }
+        .preview {
+            display: flex;
+            gap: 20px;
+            margin: 20px;
+        }
+        .preview-item {
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+        }
+        .instructions {
+            max-width: 600px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>conVeys App Icon Generator</h1>
+    
+    <div class="instructions">
+        <h3>Instructions:</h3>
+        <ol>
+            <li>Click "Generate Icon" to create the icon</li>
+            <li>Right-click on the icon and "Save Image As..."</li>
+            <li>Save as <code>app_icon.png</code> in the <code>assets/icon/</code> folder</li>
+            <li>Run: <code>flutter pub run flutter_launcher_icons</code></li>
+        </ol>
+    </div>
+
+    <button onclick="generateIcon()">Generate Icon</button>
+    
+    <div class="preview">
+        <div class="preview-item">
+            <h3>1024x1024 (Main Icon)</h3>
+            <canvas id="mainCanvas" width="1024" height="1024"></canvas>
+        </div>
+    </div>
+
+    <button onclick="downloadIcon()">Download Icon</button>
+
+    <script>
+        function generateIcon() {
+            const canvas = document.getElementById('mainCanvas');
+            const ctx = canvas.getContext('2d');
+            const size = 1024;
+
+            // Clear canvas
+            ctx.clearRect(0, 0, size, size);
+
+            // Create gradient background
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#2196F3');
+            gradient.addColorStop(1, '#1976D2');
+            
+            // Draw rounded rectangle background
+            ctx.fillStyle = gradient;
+            roundRect(ctx, 0, 0, size, size, 180);
+            ctx.fill();
+
+            // Draw first speech bubble (back)
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            drawSpeechBubble(ctx, 380, 320, 380, 280, 40);
+
+            // Draw second speech bubble (front)
+            ctx.fillStyle = 'rgba(255, 255, 255, 1)';
+            drawSpeechBubble(ctx, 520, 480, 380, 280, 40);
+
+            // Add text "cV"
+            ctx.fillStyle = '#1976D2';
+            ctx.font = 'bold 280px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('cV', size/2, size/2 + 20);
+
+            // Add small subtitle
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.font = 'bold 80px Arial';
+            ctx.fillText('conVeys', size/2, size - 150);
+        }
+
+        function drawSpeechBubble(ctx, x, y, width, height, radius) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            
+            // Tail
+            ctx.lineTo(x + 100, y + height);
+            ctx.lineTo(x + 80, y + height + 60);
+            ctx.lineTo(x + 120, y + height);
+            
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        function roundRect(ctx, x, y, width, height, radius) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+        }
+
+        function downloadIcon() {
+            const canvas = document.getElementById('mainCanvas');
+            const link = document.createElement('a');
+            link.download = 'app_icon.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        // Generate icon on page load
+        window.onload = generateIcon;
+    </script>
+</body>
+</html>

@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>X-Gone</title>
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #09090b 0%, #18181b 100%);
+      --accent: #f43f5e;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --glass-bg: rgba(255, 255, 255, 0.03);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --danger: #ef4444;
+      --success: #22c55e;
+    }
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      background: transparent;
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .app-container {
+      background: var(--bg-gradient);
+      border-radius: 12px;
+      margin: 10px;
+      height: calc(100vh - 20px);
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+      border: 1px solid var(--glass-border);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Header */
+    header {
+      -webkit-app-region: drag;
+      min-height: 48px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--glass-border);
+      background: var(--glass-bg);
+      backdrop-filter: blur(8px);
+      z-index: 10;
+    }
+
+    .title {
+      font-weight: 600;
+      font-size: 14px;
+      letter-spacing: 2px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--danger);
+      box-shadow: 0 0 8px var(--danger);
+      transition: all 0.3s;
+    }
+    .status-dot.connected {
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success);
+    }
+
+    .window-controls {
+      -webkit-app-region: no-drag;
+      display: flex;
+      gap: 12px;
+    }
+
+    .control-btn {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+       transition: transform 0.2s;
+    }
+    .control-btn:hover { transform: scale(1.1); }
+    .btn-close { background: #ef4444; }
+    .btn-min { background: #eab308; }
+    .btn-max { background: #22c55e; }
+
+    /* Main Area - Items Grid */
+    main {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+      align-content: start;
+    }
+    main::-webkit-scrollbar { width: 8px; }
+    main::-webkit-scrollbar-track { background: transparent; }
+    main::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 4px; }
+
+    .item-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+    }
+
+    .item-card.vanishing {
+      opacity: 0;
+      transform: scale(1.1) rotate(5deg);
+      filter: blur(8px);
+    }
+
+    .item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .delete-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 16px;
+    }
+    .delete-btn:hover { color: var(--accent); }
+
+    .item-content {
+      font-size: 14px;
+      line-height: 1.5;
+      word-break: break-word;
+      flex: 1;
+    }
+
+    .item-footer {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .life-bar-bg {
+      height: 4px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .life-bar-fill {
+      height: 100%;
+      background: var(--accent);
+      width: 100%;
+      transition: width 1s linear;
+    }
+
+    .time-left {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Footer - Controls */
+    footer {
+      padding: 16px;
+      border-top: 1px solid var(--glass-border);
+      background: rgba(0,0,0,0.2);
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    form {
+      flex: 1;
+      display: flex;
+      gap: 8px;
+    }
+
+    input {
+      flex: 1;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      color: var(--text-main);
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+    }
+    input:focus { border-color: rgba(255,255,255,0.2); }
+
+    button.primary-btn {
+      background: var(--text-main);
+      color: #000;
+      border: none;
+      padding: 0 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    button.primary-btn:hover { opacity: 0.8; }
+
+    button.wipe-btn {
+      background: transparent;
+      border: 1px solid var(--danger);
+      color: var(--danger);
+      padding: 0 16px;
+      border-radius: 8px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      height: 42px;
+    }
+    button.wipe-btn:hover {
+      background: var(--danger);
+      color: white;
+    }
+
+    /* Wipe Overlay */
+    .wipe-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(239, 68, 68, 0);
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      transition: background 0.5s;
+    }
+    .wipe-overlay.active {
+      background: rgba(239, 68, 68, 0.9);
+      pointer-events: all;
+    }
+    .wipe-text {
+      color: white;
+      font-size: 48px;
+      font-weight: 900;
+      letter-spacing: 8px;
+      opacity: 0;
+      transform: scale(0.5);
+      transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .wipe-overlay.active .wipe-text {
+      opacity: 1;
+      transform: scale(1);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <header>
+      <div class="title">
+        <div class="status-dot tooltip" id="status-dot"></div>
+        X-GONE
+      </div>
+      <div class="window-controls">
+        <button class="control-btn btn-min" onclick="window.closeWindow('minimize')"></button>
+        <button class="control-btn btn-max" onclick="window.closeWindow('maximize')"></button>
+        <button class="control-btn btn-close" onclick="window.closeWindow('close')"></button>
+      </div>
+    </header>
+    
+    <main id="items-grid">
+      <!-- Items will be injected here -->
+    </main>
+
+    <footer>
+      <form id="add-form">
+        <input type="text" id="content-input" placeholder="Inject a thought..." required autocomplete="off">
+        <button type="submit" class="primary-btn">+</button>
+      </form>
+      <button class="wipe-btn" id="mass-wipe">MASS WIPE</button>
+    </footer>
+
+    <div class="wipe-overlay" id="wipe-overlay">
+      <div class="wipe-text">X-GONE</div>
+    </div>
+  </div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+    
+    let items = [];
+    const MAX_LIFE = 300; // 5 minutes standard decay
+
+    // Elements
+    const statusDot = document.getElementById('status-dot');
+    const itemsGrid = document.getElementById('items-grid');
+    const addForm = document.getElementById('add-form');
+    const contentInput = document.getElementById('content-input');
+    const massWipeBtn = document.getElementById('mass-wipe');
+    const wipeOverlay = document.getElementById('wipe-overlay');
+
+    // UI Controls
+    window.closeWindow = (action) => ipcRenderer.send('window-control', action);
+
+    ipcRenderer.on('db-status', (event, status) => {
+      if (status === 'connected') {
+        statusDot.classList.add('connected');
+        statusDot.title = 'Database Connected';
+        fetchItems();
+      } else {
+        statusDot.classList.remove('connected');
+        statusDot.title = 'Database Disconnected';
+      }
+    });
+
+    // Render logic
+    function renderItems() {
+      itemsGrid.innerHTML = '';
+      items.forEach(item => {
+        const lifePct = (item.life / MAX_LIFE) * 100;
+        const mins = Math.floor(item.life / 60);
+        const secs = (item.life % 60).toString().padStart(2, '0');
+        
+        const card = document.createElement('div');
+        card.className = `item-card ${item.vanishing ? 'vanishing' : ''}`;
+        card.innerHTML = `
+          <div class="item-header">
+            <span>${item.type}</span>
+            <button class="delete-btn" onclick="removeItem('${item._id}')">✕</button>
+          </div>
+          <div class="item-content">${escapeHtml(item.content)}</div>
+          <div class="item-footer">
+            <div class="life-bar-bg">
+              <div class="life-bar-fill" style="width: ${Math.max(0, lifePct)}%"></div>
+            </div>
+            <div class="time-left">${mins}:${secs}</div>
+          </div>
+        `;
+        itemsGrid.appendChild(card);
+      });
+    }
+
+    const escapeHtml = (text) => text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+    // Operations
+    async function fetchItems() {
+      const res = await ipcRenderer.invoke('fetch-items');
+      if (res.success) {
+        const now = Date.now();
+        items = res.data.map(item => ({
+          ...item,
+          life: Math.max(0, Math.floor((new Date(item.expiresAt).getTime() - now) / 1000)),
+          vanishing: false
+        }));
+        renderItems();
+      }
+    }
+
+    addForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const content = contentInput.value.trim();
+      if (!content) return;
+      
+      contentInput.value = '';
+      const now = Date.now();
+      const payload = {
+        content,
+        type: 'note',
+        createdAt: new Date(now),
+        expiresAt: new Date(now + MAX_LIFE * 1000)
+      };
+
+      const res = await ipcRenderer.invoke('add-item', payload);
+      if (res.success) {
+        items.push({
+          ...res.data,
+          life: MAX_LIFE,
+          vanishing: false
+        });
+        renderItems();
+      }
+    });
+
+    window.removeItem = async (id) => {
+      // Optimistic vanish
+      const idx = items.findIndex(i => i._id === id);
+      if (idx > -1) {
+        items[idx].vanishing = true;
+        renderItems();
+      }
+      
+      await ipcRenderer.invoke('remove-item', id);
+      setTimeout(() => {
+        items = items.filter(i => i._id !== id);
+        renderItems();
+      }, 300);
+    };
+
+    massWipeBtn.addEventListener('click', async () => {
+      wipeOverlay.classList.add('active');
+      items.forEach(i => i.vanishing = true);
+      renderItems();
+
+      await ipcRenderer.invoke('mass-wipe');
+      
+      setTimeout(() => {
+        items = [];
+        wipeOverlay.classList.remove('active');
+        renderItems();
+      }, 1000);
+    });
+
+    // Decay Timer
+    setInterval(() => {
+      let needsRender = false;
+      items.forEach(item => {
+        if (item.vanishing) return;
+        if (item.life > 0) {
+          item.life -= 1;
+          needsRender = true;
+        } else if (item.life === 0 && !item.vanishing) {
+          item.vanishing = true;
+          needsRender = true;
+          // Trigger backend removal silently when decay finishes
+          ipcRenderer.invoke('remove-item', item._id);
+        }
+      });
+      if (needsRender) renderItems();
+    }, 1000);
+
+    // Initial fetch trigger fallback if db-status was missed
+    setTimeout(fetchItems, 500);
+
+  </script>
+</body>
+</html>

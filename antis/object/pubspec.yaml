@@ -1,0 +1,39 @@
+name: object
+description: "A Flutter app exploring the concept of negation"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  google_fonts: ^6.2.1
+  provider: ^6.1.2
+  shared_preferences: ^2.3.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter:
+  uses-material-design: true
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/icon/launcher_icon.png"
+  web:
+    generate: true
+    image_path: "assets/icon/launcher_icon.png"
+  windows:
+    generate: true
+    image_path: "assets/icon/launcher_icon.png"
+  macos:
+    generate: true
+    image_path: "assets/icon/launcher_icon.png"

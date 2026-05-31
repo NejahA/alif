@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      background-color: #1a1a1a;
+      color: white;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      -webkit-app-region: drag; /* allows dragging the window */
+    }
+    .container {
+      text-align: center;
+      padding: 20px;
+    }
+    h1 {
+      color: #ff5555;
+      font-size: 24px;
+    }
+    p {
+      color: #bbbbbb;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .btn {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      -webkit-app-region: no-drag;
+      font-size: 14px;
+    }
+    .btn:hover {
+      background-color: #45a049;
+    }
+    .close-btn {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: none;
+      border: none;
+      color: #888;
+      font-size: 20px;
+      cursor: pointer;
+      -webkit-app-region: no-drag;
+    }
+    .close-btn:hover {
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <button class="close-btn" onclick="window.close()">✕</button>
+  <div class="container">
+    <h1>Connection Failed</h1>
+    <p>Could not connect to http://localhost:3000.</p>
+    <p>Ensure that the Next.js development server is running in the 'x-gone' directory before launching this desktop application.</p>
+    <p>Command to start the server: <strong>npm run dev</strong></p>
+    <button class="btn" onclick="window.location.reload()">Retry Connection</button>
+  </div>
+  <script>
+    const { ipcRenderer } = require('electron');
+    // For the window close button
+    document.querySelector('.close-btn').addEventListener('click', () => {
+      ipcRenderer.send('window-control', 'close');
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Control Center</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎵 Audio Control Center</h1>
+        </header>
+
+        <section class="master-control">
+            <h2>Master Volume</h2>
+            <div class="volume-control">
+                <button id="masterMute" class="mute-btn">🔊</button>
+                <input type="range" id="masterVolume" min="0" max="100" value="50">
+                <span id="masterVolumeValue">50%</span>
+            </div>
+        </section>
+
+        <section class="sessions">
+            <h2>Application Audio</h2>
+            <button id="refreshSessions" class="refresh-btn">🔄 Refresh</button>
+            <div id="sessionsList"></div>
+        </section>
+
+        <section class="devices">
+            <h2>Audio Devices</h2>
+            <div id="devicesList"></div>
+        </section>
+
+        <section class="solfeggio">
+            <h2>🎵 Solfeggio Frequencies</h2>
+            <p class="solfeggio-description">Healing frequencies for meditation and wellness</p>
+            
+            <div class="solfeggio-controls">
+                <div class="solfeggio-volume-control">
+                    <label>Solfeggio Volume:</label>
+                    <input type="range" id="solfeggioVolume" min="0" max="100" value="30">
+                    <span id="solfeggioVolumeValue">30%</span>
+                </div>
+                
+                <div id="solfeggioStatus" class="status-indicator">
+                    <span class="status-dot"></span>
+                    <span class="status-text">Stopped</span>
+                </div>
+            </div>
+
+            <div id="solfeggioFrequencies" class="frequency-grid"></div>
+        </section>
+
+        <section class="transform">
+            <h2>🎵 Audio File Transformation</h2>
+            <p class="transform-description">Upload an audio file and transform its frequencies to align with solfeggio</p>
+            
+            <div class="transform-controls">
+                <div class="file-upload-section">
+                    <label for="audioFile" class="file-upload-label">
+                        <span class="upload-icon">📁</span>
+                        <span class="upload-text">Choose Audio File</span>
+                        <input type="file" id="audioFile" accept="audio/*" style="display: none;">
+                    </label>
+                    <div id="fileName" class="file-name"></div>
+                </div>
+                
+                <div class="transform-settings">
+                    <div class="setting-group">
+                        <label>Target Frequency:</label>
+                        <select id="transformFrequency" class="frequency-select">
+                            <option value="396">396 Hz - Liberation</option>
+                            <option value="417">417 Hz - Change</option>
+                            <option value="528" selected>528 Hz - DNA Repair</option>
+                            <option value="639">639 Hz - Relationships</option>
+                            <option value="741">741 Hz - Intuition</option>
+                            <option value="852">852 Hz - Spiritual</option>
+                            <option value="963">963 Hz - Divine</option>
+                        </select>
+                    </div>
+                    
+                    <div class="setting-group">
+                        <label>Intensity:</label>
+                        <input type="range" id="transformIntensity" min="0" max="100" value="50">
+                        <span id="transformIntensityValue">50%</span>
+                    </div>
+                </div>
+                
+                <div class="transform-actions">
+                    <button id="processFile" class="transform-btn start-btn" disabled>⚡ Process File</button>
+                    <button id="downloadFile" class="transform-btn download-btn" disabled>⬇ Download</button>
+                </div>
+                
+                <div id="processingStatus" class="status-indicator">
+                    <span class="status-dot"></span>
+                    <span class="status-text">No file selected</span>
+                </div>
+                
+                <div id="audioPreview" class="audio-preview" style="display: none;">
+                    <div class="preview-section">
+                        <h3>Original Audio</h3>
+                        <audio id="originalAudio" controls></audio>
+                    </div>
+                    <div class="preview-section">
+                        <h3>Transformed Audio</h3>
+                        <audio id="transformedAudio" controls></audio>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="transform-info">
+                <p>🎵 Upload any audio file (MP3, WAV, OGG, etc.) and transform it to align with solfeggio frequencies. The processed file will be available for download.</p>
+            </div>
+        </section>
+    </div>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

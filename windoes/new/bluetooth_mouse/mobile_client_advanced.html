@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Touch Mouse Pro</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+            overflow: hidden;
+            touch-action: none;
+        }
+        
+        #connection {
+            padding: 15px;
+            background: #2a2a2a;
+            border-bottom: 1px solid #3a3a3a;
+        }
+        
+        #connection input {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            background: #3a3a3a;
+            border: 1px solid #4a4a4a;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 14px;
+        }
+        
+        #connection button {
+            width: 100%;
+            padding: 12px;
+            background: #4A90E2;
+            border: none;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 5px;
+        }
+        
+        #connection button.connected {
+            background: #27ae60;
+        }
+        
+        #status {
+            text-align: center;
+            padding: 8px;
+            font-size: 12px;
+            color: #888;
+        }
+        
+        #tabs {
+            display: flex;
+            background: #2a2a2a;
+            border-bottom: 1px solid #3a3a3a;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            background: #2a2a2a;
+            border: none;
+            color: #888;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        
+        .tab.active {
+            color: #4A90E2;
+            border-bottom: 2px solid #4A90E2;
+        }
+        
+        .tab-content {
+            display: none;
+            position: absolute;
+            top: 200px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        #touchpad {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 120px;
+            background: #2a2a2a;
+            border-top: 2px solid #4A90E2;
+        }
+        
+        #buttons {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 120px;
+            display: flex;
+            gap: 8px;
+            padding: 8px;
+            background: #1a1a1a;
+        }
+        
+        .btn {
+            flex: 1;
+            background: #3a3a3a;
+            border: 2px solid #4a4a4a;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .btn:active {
+            background: #4A90E2;
+            transform: scale(0.95);
+        }
+        
+        #keyboard-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            padding: 10px;
+            height: calc(100% - 120px);
+            overflow-y: auto;
+        }
+        
+        .shortcut-btn {
+            background: #3a3a3a;
+            border: 2px solid #4a4a4a;
+            border-radius: 10px;
+            color: #fff;
+            padding: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+        
+        .shortcut-btn:active {
+            background: #4A90E2;
+        }
+        
+        .shortcut-icon {
+            font-size: 24px;
+        }
+        
+        #gesture-info {
+            padding: 20px;
+            color: #888;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        #sensitivity {
+            position: absolute;
+            top: 160px;
+            left: 15px;
+            right: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 12px;
+        }
+        
+        #sensitivity input {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <div id="connection">
+        <input type="text" id="serverIp" placeholder="PC IP Address" value="192.168.1.100">
+        <input type="number" id="serverPort" placeholder="Port" value="5000">
+        <button id="connectBtn" onclick="toggleConnection()">Connect</button>
+    </div>
+    
+    <div id="status">Not connected</div>
+    
+    <div id="tabs">
+        <button class="tab active" onclick="switchTab('mouse')">Mouse</button>
+        <button class="tab" onclick="switchTab('keyboard')">Keyboard</button>
+        <button class="tab" onclick="switchTab('gestures')">Gestures</button>
+    </div>
+    
+    <div id="sensitivity">
+        <span>Sensitivity:</span>
+        <input type="range" id="sensitivitySlider" min="0.5" max="5" step="0.5" value="2">
+        <span id="sensitivityValue">2.0x</span>
+    </div>
+    
+    <!-- Mouse Tab -->
+    <div id="mouse-tab" class="tab-content active">
+        <div id="touchpad"></div>
+        <div id="buttons">
+            <button class="btn" id="leftBtn">LEFT</button>
+            <button class="btn" id="rightBtn">RIGHT</button>
+        </div>
+    </div>
+    
+    <!-- Keyboard Tab -->
+    <div id="keyboard-tab" class="tab-content">
+        <div id="keyboard-grid">
+            <button class="shortcut-btn" onclick="sendShortcut('copy')">
+                <span class="shortcut-icon">📋</span>
+                <span>Copy</span>
+            </button>
+            <button class="shortcut-btn" onclick="sendShortcut('paste')">
+                <span class="shortcut-icon">📄</span>
+                <span>Paste</span>
+            </button>
+            <button class="shortcut-btn" onclick="sendShortcut('cut')">
+                <span class="shortcut-icon">✂️</span>
+                <span>Cut</span>
+            </button>
+            <button class="shortcut-btn" onclick="sendShortcut('undo')">
+                <span class="shortcut-icon">↶</span>
+                <span>Undo</span>
+            </button>
+            <button class="shortcut-btn" onclick="sendShortcut('redo')">
+                <span class="shortcut-icon">↷</span>
+                <span>Redo</span>
+            </button>
+            <button class="shortcut-btn" onclick="sendShortcut('save')">
+                <span class="shortcut-icon">💾</span>
+                <span>Save</span>
+            </button>
+            <button class="shortcut-btn" onclick="sendShortcut('find')">
+                <span class="shortcut-icon">🔍</span>
+                <span>Find</span>
+            </button>
+            <button class="shortcut-btn" onclick="sendShortcut('select_all')">
+                <span class="shortcut-icon">📝</span>
+                <span>Select All</span>
+            </button>
+            <button class="shortcut-btn" onclick="sendShortcut('new_tab')">
+                <span class="shortcut-icon">➕</span>
+                <span>New Tab</span>
+            </button>
+            <button class="shortcut-btn" onclick="sendShortcut('close_tab')">
+                <span class="shortcut-icon">✖️</span>
+                <span>Close Tab</span>
+            </button>
+            <button class="shortcut-btn" onclick="sendShortcut('refresh')">
+                <span class="shortcut-icon">🔄</span>
+                <span>Refresh</span>
+            </button>
+            <button class="shortcut-btn" onclick="sendShortcut('screenshot')">
+                <span class="shortcut-icon">📸</span>
+                <span>Screenshot</span>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Gestures Tab -->
+    <div id="gestures-tab" class="tab-content">
+        <div id="gesture-info">
+            <h3 style="color: #4A90E2; margin-bottom: 15px;">Available Gestures</h3>
+            
+            <p><strong>Two-finger scroll:</strong> Swipe up/down with two fingers</p>
+            <p><strong>Three-finger swipe left:</strong> Browser back</p>
+            <p><strong>Three-finger swipe right:</strong> Browser forward</p>
+            <p><strong>Pinch in:</strong> Zoom out</p>
+            <p><strong>Pinch out:</strong> Zoom in</p>
+            <p><strong>Three-finger tap:</strong> Show desktop</p>
+            <p><strong>Double-tap:</strong> Double click</p>
+            
+            <h3 style="color: #4A90E2; margin: 20px 0 15px;">Tips</h3>
+            <p>• Use gestures on the Mouse tab touchpad</p>
+            <p>• Adjust sensitivity for better control</p>
+            <p>• Keyboard shortcuts work system-wide</p>
+        </div>
+    </div>
+
+    <script>
+        let connected = false;
+        let lastTouch = { x: 0, y: 0 };
+        let touchStartY = 0;
+        let touchStartTime = 0;
+        let lastTapTime = 0;
+        
+        const touchpad = document.getElementById('touchpad');
+        const status = document.getElementById('status');
+        const connectBtn = document.getElementById('connectBtn');
+        const sensitivitySlider = document.getElementById('sensitivitySlider');
+        const sensitivityValue = document.getElementById('sensitivityValue');
+        
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName + '-tab').classList.add('active');
+        }
+        
+        // Touch events
+        touchpad.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            lastTouch = { x: touch.clientX, y: touch.clientY };
+            touchStartY = touch.clientY;
+            touchStartTime = Date.now();
+        });
+        
+        touchpad.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (!connected) return;
+            
+            const touch = e.touches[0];
+            
+            // Two-finger scroll
+            if (e.touches.length === 2) {
+                const dy = touchStartY - touch.clientY;
+                if (Math.abs(dy) > 10) {
+                    sendCommand({ type: 'scroll', amount: dy > 0 ? 1 : -1 });
+                    touchStartY = touch.clientY;
+                }
+            } else {
+                // Single finger move
+                const dx = touch.clientX - lastTouch.x;
+                const dy = touch.clientY - lastTouch.y;
+                sendCommand({ type: 'move', dx, dy });
+                lastTouch = { x: touch.clientX, y: touch.clientY };
+            }
+        });
+        
+        touchpad.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            
+            // Detect double-tap
+            const now = Date.now();
+            if (now - lastTapTime < 300 && now - touchStartTime < 200) {
+                sendCommand({ type: 'click', button: 'left', clicks: 2 });
+            }
+            lastTapTime = now;
+        });
+        
+        // Click buttons
+        document.getElementById('leftBtn').addEventListener('click', () => {
+            if (connected) sendCommand({ type: 'click', button: 'left' });
+        });
+        
+        document.getElementById('rightBtn').addEventListener('click', () => {
+            if (connected) sendCommand({ type: 'click', button: 'right' });
+        });
+        
+        // Sensitivity
+        sensitivitySlider.addEventListener('input', (e) => {
+            const value = parseFloat(e.target.value);
+            sensitivityValue.textContent = value.toFixed(1) + 'x';
+            if (connected) {
+                sendCommand({ type: 'sensitivity', value });
+            }
+        });
+        
+        function toggleConnection() {
+            if (connected) {
+                disconnect();
+            } else {
+                connect();
+            }
+        }
+        
+        function connect() {
+            const ip = document.getElementById('serverIp').value;
+            const port = document.getElementById('serverPort').value;
+            
+            fetch(`http://${ip}:${port}`)
+                .then(() => {
+                    connected = true;
+                    status.textContent = `Connected to ${ip}:${port}`;
+                    connectBtn.textContent = 'Disconnect';
+                    connectBtn.classList.add('connected');
+                })
+                .catch(() => {
+                    status.textContent = 'Connection failed';
+                    connected = false;
+                });
+        }
+        
+        function disconnect() {
+            connected = false;
+            status.textContent = 'Disconnected';
+            connectBtn.textContent = 'Connect';
+            connectBtn.classList.remove('connected');
+        }
+        
+        function sendCommand(command) {
+            if (!connected) return;
+            
+            const ip = document.getElementById('serverIp').value;
+            const port = document.getElementById('serverPort').value;
+            
+            fetch(`http://${ip}:${port}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(command),
+                mode: 'no-cors'
+            }).catch(() => {});
+        }
+        
+        function sendShortcut(shortcut) {
+            if (!connected) return;
+            sendCommand({ type: 'keyboard', action: 'shortcut', shortcut });
+        }
+    </script>
+</body>
+</html>

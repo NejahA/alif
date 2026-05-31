@@ -1,0 +1,10 @@
+{
+  "name": "proxy-ad-blocker",
+  "version": "1.0.0",
+  "description": "Proxy-based ad blocker",
+  "main": "proxy.js",
+  "scripts": {
+    "start": "node proxy.js"
+  },
+  "dependencies": {}
+}

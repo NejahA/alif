@@ -1,0 +1,50 @@
+.harlequin-grid-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  z-index: 1;
+  background-color: var(--color-black);
+  pointer-events: none;
+}
+
+.diamond {
+  position: absolute;
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  transition: opacity 0.3s ease, transform 0.1s linear;
+  animation: pulse-opac 5s ease-in-out infinite alternate;
+  
+  /* Resonance Logic */
+  --dist-x: calc(var(--mx) - var(--ix));
+  --dist-y: calc(var(--my) - var(--iy));
+  --dist: hypot(var(--dist-x), var(--dist-y));
+  --res: clamp(0, calc(1 - var(--dist) / 300), 1); /* 0 to 1 based on 300px range */
+  
+  transform: translate(
+    calc(var(--dist-x) * var(--res) * -0.1),
+    calc(var(--dist-y) * var(--res) * -0.1)
+  ) rotate(calc(var(--res) * 45deg));
+  
+  filter: brightness(calc(1 + var(--res) * 2)) drop-shadow(0 0 calc(var(--res) * 10px) currentColor);
+  opacity: calc(0.1 + var(--res) * 0.4) !important;
+}
+
+.grid-overlay-vignette {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at var(--mx) var(--my), transparent 10%, var(--color-black) 90%);
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0.8;
+}
+
+@keyframes pulse-opac {
+  0% { transform: scale(0.95); opacity: 0.05; }
+  50% { transform: scale(1.05); opacity: 0.2; }
+  100% { transform: scale(0.95); opacity: 0.05; }
+}

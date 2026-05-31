@@ -1,0 +1,1 @@
+"""Galaxy screenshot tool package"""

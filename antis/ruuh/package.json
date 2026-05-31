@@ -1,0 +1,37 @@
+{
+  "name": "ruuh",
+  "version": "1.0.0",
+  "description": "System utility for Context Switching",
+  "main": "main.js",
+  "scripts": {
+    "dev": "concurrently \"vite\" \"npm run electron\"",
+    "electron": "wait-on tcp:5173 && electron .",
+    "build": "vite build && electron-builder"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.1",
+    "concurrently": "^8.2.2",
+    "electron": "^30.0.1",
+    "electron-builder": "^24.13.3",
+    "vite": "^5.2.0",
+    "wait-on": "^7.2.0"
+  },
+  "build": {
+    "appId": "com.ruuh.app",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "dist/**/*",
+      "main.js",
+      "preload.js"
+    ],
+    "win": {
+      "target": "nsis"
+    }
+  }
+}

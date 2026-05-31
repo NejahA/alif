@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Touch Mouse</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+            overflow: hidden;
+            touch-action: none;
+        }
+        
+        #connection {
+            padding: 20px;
+            background: #2a2a2a;
+            border-bottom: 1px solid #3a3a3a;
+        }
+        
+        #connection input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            background: #3a3a3a;
+            border: 1px solid #4a4a4a;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 16px;
+        }
+        
+        #connection button {
+            width: 100%;
+            padding: 14px;
+            background: #4A90E2;
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        #connection button:active {
+            background: #357ABD;
+        }
+        
+        #connection button.connected {
+            background: #27ae60;
+        }
+        
+        #status {
+            text-align: center;
+            padding: 10px;
+            font-size: 14px;
+            color: #888;
+        }
+        
+        #touchpad {
+            position: absolute;
+            top: 180px;
+            left: 0;
+            right: 0;
+            bottom: 120px;
+            background: #2a2a2a;
+            border-top: 2px solid #4A90E2;
+            cursor: none;
+        }
+        
+        #buttons {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 120px;
+            display: flex;
+            gap: 10px;
+            padding: 10px;
+            background: #1a1a1a;
+        }
+        
+        .btn {
+            flex: 1;
+            background: #3a3a3a;
+            border: 2px solid #4a4a4a;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+        
+        .btn:active {
+            background: #4A90E2;
+            border-color: #357ABD;
+            transform: scale(0.95);
+        }
+        
+        #sensitivity {
+            position: absolute;
+            top: 140px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        #sensitivity input {
+            flex: 1;
+        }
+        
+        #sensitivity span {
+            font-size: 14px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <div id="connection">
+        <input type="text" id="serverIp" placeholder="PC IP Address (e.g., 192.168.1.100)" value="192.168.1.100">
+        <input type="number" id="serverPort" placeholder="Port" value="5000">
+        <button id="connectBtn" onclick="toggleConnection()">Connect</button>
+    </div>
+    
+    <div id="status">Not connected</div>
+    
+    <div id="sensitivity">
+        <span>Sensitivity:</span>
+        <input type="range" id="sensitivitySlider" min="0.5" max="5" step="0.5" value="2">
+        <span id="sensitivityValue">2.0x</span>
+    </div>
+    
+    <div id="touchpad"></div>
+    
+    <div id="buttons">
+        <button class="btn" id="leftBtn">LEFT</button>
+        <button class="btn" id="rightBtn">RIGHT</button>
+    </div>
+
+    <script>
+        let ws = null;
+        let connected = false;
+        let lastTouch = { x: 0, y: 0 };
+        let touchStartY = 0;
+        
+        const touchpad = document.getElementById('touchpad');
+        const status = document.getElementById('status');
+        const connectBtn = document.getElementById('connectBtn');
+        const sensitivitySlider = document.getElementById('sensitivitySlider');
+        const sensitivityValue = document.getElementById('sensitivityValue');
+        
+        // Touch events for mouse movement
+        touchpad.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            lastTouch = { x: touch.clientX, y: touch.clientY };
+            touchStartY = touch.clientY;
+        });
+        
+        touchpad.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (!connected) return;
+            
+            const touch = e.touches[0];
+            const dx = touch.clientX - lastTouch.x;
+            const dy = touch.clientY - lastTouch.y;
+            
+            sendCommand({ type: 'move', dx, dy });
+            
+            lastTouch = { x: touch.clientX, y: touch.clientY };
+        });
+        
+        // Two-finger scroll
+        touchpad.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 2 && connected) {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const dy = touchStartY - touch.clientY;
+                
+                if (Math.abs(dy) > 10) {
+                    sendCommand({ type: 'scroll', amount: dy > 0 ? 1 : -1 });
+                    touchStartY = touch.clientY;
+                }
+            }
+        });
+        
+        // Click buttons
+        document.getElementById('leftBtn').addEventListener('click', () => {
+            if (connected) sendCommand({ type: 'click', button: 'left' });
+        });
+        
+        document.getElementById('rightBtn').addEventListener('click', () => {
+            if (connected) sendCommand({ type: 'click', button: 'right' });
+        });
+        
+        // Sensitivity control
+        sensitivitySlider.addEventListener('input', (e) => {
+            const value = parseFloat(e.target.value);
+            sensitivityValue.textContent = value.toFixed(1) + 'x';
+            if (connected) {
+                sendCommand({ type: 'sensitivity', value });
+            }
+        });
+        
+        function toggleConnection() {
+            if (connected) {
+                disconnect();
+            } else {
+                connect();
+            }
+        }
+        
+        function connect() {
+            const ip = document.getElementById('serverIp').value;
+            const port = document.getElementById('serverPort').value;
+            
+            ws = new WebSocket(`ws://${ip}:${port}`);
+            
+            // Fallback to TCP socket simulation
+            ws = {
+                send: function(data) {
+                    fetch(`http://${ip}:${port}`, {
+                        method: 'POST',
+                        body: data,
+                        mode: 'no-cors'
+                    }).catch(() => {});
+                }
+            };
+            
+            // Simulate connection via HTTP
+            fetch(`http://${ip}:${port}`)
+                .then(() => {
+                    connected = true;
+                    status.textContent = `Connected to ${ip}:${port}`;
+                    connectBtn.textContent = 'Disconnect';
+                    connectBtn.classList.add('connected');
+                })
+                .catch(() => {
+                    status.textContent = 'Connection failed. Check IP and port.';
+                    connected = false;
+                });
+        }
+        
+        function disconnect() {
+            connected = false;
+            status.textContent = 'Disconnected';
+            connectBtn.textContent = 'Connect';
+            connectBtn.classList.remove('connected');
+        }
+        
+        function sendCommand(command) {
+            if (!connected) return;
+            
+            const ip = document.getElementById('serverIp').value;
+            const port = document.getElementById('serverPort').value;
+            
+            fetch(`http://${ip}:${port}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(command),
+                mode: 'no-cors'
+            }).catch(() => {});
+        }
+    </script>
+</body>
+</html>

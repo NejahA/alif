@@ -1,0 +1,1653 @@
+[
+  {
+    "id": "2026-03-13T21:24:05.169111",
+    "name": "o",
+    "created_at": "2026-03-13T21:24:05.169120",
+    "applications": [
+      {
+        "name": "System Idle Process",
+        "path": null
+      },
+      {
+        "name": "System",
+        "path": ""
+      },
+      {
+        "name": "",
+        "path": ""
+      },
+      {
+        "name": "Registry",
+        "path": "Registry"
+      },
+      {
+        "name": "Kiro.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Kiro\\Kiro.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "smss.exe",
+        "path": "C:\\Windows\\System32\\smss.exe"
+      },
+      {
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\145.0.3800.97\\msedgewebview2.exe"
+      },
+      {
+        "name": "csrss.exe",
+        "path": "C:\\Windows\\System32\\csrss.exe"
+      },
+      {
+        "name": "wininit.exe",
+        "path": "C:\\Windows\\System32\\wininit.exe"
+      },
+      {
+        "name": "promecefpluginhost.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Kingsoft\\WPS Office\\12.2.0.23196\\office6\\promecefpluginhost.exe"
+      },
+      {
+        "name": "services.exe",
+        "path": "C:\\Windows\\System32\\services.exe"
+      },
+      {
+        "name": "LsaIso.exe",
+        "path": "C:\\Windows\\System32\\LsaIso.exe"
+      },
+      {
+        "name": "lsass.exe",
+        "path": "C:\\Windows\\System32\\lsass.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "fontdrvhost.exe",
+        "path": "C:\\Windows\\System32\\fontdrvhost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "conhost.exe",
+        "path": "C:\\Windows\\System32\\conhost.exe"
+      },
+      {
+        "name": "WUDFHost.exe",
+        "path": "C:\\Windows\\System32\\WUDFHost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "IntelCpHDCPSvc.exe",
+        "path": "C:\\Windows\\System32\\DriverStore\\FileRepository\\iigd_dch.inf_amd64_b38f68fdfc88d52c\\IntelCpHDCPSvc.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\145.0.3800.97\\msedgewebview2.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "electron.exe",
+        "path": "C:\\Users\\Lenovo\\Desktop\\projects\\kiros\\Atlas\\node_modules\\electron\\dist\\electron.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "Locator.exe",
+        "path": "C:\\Windows\\System32\\Locator.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "CrossDeviceResume.exe",
+        "path": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\CrossDeviceResume.exe"
+      },
+      {
+        "name": "WUDFHost.exe",
+        "path": "C:\\Windows\\System32\\WUDFHost.exe"
+      },
+      {
+        "name": "Notion.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Notion\\Notion.exe"
+      },
+      {
+        "name": "NVDisplay.Container.exe",
+        "path": "C:\\Windows\\System32\\DriverStore\\FileRepository\\nvlti.inf_amd64_26c7d450745b4e73\\Display.NvContainer\\NVDisplay.Container.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "igfxCUIServiceN.exe",
+        "path": "C:\\Windows\\System32\\DriverStore\\FileRepository\\cui_dch.inf_amd64_6673c5322430fc8a\\igfxCUIServiceN.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "SecurityHealthSystray.exe",
+        "path": "C:\\Windows\\System32\\SecurityHealthSystray.exe"
+      },
+      {
+        "name": "ollama app.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Ollama\\ollama app.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "AppActions.exe",
+        "path": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\AppActions.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "opera.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Opera GX\\opera.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "MemCompression",
+        "path": "MemCompression"
+      },
+      {
+        "name": "Spotify.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Roaming\\Spotify\\Spotify.exe"
+      },
+      {
+        "name": "jhi_service.exe",
+        "path": "C:\\Windows\\System32\\DriverStore\\FileRepository\\dal.inf_amd64_64d7fcfcde9b9c10\\jhi_service.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "BlueStacksServices.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\bluestacks-services\\BlueStacksServices.exe"
+      },
+      {
+        "name": "LenovoUtilityService.exe",
+        "path": "C:\\Windows\\System32\\DriverStore\\FileRepository\\lenovofnandfunctionkeys.inf_amd64_e40ba436be734fd2\\LenovoUtilityService.exe"
+      },
+      {
+        "name": "backgroundTaskHost.exe",
+        "path": "C:\\Windows\\System32\\backgroundTaskHost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "postgres.exe",
+        "path": "C:\\Program Files\\PostgreSQL\\16\\bin\\postgres.exe"
+      },
+      {
+        "name": "spoolsv.exe",
+        "path": "C:\\Windows\\System32\\spoolsv.exe"
+      },
+      {
+        "name": "Notion.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Notion\\Notion.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "conhost.exe",
+        "path": "C:\\Windows\\System32\\conhost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "mDNSResponder.exe",
+        "path": "C:\\Program Files\\Bonjour\\mDNSResponder.exe"
+      },
+      {
+        "name": "armsvc.exe",
+        "path": "C:\\Program Files (x86)\\Common Files\\Adobe\\ARM\\1.0\\armsvc.exe"
+      },
+      {
+        "name": "bash.exe",
+        "path": "C:\\Program Files\\Git\\bin\\bash.exe"
+      },
+      {
+        "name": "cfbackd.w32.exe",
+        "path": "C:\\Program Files\\CleverFiles\\Disk Drill\\cfbackd.w32.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "Everything.exe",
+        "path": "C:\\Program Files (x86)\\Everything\\Everything.exe"
+      },
+      {
+        "name": "esif_uf.exe",
+        "path": "C:\\Windows\\System32\\DriverStore\\FileRepository\\dptf_cpu.inf_amd64_897ea327b3fe52f7\\esif_uf.exe"
+      },
+      {
+        "name": "Avira.ServiceHost.exe",
+        "path": "C:\\Program Files (x86)\\Avira\\Launcher\\Avira.ServiceHost.exe"
+      },
+      {
+        "name": "adskflex.exe",
+        "path": "C:\\Program Files (x86)\\Common Files\\Autodesk Shared\\Network License Manager\\adskflex.exe"
+      },
+      {
+        "name": "lmgrd.exe",
+        "path": "C:\\Program Files (x86)\\Graitec\\License Server\\Bin\\lmgrd.exe"
+      },
+      {
+        "name": "hasplms.exe",
+        "path": "C:\\Program Files (x86)\\Common Files\\Aladdin Shared\\HASP\\hasplms.exe"
+      },
+      {
+        "name": "NahimicService.exe",
+        "path": "C:\\Windows\\System32\\NahimicService.exe"
+      },
+      {
+        "name": "HonorSuiteService64.exe",
+        "path": "C:\\Program Files (x86)\\HonorSuite\\HandSetService\\HonorSuiteService64.exe"
+      },
+      {
+        "name": "cmw_srv.exe",
+        "path": "C:\\Program Files (x86)\\Hotspot Shield\\12.10.2\\bin\\cmw_srv.exe"
+      },
+      {
+        "name": "OneApp.IGCC.WinService.exe",
+        "path": "C:\\Windows\\System32\\DriverStore\\FileRepository\\igcc_dch.inf_amd64_a687edda40db3316\\OneApp.IGCC.WinService.exe"
+      },
+      {
+        "name": "Lenovo.Modern.ImController.exe",
+        "path": "C:\\Windows\\Lenovo\\ImController\\Service\\Lenovo.Modern.ImController.exe"
+      },
+      {
+        "name": "IntelAudioService.exe",
+        "path": "C:\\Windows\\System32\\DriverStore\\FileRepository\\intcoed.inf_amd64_6f0a892deb241071\\AS\\IAS\\IntelAudioService.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "AmanUpdateLogLT.exe",
+        "path": "C:\\Windows\\AmanUpdateLogLT.exe"
+      },
+      {
+        "name": "nvcontainer.exe",
+        "path": "C:\\Program Files\\NVIDIA Corporation\\NvContainer\\nvcontainer.exe"
+      },
+      {
+        "name": "updatesvc.exe",
+        "path": "C:\\Program Files\\ONLYOFFICE\\DesktopEditors\\updatesvc.exe"
+      },
+      {
+        "name": "pservice.exe",
+        "path": "C:\\Program Files\\Parsec\\pservice.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "mysqld.exe",
+        "path": "C:\\Program Files\\MySQL\\MySQL Server 8.0\\bin\\mysqld.exe"
+      },
+      {
+        "name": "RstMwService.exe",
+        "path": "C:\\Windows\\System32\\DriverStore\\FileRepository\\iastorvd.inf_amd64_a5d1cbafba9d4a6c\\RstMwService.exe"
+      },
+      {
+        "name": "pg_ctl.exe",
+        "path": "C:\\Program Files\\PostgreSQL\\16\\bin\\pg_ctl.exe"
+      },
+      {
+        "name": "WmiPrvSE.exe",
+        "path": "C:\\Windows\\System32\\wbem\\WmiPrvSE.exe"
+      },
+      {
+        "name": "RtkAudUService64.exe",
+        "path": "C:\\Windows\\System32\\DriverStore\\FileRepository\\realtekservice.inf_amd64_4401706d277a86e0\\RtkAudUService64.exe"
+      },
+      {
+        "name": "RvControlSvc.exe",
+        "path": "C:\\Program Files (x86)\\Radmin VPN\\RvControlSvc.exe"
+      },
+      {
+        "name": "sqlwriter.exe",
+        "path": "C:\\Program Files\\Microsoft SQL Server\\90\\Shared\\sqlwriter.exe"
+      },
+      {
+        "name": "ss_conn_service.exe",
+        "path": "C:\\Program Files\\Samsung\\USB Drivers\\27_ssconn\\conn\\ss_conn_service.exe"
+      },
+      {
+        "name": "ss_conn_service2.exe",
+        "path": "C:\\Program Files\\Samsung\\USB Drivers\\28_ssconn2\\conn\\ss_conn_service2.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "audiodg.exe",
+        "path": "C:\\Windows\\System32\\audiodg.exe"
+      },
+      {
+        "name": "launcher-x64.exe",
+        "path": "C:\\Program Files (x86)\\WinFsp\\SxS\\sxs.20250818T124604Z\\bin\\launcher-x64.exe"
+      },
+      {
+        "name": "UDClientService.exe",
+        "path": "C:\\Windows\\System32\\drivers\\Lenovo\\udc\\Service\\UDClientService.exe"
+      },
+      {
+        "name": "lmgrd.exe",
+        "path": "C:\\Program Files (x86)\\Common Files\\Autodesk Shared\\Network License Manager\\lmgrd.exe"
+      },
+      {
+        "name": "usbipd.exe",
+        "path": "C:\\Program Files\\usbipd-win\\usbipd.exe"
+      },
+      {
+        "name": "SearchIndexer.exe",
+        "path": "C:\\Windows\\System32\\SearchIndexer.exe"
+      },
+      {
+        "name": "MpDefenderCoreService.exe",
+        "path": "C:\\ProgramData\\Microsoft\\Windows Defender\\Platform\\4.18.26010.5-0\\MpDefenderCoreService.exe"
+      },
+      {
+        "name": "ReadyForService.exe",
+        "path": "C:\\Program Files\\Lenovo\\Ready For Assistant\\ReadyForService.exe"
+      },
+      {
+        "name": "MsMpEng.exe",
+        "path": "C:\\ProgramData\\Microsoft\\Windows Defender\\Platform\\4.18.26010.5-0\\MsMpEng.exe"
+      },
+      {
+        "name": "LenovoVantageService.exe",
+        "path": "C:\\Program Files (x86)\\Lenovo\\VantageService\\4.2601.20.0\\LenovoVantageService.exe"
+      },
+      {
+        "name": "warp-svc.exe",
+        "path": "C:\\Program Files\\Cloudflare\\Cloudflare WARP\\warp-svc.exe"
+      },
+      {
+        "name": "opera.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Opera GX\\opera.exe"
+      },
+      {
+        "name": "unsecapp.exe",
+        "path": "C:\\Windows\\System32\\wbem\\unsecapp.exe"
+      },
+      {
+        "name": "RuntimeBroker.exe",
+        "path": "C:\\Windows\\System32\\RuntimeBroker.exe"
+      },
+      {
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\145.0.3800.97\\msedgewebview2.exe"
+      },
+      {
+        "name": "bash.exe",
+        "path": "C:\\Program Files\\Git\\usr\\bin\\bash.exe"
+      },
+      {
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\145.0.3800.97\\msedgewebview2.exe"
+      },
+      {
+        "name": "conhost.exe",
+        "path": "C:\\Windows\\System32\\conhost.exe"
+      },
+      {
+        "name": "PhoneExperienceHost.exe",
+        "path": "C:\\Program Files\\WindowsApps\\Microsoft.YourPhone_1.26012.101.0_x64__8wekyb3d8bbwe\\PhoneExperienceHost.exe"
+      },
+      {
+        "name": "mysqld.exe",
+        "path": "C:\\Program Files\\MySQL\\MySQL Server 8.0\\bin\\mysqld.exe"
+      },
+      {
+        "name": "nvcontainer.exe",
+        "path": "C:\\Program Files\\NVIDIA Corporation\\NvContainer\\nvcontainer.exe"
+      },
+      {
+        "name": "conhost.exe",
+        "path": "C:\\Windows\\System32\\conhost.exe"
+      },
+      {
+        "name": "dasHost.exe",
+        "path": "C:\\Windows\\System32\\dasHost.exe"
+      },
+      {
+        "name": "conhost.exe",
+        "path": "C:\\Windows\\System32\\conhost.exe"
+      },
+      {
+        "name": "Kiro.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Kiro\\Kiro.exe"
+      },
+      {
+        "name": "conhost.exe",
+        "path": "C:\\Windows\\System32\\conhost.exe"
+      },
+      {
+        "name": "opera.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Opera GX\\opera.exe"
+      },
+      {
+        "name": "lmgrd.exe",
+        "path": "C:\\Program Files (x86)\\Common Files\\Autodesk Shared\\Network License Manager\\lmgrd.exe"
+      },
+      {
+        "name": "WUDFHost.exe",
+        "path": "C:\\Windows\\System32\\WUDFHost.exe"
+      },
+      {
+        "name": "lmgrd.exe",
+        "path": "C:\\Program Files (x86)\\Graitec\\License Server\\Bin\\lmgrd.exe"
+      },
+      {
+        "name": "Notion.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Notion\\Notion.exe"
+      },
+      {
+        "name": "conhost.exe",
+        "path": "C:\\Windows\\System32\\conhost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "WUDFHost.exe",
+        "path": "C:\\Windows\\System32\\WUDFHost.exe"
+      },
+      {
+        "name": "postgres.exe",
+        "path": "C:\\Program Files\\PostgreSQL\\16\\bin\\postgres.exe"
+      },
+      {
+        "name": "WmiPrvSE.exe",
+        "path": "C:\\Windows\\System32\\wbem\\WmiPrvSE.exe"
+      },
+      {
+        "name": "postgres.exe",
+        "path": "C:\\Program Files\\PostgreSQL\\16\\bin\\postgres.exe"
+      },
+      {
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\145.0.3800.97\\msedgewebview2.exe"
+      },
+      {
+        "name": "Notion.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Notion\\Notion.exe"
+      },
+      {
+        "name": "postgres.exe",
+        "path": "C:\\Program Files\\PostgreSQL\\16\\bin\\postgres.exe"
+      },
+      {
+        "name": "hasplmv.exe",
+        "path": "C:\\Program Files (x86)\\Common Files\\Aladdin Shared\\HASP\\hasplmv.exe"
+      },
+      {
+        "name": "AcrobatNotificationClient.exe",
+        "path": "C:\\Program Files\\WindowsApps\\ReaderNotificationClient_1.0.4.0_x86__e1rzdqpraam7r\\AcrobatNotificationClient.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "Spotify.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Roaming\\Spotify\\Spotify.exe"
+      },
+      {
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\145.0.3800.97\\msedgewebview2.exe"
+      },
+      {
+        "name": "opera.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Opera GX\\opera.exe"
+      },
+      {
+        "name": "Spotify.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Roaming\\Spotify\\Spotify.exe"
+      },
+      {
+        "name": "opera.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Opera GX\\opera.exe"
+      },
+      {
+        "name": "Spotify.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Roaming\\Spotify\\Spotify.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "WMIRegistrationService.exe",
+        "path": "C:\\Windows\\System32\\DriverStore\\FileRepository\\mewmiprov.inf_amd64_d51901c26227fb29\\WMIRegistrationService.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "wslservice.exe",
+        "path": "C:\\Program Files\\WSL\\wslservice.exe"
+      },
+      {
+        "name": "AmanOnlineWT.exe",
+        "path": "C:\\Windows\\AmanOnlineWT.exe"
+      },
+      {
+        "name": "RuntimeBroker.exe",
+        "path": "C:\\Windows\\System32\\RuntimeBroker.exe"
+      },
+      {
+        "name": "ShellExperienceHost.exe",
+        "path": "C:\\Windows\\SystemApps\\ShellExperienceHost_cw5n1h2txyewy\\ShellExperienceHost.exe"
+      },
+      {
+        "name": "GRAITEC.exe",
+        "path": "C:\\Program Files (x86)\\Graitec\\License Server\\Bin\\GRAITEC.exe"
+      },
+      {
+        "name": "steamwebhelper.exe",
+        "path": "C:\\Program Files (x86)\\Steam\\bin\\cef\\cef.win64\\steamwebhelper.exe"
+      },
+      {
+        "name": "conhost.exe",
+        "path": "C:\\Windows\\System32\\conhost.exe"
+      },
+      {
+        "name": "PresentationFontCache.exe",
+        "path": "C:\\Windows\\Microsoft.NET\\Framework64\\v3.0\\WPF\\PresentationFontCache.exe"
+      },
+      {
+        "name": "Kiro.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Kiro\\Kiro.exe"
+      },
+      {
+        "name": "RuntimeBroker.exe",
+        "path": "C:\\Windows\\System32\\RuntimeBroker.exe"
+      },
+      {
+        "name": "wps.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Kingsoft\\WPSOFF~1\\1220~3.231\\office6\\wps.exe"
+      },
+      {
+        "name": "opera_crashreporter.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Opera GX\\127.0.5778.96\\opera_crashreporter.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "FxSound.exe",
+        "path": "C:\\Program Files\\FxSound LLC\\FxSound\\FxSound.exe"
+      },
+      {
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\145.0.3800.97\\msedgewebview2.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "GameInputSvc.exe",
+        "path": "C:\\Windows\\System32\\GameInputSvc.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "bash.exe",
+        "path": "C:\\Program Files\\Git\\usr\\bin\\bash.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "node.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\nvm\\v20.19.4\\node.exe"
+      },
+      {
+        "name": "AggregatorHost.exe",
+        "path": "C:\\Windows\\System32\\AggregatorHost.exe"
+      },
+      {
+        "name": "AppProvisioningPlugin.exe",
+        "path": "C:\\ProgramData\\Lenovo\\Udc\\Hosts\\x64\\AppProvisioningPlugin.exe"
+      },
+      {
+        "name": "postgres.exe",
+        "path": "C:\\Program Files\\PostgreSQL\\16\\bin\\postgres.exe"
+      },
+      {
+        "name": "postgres.exe",
+        "path": "C:\\Program Files\\PostgreSQL\\16\\bin\\postgres.exe"
+      },
+      {
+        "name": "postgres.exe",
+        "path": "C:\\Program Files\\PostgreSQL\\16\\bin\\postgres.exe"
+      },
+      {
+        "name": "wpscenter.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Kingsoft\\WPS Office\\12.2.0.23196\\office6\\wpscenter.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "conhost.exe",
+        "path": "C:\\Windows\\System32\\conhost.exe"
+      },
+      {
+        "name": "opera.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Opera GX\\opera.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "promecefpluginhost.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Kingsoft\\WPS Office\\12.2.0.23196\\office6\\promecefpluginhost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "dwm.exe",
+        "path": "C:\\Windows\\System32\\dwm.exe"
+      },
+      {
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\145.0.3800.97\\msedgewebview2.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "winlogon.exe",
+        "path": "C:\\Windows\\System32\\winlogon.exe"
+      },
+      {
+        "name": "wlanext.exe",
+        "path": "C:\\Windows\\System32\\wlanext.exe"
+      },
+      {
+        "name": "Poe.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Poe\\app-1.1.33\\Poe.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "FnHotkeyUtility.exe",
+        "path": "C:\\Windows\\System32\\DriverStore\\FileRepository\\lenovofnandfunctionkeys.inf_amd64_e40ba436be734fd2\\FnHotkeyUtility.exe"
+      },
+      {
+        "name": "Spotify.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Roaming\\Spotify\\Spotify.exe"
+      },
+      {
+        "name": "python.exe",
+        "path": "C:\\Python313\\python.exe"
+      },
+      {
+        "name": "HonorSuite.exe",
+        "path": "C:\\Program Files (x86)\\HonorSuite\\HonorSuite.exe"
+      },
+      {
+        "name": "NahimicSvc32.exe",
+        "path": "C:\\Windows\\SysWOW64\\NahimicSvc32.exe"
+      },
+      {
+        "name": "gamingservices.exe",
+        "path": "C:\\Program Files\\WindowsApps\\Microsoft.GamingServices_34.110.25001.0_x64__8wekyb3d8bbwe\\gamingservices.exe"
+      },
+      {
+        "name": "nvcontainer.exe",
+        "path": "C:\\Program Files\\NVIDIA Corporation\\NvContainer\\nvcontainer.exe"
+      },
+      {
+        "name": "opera.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Opera GX\\opera.exe"
+      },
+      {
+        "name": "wps.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Kingsoft\\WPS Office\\12.2.0.23196\\office6\\wps.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "Nahimic3.exe",
+        "path": "C:\\Program Files\\WindowsApps\\A-Volute.Nahimic_1.10.9.0_x64__w2gh52qy24etm\\Nahimic3.exe"
+      },
+      {
+        "name": "NisSrv.exe",
+        "path": "C:\\ProgramData\\Microsoft\\Windows Defender\\Platform\\4.18.26010.5-0\\NisSrv.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "WidgetBoard.exe",
+        "path": "C:\\Program Files\\WindowsApps\\MicrosoftWindows.Client.WebExperience_526.1202.40.0_x64__cw5n1h2txyewy\\WidgetBoard.exe"
+      },
+      {
+        "name": "Kiro.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Kiro\\Kiro.exe"
+      },
+      {
+        "name": "MicrosoftStartFeedProvider.exe",
+        "path": "C:\\Program Files\\WindowsApps\\Microsoft.StartExperiencesApp_1.241.0.0_x64__8wekyb3d8bbwe\\MicrosoftStartFeedProvider\\MicrosoftStartFeedProvider.exe"
+      },
+      {
+        "name": "bash.exe",
+        "path": "C:\\Program Files\\Git\\usr\\bin\\bash.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "Copilot.exe",
+        "path": "C:\\Program Files\\WindowsApps\\Microsoft.Copilot_1.25121.84.0_x64__8wekyb3d8bbwe\\Copilot.exe"
+      },
+      {
+        "name": "PAD.Console.Host.exe",
+        "path": "C:\\Program Files\\WindowsApps\\Microsoft.PowerAutomateDesktop_11.2512.163.0_x64__8wekyb3d8bbwe\\dotnet\\PAD.Console.Host.exe"
+      },
+      {
+        "name": "conhost.exe",
+        "path": "C:\\Windows\\System32\\conhost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\145.0.3800.97\\msedgewebview2.exe"
+      },
+      {
+        "name": "opera.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Opera GX\\opera.exe"
+      },
+      {
+        "name": "ctfmon.exe",
+        "path": "C:\\Windows\\System32\\ctfmon.exe"
+      },
+      {
+        "name": "unsecapp.exe",
+        "path": "C:\\Windows\\System32\\wbem\\unsecapp.exe"
+      },
+      {
+        "name": "LenovoVantage-(LenovoServiceBridgeAddin).exe",
+        "path": "C:\\Program Files (x86)\\Lenovo\\VantageService\\4.2601.20.0\\LenovoVantage-(LenovoServiceBridgeAddin).exe"
+      },
+      {
+        "name": "RuntimeBroker.exe",
+        "path": "C:\\Windows\\System32\\RuntimeBroker.exe"
+      },
+      {
+        "name": "RuntimeBroker.exe",
+        "path": "C:\\Windows\\System32\\RuntimeBroker.exe"
+      },
+      {
+        "name": "opera.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Opera GX\\opera.exe"
+      },
+      {
+        "name": "NahimicSvc64.exe",
+        "path": "C:\\Windows\\System32\\NahimicSvc64.exe"
+      },
+      {
+        "name": "electron.exe",
+        "path": "C:\\Users\\Lenovo\\Desktop\\projects\\kiros\\Atlas\\node_modules\\electron\\dist\\electron.exe"
+      },
+      {
+        "name": "ApplicationFrameHost.exe",
+        "path": "C:\\Windows\\System32\\ApplicationFrameHost.exe"
+      },
+      {
+        "name": "AdobeCollabSync.exe",
+        "path": "C:\\Program Files\\Adobe\\Acrobat DC\\Acrobat\\AdobeCollabSync.exe"
+      },
+      {
+        "name": "LenovoVantage-(VantageCoreAddin).exe",
+        "path": "C:\\Program Files (x86)\\Lenovo\\VantageService\\4.2601.20.0\\LenovoVantage-(VantageCoreAddin).exe"
+      },
+      {
+        "name": "steamwebhelper.exe",
+        "path": "C:\\Program Files (x86)\\Steam\\bin\\cef\\cef.win64\\steamwebhelper.exe"
+      },
+      {
+        "name": "language_server_windows_x64.exe",
+        "path": "C:\\Users\\Lenovo\\.kiro\\extensions\\codeium.codeium-1.48.2-universal\\dist\\e03af6ebc40b844314d448f947c80b636d093049\\language_server_windows_x64.exe"
+      },
+      {
+        "name": "ShellHost.exe",
+        "path": "C:\\Windows\\System32\\ShellHost.exe"
+      },
+      {
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\145.0.3800.97\\msedgewebview2.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "PAD.AutomationServer.exe",
+        "path": "C:\\Program Files\\WindowsApps\\Microsoft.PowerAutomateDesktop_11.2512.163.0_x64__8wekyb3d8bbwe\\dotnet\\PAD.AutomationServer.exe"
+      },
+      {
+        "name": "SecurityHealthService.exe",
+        "path": "C:\\Windows\\System32\\SecurityHealthService.exe"
+      },
+      {
+        "name": "conhost.exe",
+        "path": "C:\\Windows\\System32\\conhost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "BlueStacksServices.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\bluestacks-services\\BlueStacksServices.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "LenovoVantage-(LenovoGamingSystemAddin).exe",
+        "path": "C:\\Program Files (x86)\\Lenovo\\VantageService\\4.2601.20.0\\LenovoVantage-(LenovoGamingSystemAddin).exe"
+      },
+      {
+        "name": "opera.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Opera GX\\opera.exe"
+      },
+      {
+        "name": "cmd.exe",
+        "path": "C:\\Windows\\System32\\cmd.exe"
+      },
+      {
+        "name": "FNPLicensingService.exe",
+        "path": "C:\\Program Files (x86)\\Common Files\\Macrovision Shared\\FlexNet Publisher\\FNPLicensingService.exe"
+      },
+      {
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\145.0.3800.97\\msedgewebview2.exe"
+      },
+      {
+        "name": "Kiro.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Kiro\\Kiro.exe"
+      },
+      {
+        "name": "SmartAIPlugin.exe",
+        "path": "C:\\Program Files\\Lenovo\\Ready For Assistant\\SmartAIPlugin.exe"
+      },
+      {
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\145.0.3800.97\\msedgewebview2.exe"
+      },
+      {
+        "name": "opera.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Opera GX\\opera.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "SearchProtocolHost.exe",
+        "path": "C:\\Windows\\System32\\SearchProtocolHost.exe"
+      },
+      {
+        "name": "hwtransport.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\HonorSuite\\userdata\\hwtools\\hwtransport.exe"
+      },
+      {
+        "name": "jucheck.exe",
+        "path": "C:\\Program Files (x86)\\Common Files\\Java\\Java Update\\jucheck.exe"
+      },
+      {
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\145.0.3800.97\\msedgewebview2.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "SystemSettings.exe",
+        "path": "C:\\Windows\\ImmersiveControlPanel\\SystemSettings.exe"
+      },
+      {
+        "name": "BlueStacksServices.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\bluestacks-services\\BlueStacksServices.exe"
+      },
+      {
+        "name": "nahimicNotifSys.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\NhNotifSys\\nahimic\\nahimicNotifSys.exe"
+      },
+      {
+        "name": "OneDrive.exe",
+        "path": "C:\\Program Files\\Microsoft OneDrive\\OneDrive.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "Notion.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Notion\\Notion.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "python.exe",
+        "path": "C:\\Python313\\python.exe"
+      },
+      {
+        "name": "Spotify.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Roaming\\Spotify\\Spotify.exe"
+      },
+      {
+        "name": "Cloudflare WARP.exe",
+        "path": "C:\\Program Files\\Cloudflare\\Cloudflare WARP\\Cloudflare WARP.exe"
+      },
+      {
+        "name": "Kiro.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Kiro\\Kiro.exe"
+      },
+      {
+        "name": "FnHotkeyCapsLKNumLK.exe",
+        "path": "C:\\Windows\\System32\\DriverStore\\FileRepository\\lenovofnandfunctionkeys.inf_amd64_e40ba436be734fd2\\FnHotkeyCapsLKNumLK.exe"
+      },
+      {
+        "name": "opera.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Opera GX\\opera.exe"
+      },
+      {
+        "name": "Spotify.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Roaming\\Spotify\\Spotify.exe"
+      },
+      {
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\145.0.3800.97\\msedgewebview2.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "vmcompute.exe",
+        "path": "C:\\Windows\\System32\\vmcompute.exe"
+      },
+      {
+        "name": "RtkAudUService64.exe",
+        "path": "C:\\Windows\\System32\\DriverStore\\FileRepository\\realtekservice.inf_amd64_4401706d277a86e0\\RtkAudUService64.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "SDXHelper.exe",
+        "path": "C:\\Program Files\\Microsoft Office\\root\\Office16\\SDXHelper.exe"
+      },
+      {
+        "name": "Kiro.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Kiro\\Kiro.exe"
+      },
+      {
+        "name": "Everything.exe",
+        "path": "C:\\Program Files (x86)\\Everything\\Everything.exe"
+      },
+      {
+        "name": "taskhostw.exe",
+        "path": "C:\\Windows\\System32\\taskhostw.exe"
+      },
+      {
+        "name": "FileSyncHelper.exe",
+        "path": "C:\\Program Files\\Microsoft OneDrive\\26.026.0209.0004\\FileSyncHelper.exe"
+      },
+      {
+        "name": "SmartConnect.exe",
+        "path": "C:\\Program Files\\Lenovo\\Ready For Assistant\\SmartConnect.exe"
+      },
+      {
+        "name": "electron.exe",
+        "path": "C:\\Users\\Lenovo\\Desktop\\projects\\kiros\\Atlas\\node_modules\\electron\\dist\\electron.exe"
+      },
+      {
+        "name": "WmiApSrv.exe",
+        "path": "C:\\Windows\\System32\\wbem\\WmiApSrv.exe"
+      },
+      {
+        "name": "sihost.exe",
+        "path": "C:\\Windows\\System32\\sihost.exe"
+      },
+      {
+        "name": "opera.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Opera GX\\opera.exe"
+      },
+      {
+        "name": "nvsphelper64.exe",
+        "path": "C:\\Program Files\\NVIDIA Corporation\\NVIDIA App\\ShadowPlay\\nvsphelper64.exe"
+      },
+      {
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\145.0.3800.97\\msedgewebview2.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "SystemSettingsAdminFlows.exe",
+        "path": "C:\\Windows\\System32\\SystemSettingsAdminFlows.exe"
+      },
+      {
+        "name": "WidgetService.exe",
+        "path": "C:\\Program Files\\WindowsApps\\Microsoft.WidgetsPlatformRuntime_1.6.14.0_x64__8wekyb3d8bbwe\\WidgetService\\WidgetService.exe"
+      },
+      {
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\145.0.3800.97\\msedgewebview2.exe"
+      },
+      {
+        "name": "dllhost.exe",
+        "path": "C:\\Windows\\System32\\dllhost.exe"
+      },
+      {
+        "name": "RuntimeBroker.exe",
+        "path": "C:\\Windows\\System32\\RuntimeBroker.exe"
+      },
+      {
+        "name": "APAgent.exe",
+        "path": "C:\\Program Files (x86)\\AirPort\\APAgent.exe"
+      },
+      {
+        "name": "steamwebhelper.exe",
+        "path": "C:\\Program Files (x86)\\Steam\\bin\\cef\\cef.win64\\steamwebhelper.exe"
+      },
+      {
+        "name": "RuntimeBroker.exe",
+        "path": "C:\\Windows\\System32\\RuntimeBroker.exe"
+      },
+      {
+        "name": "taskhostw.exe",
+        "path": "C:\\Windows\\System32\\taskhostw.exe"
+      },
+      {
+        "name": "bash.exe",
+        "path": "C:\\Program Files\\Git\\bin\\bash.exe"
+      },
+      {
+        "name": "NVDisplay.Container.exe",
+        "path": "C:\\Windows\\System32\\DriverStore\\FileRepository\\nvlti.inf_amd64_26c7d450745b4e73\\Display.NvContainer\\NVDisplay.Container.exe"
+      },
+      {
+        "name": "Poe.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Poe\\app-1.1.33\\Poe.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "parsecd.exe",
+        "path": "C:\\Program Files\\Parsec\\parsecd.exe"
+      },
+      {
+        "name": "PAD.BridgeToUIAutomation2.exe",
+        "path": "C:\\Program Files\\WindowsApps\\Microsoft.PowerAutomateDesktop_11.2512.163.0_x64__8wekyb3d8bbwe\\dotnet\\PAD.BridgeToUIAutomation2.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\145.0.3800.97\\msedgewebview2.exe"
+      },
+      {
+        "name": "steamwebhelper.exe",
+        "path": "C:\\Program Files (x86)\\Steam\\bin\\cef\\cef.win64\\steamwebhelper.exe"
+      },
+      {
+        "name": "conhost.exe",
+        "path": "C:\\Windows\\System32\\conhost.exe"
+      },
+      {
+        "name": "nvcontainer.exe",
+        "path": "C:\\Program Files\\NVIDIA Corporation\\NvContainer\\nvcontainer.exe"
+      },
+      {
+        "name": "bash.exe",
+        "path": "C:\\Program Files\\Git\\usr\\bin\\bash.exe"
+      },
+      {
+        "name": "Kiro.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Kiro\\Kiro.exe"
+      },
+      {
+        "name": "UserOOBEBroker.exe",
+        "path": "C:\\Windows\\System32\\oobe\\UserOOBEBroker.exe"
+      },
+      {
+        "name": "csrss.exe",
+        "path": "C:\\Windows\\System32\\csrss.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "bash.exe",
+        "path": "C:\\Program Files\\Git\\usr\\bin\\bash.exe"
+      },
+      {
+        "name": "steam.exe",
+        "path": "C:\\Program Files (x86)\\Steam\\steam.exe"
+      },
+      {
+        "name": "BlueStacksServices.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\bluestacks-services\\BlueStacksServices.exe"
+      },
+      {
+        "name": "Kiro.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Kiro\\Kiro.exe"
+      },
+      {
+        "name": "Kiro.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Kiro\\Kiro.exe"
+      },
+      {
+        "name": "opera.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Opera GX\\opera.exe"
+      },
+      {
+        "name": "gamingservicesnet.exe",
+        "path": "C:\\Program Files\\WindowsApps\\Microsoft.GamingServices_34.110.25001.0_x64__8wekyb3d8bbwe\\gamingservicesnet.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "bash.exe",
+        "path": "C:\\Program Files\\Git\\usr\\bin\\bash.exe"
+      },
+      {
+        "name": "Notion.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Notion\\Notion.exe"
+      },
+      {
+        "name": "bash.exe",
+        "path": "C:\\Program Files\\Git\\bin\\bash.exe"
+      },
+      {
+        "name": "parsecd.exe",
+        "path": "C:\\Program Files\\Parsec\\parsecd.exe"
+      },
+      {
+        "name": "LenovoVantage-(GenericMessagingAddin).exe",
+        "path": "C:\\Program Files (x86)\\Lenovo\\VantageService\\4.2601.20.0\\LenovoVantage-(GenericMessagingAddin).exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "Notion.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Notion\\Notion.exe"
+      },
+      {
+        "name": "Kiro.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Kiro\\Kiro.exe"
+      },
+      {
+        "name": "unsecapp.exe",
+        "path": "C:\\Windows\\System32\\wbem\\unsecapp.exe"
+      },
+      {
+        "name": "Kiro.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Kiro\\Kiro.exe"
+      },
+      {
+        "name": "Poe.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Poe\\app-1.1.33\\Poe.exe"
+      },
+      {
+        "name": "opera.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Opera GX\\opera.exe"
+      },
+      {
+        "name": "conhost.exe",
+        "path": "C:\\Windows\\System32\\conhost.exe"
+      },
+      {
+        "name": "BatteryWidgetHost.exe",
+        "path": "C:\\ProgramData\\Lenovo\\Vantage\\Addins\\BatteryWidgetAddin\\3.0.0.190\\BatteryWidgetHost\\BatteryWidgetHost.exe"
+      },
+      {
+        "name": "ollama.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Ollama\\ollama.exe"
+      },
+      {
+        "name": "RuntimeBroker.exe",
+        "path": "C:\\Windows\\System32\\RuntimeBroker.exe"
+      },
+      {
+        "name": "electron.exe",
+        "path": "C:\\Users\\Lenovo\\Desktop\\projects\\kiros\\Atlas\\node_modules\\electron\\dist\\electron.exe"
+      },
+      {
+        "name": "OfficeClickToRun.exe",
+        "path": "C:\\Program Files\\Common Files\\microsoft shared\\ClickToRun\\OfficeClickToRun.exe"
+      },
+      {
+        "name": "bash.exe",
+        "path": "C:\\Program Files\\Git\\bin\\bash.exe"
+      },
+      {
+        "name": "steamwebhelper.exe",
+        "path": "C:\\Program Files (x86)\\Steam\\bin\\cef\\cef.win64\\steamwebhelper.exe"
+      },
+      {
+        "name": "opera.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Opera GX\\opera.exe"
+      },
+      {
+        "name": "opera.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Opera GX\\opera.exe"
+      },
+      {
+        "name": "Notion.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Notion\\Notion.exe"
+      },
+      {
+        "name": "language_server_windows_x64.exe",
+        "path": "C:\\Users\\Lenovo\\.kiro\\extensions\\codeium.codeium-1.48.2-universal\\dist\\e03af6ebc40b844314d448f947c80b636d093049\\language_server_windows_x64.exe"
+      },
+      {
+        "name": "steamwebhelper.exe",
+        "path": "C:\\Program Files (x86)\\Steam\\bin\\cef\\cef.win64\\steamwebhelper.exe"
+      },
+      {
+        "name": "wpscloudsvr.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Kingsoft\\WPS Office\\12.2.0.23196\\office6\\wpscloudsvr.exe"
+      },
+      {
+        "name": "CrossDeviceService.exe",
+        "path": "C:\\Program Files\\WindowsApps\\MicrosoftWindows.CrossDevice_1.26012.79.0_x64__cw5n1h2txyewy\\CrossDeviceService.exe"
+      },
+      {
+        "name": "steamservice.exe",
+        "path": "C:\\Program Files (x86)\\Common Files\\Steam\\steamservice.exe"
+      },
+      {
+        "name": "SystemSettingsAdminFlows.exe",
+        "path": "C:\\Windows\\System32\\SystemSettingsAdminFlows.exe"
+      },
+      {
+        "name": "RuntimeBroker.exe",
+        "path": "C:\\Windows\\System32\\RuntimeBroker.exe"
+      },
+      {
+        "name": "Poe.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Poe\\app-1.1.33\\Poe.exe"
+      },
+      {
+        "name": "Kiro.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Kiro\\Kiro.exe"
+      },
+      {
+        "name": "Kiro.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Kiro\\Kiro.exe"
+      },
+      {
+        "name": "Notion.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Notion\\Notion.exe"
+      },
+      {
+        "name": "igfxEMN.exe",
+        "path": "C:\\Windows\\System32\\DriverStore\\FileRepository\\cui_dch.inf_amd64_6673c5322430fc8a\\igfxEMN.exe"
+      },
+      {
+        "name": "TextInputHost.exe",
+        "path": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\TextInputHost.exe"
+      },
+      {
+        "name": "Kiro.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Kiro\\Kiro.exe"
+      },
+      {
+        "name": "conhost.exe",
+        "path": "C:\\Windows\\System32\\conhost.exe"
+      },
+      {
+        "name": "opera.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Opera GX\\opera.exe"
+      },
+      {
+        "name": "MessagingPlugin.exe",
+        "path": "C:\\ProgramData\\Lenovo\\Udc\\Hosts\\x64\\MessagingPlugin.exe"
+      },
+      {
+        "name": "node.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\nvm\\v20.19.4\\node.exe"
+      },
+      {
+        "name": "WhatsApp.Root.exe",
+        "path": "C:\\Program Files\\WindowsApps\\5319275A.WhatsAppDesktop_2.2606.102.0_x64__cv1g1gvanyjgm\\WhatsApp.Root.exe"
+      },
+      {
+        "name": "fontdrvhost.exe",
+        "path": "C:\\Windows\\System32\\fontdrvhost.exe"
+      },
+      {
+        "name": "jusched.exe",
+        "path": "C:\\Program Files (x86)\\Common Files\\Java\\Java Update\\jusched.exe"
+      },
+      {
+        "name": "AdobeCollabSync.exe",
+        "path": "C:\\Program Files\\Adobe\\Acrobat DC\\Acrobat\\AdobeCollabSync.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "opera.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Opera GX\\opera.exe"
+      },
+      {
+        "name": "explorer.exe",
+        "path": "C:\\Windows\\explorer.exe"
+      },
+      {
+        "name": "SearchHost.exe",
+        "path": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\SearchHost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "svchost.exe",
+        "path": "C:\\Windows\\System32\\svchost.exe"
+      },
+      {
+        "name": "Kiro.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Kiro\\Kiro.exe"
+      },
+      {
+        "name": "steamwebhelper.exe",
+        "path": "C:\\Program Files (x86)\\Steam\\bin\\cef\\cef.win64\\steamwebhelper.exe"
+      },
+      {
+        "name": "GameInputSvc.exe",
+        "path": "C:\\Windows\\System32\\GameInputSvc.exe"
+      },
+      {
+        "name": "conhost.exe",
+        "path": "C:\\Windows\\System32\\conhost.exe"
+      },
+      {
+        "name": "StartMenuExperienceHost.exe",
+        "path": "C:\\Windows\\SystemApps\\Microsoft.Windows.StartMenuExperienceHost_cw5n1h2txyewy\\StartMenuExperienceHost.exe"
+      },
+      {
+        "name": "bash.exe",
+        "path": "C:\\Program Files\\Git\\usr\\bin\\bash.exe"
+      },
+      {
+        "name": "opera.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Opera GX\\opera.exe"
+      },
+      {
+        "name": "Kiro.exe",
+        "path": "C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Kiro\\Kiro.exe"
+      },
+      {
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\145.0.3800.97\\msedgewebview2.exe"
+      }
+    ]
+  }
+]

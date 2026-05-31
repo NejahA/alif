@@ -1,0 +1,22 @@
+{
+  "name": "artflow",
+  "version": "1.0.0",
+  "description": "ArtFlow - Creative Coding Platform for Generative Art",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve .",
+    "dev": "npx live-server .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "creative-coding",
+    "generative-art",
+    "web-app",
+    "canvas",
+    "javascript"
+  ],
+  "author": "ArtFlow Team",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {}
+}

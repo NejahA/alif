@@ -1,0 +1,350 @@
+<Window x:Class="Bluetough.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Bluetough - Audio Manager" Height="750" Width="1000"
+        Background="#1E1E1E" WindowStyle="None" AllowsTransparency="True"
+        ResizeMode="CanResize" MinHeight="600" MinWidth="900">
+    
+    <Window.Resources>
+        <!-- Glow Effect -->
+        <DropShadowEffect x:Key="GlowEffect" Color="#0078D4" BlurRadius="20" ShadowDepth="0" Opacity="0.6"/>
+        <DropShadowEffect x:Key="CardShadow" Color="Black" BlurRadius="15" ShadowDepth="5" Opacity="0.3"/>
+        
+        <!-- Button Style with Hover Animation -->
+        <Style x:Key="ModernButton" TargetType="Button">
+            <Setter Property="Background" Value="#0078D4"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Effect" Value="{StaticResource CardShadow}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" 
+                                CornerRadius="8" Padding="15,10">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#1E90FF"/>
+                    <Setter Property="Effect" Value="{StaticResource GlowEffect}"/>
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="#005A9E"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+    
+    <Border CornerRadius="15" Background="#2D2D30" BorderBrush="#0078D4" BorderThickness="2">
+        <Grid Margin="20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Title Bar with Close Button -->
+            <Grid Grid.Row="0" Margin="0,0,0,15" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                <TextBlock Text="🎧 Bluetough Audio Manager" 
+                            FontSize="24" FontWeight="Bold" 
+                            Foreground="#0078D4" VerticalAlignment="Center">
+                    <TextBlock.Effect>
+                        <DropShadowEffect Color="#0078D4" BlurRadius="10" ShadowDepth="0" Opacity="0.8"/>
+                    </TextBlock.Effect>
+                </TextBlock>
+                <Button Content="✕" Width="40" Height="40" 
+                        HorizontalAlignment="Right" 
+                        Background="#D13438" Foreground="White"
+                        FontSize="20" FontWeight="Bold"
+                        Click="CloseButton_Click"
+                        Style="{StaticResource ModernButton}"/>
+            </Grid>
+
+            <!-- Scan Button with Animation -->
+            <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,15">
+                <Button x:Name="ScanButton" Content="🔍 Scan for Devices" 
+                        Width="180" Height="45" Click="ScanButton_Click"
+                        Style="{StaticResource ModernButton}">
+                    <Button.Triggers>
+                        <EventTrigger RoutedEvent="Button.Click">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetProperty="(Button.RenderTransform).(ScaleTransform.ScaleX)"
+                                                        From="1" To="1.1" Duration="0:0:0.1" AutoReverse="True"/>
+                                    <DoubleAnimation Storyboard.TargetProperty="(Button.RenderTransform).(ScaleTransform.ScaleY)"
+                                                        From="1" To="1.1" Duration="0:0:0.1" AutoReverse="True"/>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                    </Button.Triggers>
+                    <Button.RenderTransform>
+                        <ScaleTransform/>
+                    </Button.RenderTransform>
+                </Button>
+                
+                <TextBlock x:Name="StatusText" Text="Ready" 
+                            VerticalAlignment="Center" Margin="15,0,0,0"
+                            FontSize="14" Foreground="#00D4AA" FontWeight="SemiBold"/>
+            </StackPanel>
+
+            <!-- Device List with Gradient Background -->
+            <Border Grid.Row="2" CornerRadius="10" Margin="0,0,0,15" Height="250"
+                    Effect="{StaticResource CardShadow}">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                        <GradientStop Color="#3A3A3C" Offset="0"/>
+                        <GradientStop Color="#2D2D30" Offset="1"/>
+                    </LinearGradientBrush>
+                </Border.Background>
+                
+                <ListView x:Name="DevicesList" Background="Transparent" 
+                            BorderThickness="0" Foreground="White"
+                            SelectionChanged="DevicesList_SelectionChanged"
+                            ScrollViewer.VerticalScrollBarVisibility="Auto">
+                    <ListView.Resources>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="Foreground" Value="White"/>
+                            <Setter Property="Padding" Value="10"/>
+                            <Setter Property="Margin" Value="5"/>
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#0078D4"/>
+                                </Trigger>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Background" Value="#1E90FF"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ListView.Resources>
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Header="Device Name" Width="250">
+                                <GridViewColumn.HeaderContainerStyle>
+                                    <Style TargetType="GridViewColumnHeader">
+                                        <Setter Property="Background" Value="#0078D4"/>
+                                        <Setter Property="Foreground" Value="White"/>
+                                        <Setter Property="FontWeight" Value="Bold"/>
+                                        <Setter Property="Padding" Value="10"/>
+                                        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                                    </Style>
+                                </GridViewColumn.HeaderContainerStyle>
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Name}" Foreground="White" TextWrapping="Wrap"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn Header="Type" Width="150">
+                                <GridViewColumn.HeaderContainerStyle>
+                                    <Style TargetType="GridViewColumnHeader">
+                                        <Setter Property="Background" Value="#0078D4"/>
+                                        <Setter Property="Foreground" Value="White"/>
+                                        <Setter Property="FontWeight" Value="Bold"/>
+                                        <Setter Property="Padding" Value="10"/>
+                                        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                                    </Style>
+                                </GridViewColumn.HeaderContainerStyle>
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding DeviceType}" Foreground="#00D4AA"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn Header="Status" Width="150">
+                                <GridViewColumn.HeaderContainerStyle>
+                                    <Style TargetType="GridViewColumnHeader">
+                                        <Setter Property="Background" Value="#0078D4"/>
+                                        <Setter Property="Foreground" Value="White"/>
+                                        <Setter Property="FontWeight" Value="Bold"/>
+                                        <Setter Property="Padding" Value="10"/>
+                                        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                                    </Style>
+                                </GridViewColumn.HeaderContainerStyle>
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Status}" Foreground="#FFD700"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn Header="🔋 Battery L/R" Width="120">
+                                <GridViewColumn.HeaderContainerStyle>
+                                    <Style TargetType="GridViewColumnHeader">
+                                        <Setter Property="Background" Value="#0078D4"/>
+                                        <Setter Property="Foreground" Value="White"/>
+                                        <Setter Property="FontWeight" Value="Bold"/>
+                                        <Setter Property="Padding" Value="10"/>
+                                        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                                    </Style>
+                                </GridViewColumn.HeaderContainerStyle>
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding BatteryLevel}" Foreground="#00FF00"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+            </Border>
+
+            <!-- Control Buttons -->
+            <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,15">
+                <Button x:Name="ConnectButton" Content="🔗 Connect" 
+                        Width="120" Height="40" Click="ConnectButton_Click"
+                        IsEnabled="False" Style="{StaticResource ModernButton}"
+                        Background="#107C10" Margin="0,0,10,0"/>
+                <Button x:Name="RefreshButton" Content="🔄 Refresh" 
+                        Width="120" Height="40" Click="RefreshButton_Click"
+                        Style="{StaticResource ModernButton}"
+                        Background="#8A2BE2"/>
+            </StackPanel>
+
+            <!-- Audio Control Panel with Gradient -->
+            <Border Grid.Row="4" CornerRadius="15" Padding="20"
+                    Effect="{StaticResource CardShadow}">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                        <GradientStop Color="#3A3A3C" Offset="0"/>
+                        <GradientStop Color="#2D2D30" Offset="0.5"/>
+                        <GradientStop Color="#1E1E1E" Offset="1"/>
+                    </LinearGradientBrush>
+                </Border.Background>
+                
+                <StackPanel>
+                    <Grid Margin="0,0,0,15">
+                        <TextBlock x:Name="SelectedDeviceText" Text="No device selected" 
+                                    FontWeight="Bold" FontSize="16" Foreground="White"/>
+                        
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <TextBlock Text="🔋 Battery: " Foreground="#FFD700" FontSize="14" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="BatteryLevelText" Text="N/A" 
+                                        FontWeight="Bold" Foreground="#00FF00" FontSize="14" VerticalAlignment="Center">
+                                <TextBlock.Effect>
+                                    <DropShadowEffect Color="#00FF00" BlurRadius="5" ShadowDepth="0"/>
+                                </TextBlock.Effect>
+                            </TextBlock>
+                        </StackPanel>
+                    </Grid>
+                    
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
+                        <TextBlock Text="🔊 Volume:" Width="100" VerticalAlignment="Center" 
+                                    Foreground="White" FontSize="14"/>
+                        <Slider x:Name="MasterVolumeSlider" Width="400" 
+                                Minimum="0" Maximum="100" Value="50"
+                                ValueChanged="MasterVolumeSlider_ValueChanged"
+                                TickFrequency="10" IsSnapToTickEnabled="True"
+                                Foreground="#0078D4"/>
+                        <TextBlock x:Name="MasterVolumeText" Text="50%" 
+                                    Width="60" VerticalAlignment="Center" Margin="10,0,0,0"
+                                    Foreground="#00D4AA" FontWeight="Bold" FontSize="16"/>
+                    </StackPanel>
+
+                    <TextBlock Text="🎧 Earpiece Control" FontWeight="Bold" Margin="0,0,0,10"
+                                Foreground="White" FontSize="14"/>
+                    
+                    <Grid Margin="0,0,0,15">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <!-- Left Earpiece -->
+                        <Border Grid.Column="0" CornerRadius="10" Padding="10" Margin="0,0,5,0"
+                                Background="#3A3A3C">
+                            <StackPanel>
+                                <TextBlock Text="◀ Left" FontWeight="Bold" Foreground="#00D4AA" 
+                                            HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                                <Button x:Name="MuteLeftButton" Content="🔇 Mute" 
+                                        Height="35" Click="MuteLeftButton_Click"
+                                        Style="{StaticResource ModernButton}"
+                                        Background="#D13438"/>
+                                <Button x:Name="UnmuteLeftButton" Content="🔊 Unmute" 
+                                        Height="35" Click="UnmuteLeftButton_Click"
+                                        Style="{StaticResource ModernButton}"
+                                        Background="#107C10" Margin="0,5,0,0"/>
+                                <TextBlock x:Name="LeftStatusText" Text="Active" 
+                                            HorizontalAlignment="Center" Margin="0,5,0,0"
+                                            Foreground="#00FF00" FontSize="12" FontWeight="Bold"/>
+                            </StackPanel>
+                        </Border>
+                        
+                        <!-- Both Earpieces -->
+                        <Border Grid.Column="1" CornerRadius="10" Padding="10" Margin="5,0,5,0"
+                                Background="#3A3A3C">
+                            <StackPanel>
+                                <TextBlock Text="◀▶ Both" FontWeight="Bold" Foreground="#FFD700" 
+                                            HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                                <Button x:Name="MuteButton" Content="🔇 Mute All" 
+                                        Height="35" Click="MuteButton_Click"
+                                        Style="{StaticResource ModernButton}"
+                                        Background="#D13438"/>
+                                <Button x:Name="UnmuteButton" Content="🔊 Unmute All" 
+                                        Height="35" Click="UnmuteButton_Click"
+                                        Style="{StaticResource ModernButton}"
+                                        Background="#107C10" Margin="0,5,0,0"/>
+                                <TextBlock x:Name="BothStatusText" Text="Active" 
+                                            HorizontalAlignment="Center" Margin="0,5,0,0"
+                                            Foreground="#00FF00" FontSize="12" FontWeight="Bold"/>
+                            </StackPanel>
+                        </Border>
+                        
+                        <!-- Right Earpiece -->
+                        <Border Grid.Column="2" CornerRadius="10" Padding="10" Margin="5,0,0,0"
+                                Background="#3A3A3C">
+                            <StackPanel>
+                                <TextBlock Text="Right ▶" FontWeight="Bold" Foreground="#00D4AA" 
+                                            HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                                <Button x:Name="MuteRightButton" Content="🔇 Mute" 
+                                        Height="35" Click="MuteRightButton_Click"
+                                        Style="{StaticResource ModernButton}"
+                                        Background="#D13438"/>
+                                <Button x:Name="UnmuteRightButton" Content="🔊 Unmute" 
+                                        Height="35" Click="UnmuteRightButton_Click"
+                                        Style="{StaticResource ModernButton}"
+                                        Background="#107C10" Margin="0,5,0,0"/>
+                                <TextBlock x:Name="RightStatusText" Text="Active" 
+                                            HorizontalAlignment="Center" Margin="0,5,0,0"
+                                            Foreground="#00FF00" FontSize="12" FontWeight="Bold"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <Separator Background="#555" Margin="0,10,0,15" Height="2"/>
+
+                    <TextBlock Text="🎵 Noise Cancellation" FontWeight="Bold" Margin="0,0,0,10"
+                                    Foreground="White" FontSize="14"/>
+                    
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                        <RadioButton x:Name="NcOffRadio" Content="Off" 
+                                        GroupName="NoiseControl" Margin="0,0,20,0"
+                                        Checked="NcMode_Changed" Foreground="White"/>
+                        <RadioButton x:Name="NcOnRadio" Content="🎧 Active NC" 
+                                        GroupName="NoiseControl" Margin="0,0,20,0"
+                                        Checked="NcMode_Changed" IsChecked="True" Foreground="White"/>
+                        <RadioButton x:Name="TransparencyRadio" Content="👂 Transparency" 
+                                        GroupName="NoiseControl"
+                                        Checked="NcMode_Changed" Foreground="White"/>
+                    </StackPanel>
+                    
+                    <TextBlock x:Name="NcStatusText" Text="Active Noise Cancellation: ON" 
+                                    Foreground="#00D4AA" Margin="0,5,0,0" FontSize="12" FontWeight="SemiBold">
+                        <TextBlock.Effect>
+                            <DropShadowEffect Color="#00D4AA" BlurRadius="5" ShadowDepth="0"/>
+                        </TextBlock.Effect>
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Border>
+</Window>

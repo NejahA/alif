@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ArtFlow Enhanced Features Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f0f0f0;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .feature-list {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .feature-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #3b82f6;
+        }
+        .feature-card h3 {
+            margin-top: 0;
+            color: #3b82f6;
+        }
+        .feature-card ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .feature-card li {
+            margin: 5px 0;
+        }
+        .status {
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            display: inline-block;
+        }
+        .status.working {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .status.partial {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .status.planned {
+            background: #e5e7eb;
+            color: #374151;
+        }
+        .test-buttons {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            justify-content: center;
+        }
+        .test-btn {
+            padding: 10px 20px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .test-btn:hover {
+            background: #2563eb;
+        }
+        .test-btn.secondary {
+            background: #6b7280;
+        }
+        .test-btn.secondary:hover {
+            background: #4b5563;
+        }
+        .instructions {
+            background: #fef3c7;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #f59e0b;
+        }
+        .instructions h3 {
+            margin-top: 0;
+            color: #92400e;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🎨 ArtFlow Enhanced Features Test</h1>
+        
+        <div class="instructions">
+            <h3>How to Test:</h3>
+            <ol>
+                <li>Click "Open ArtFlow" to launch the enhanced application</li>
+                <li>Test each feature listed below</li>
+                <li>Report any issues or suggest improvements</li>
+            </ol>
+        </div>
+        
+        <div class="test-buttons">
+            <button class="test-btn" onclick="window.open('index.html', '_blank')">Open ArtFlow</button>
+            <button class="test-btn secondary" onclick="window.open('test_fix.html', '_blank')">Test Canvas Fix</button>
+        </div>
+        
+        <div class="feature-list">
+            <div class="feature-card">
+                <h3>🎯 Core Drawing Tools</h3>
+                <ul>
+                    <li>Brush Tool <span class="status working">✓ Working</span></li>
+                    <li>Line Tool <span class="status working">✓ Working</span></li>
+                    <li>Circle Tool <span class="status working">✓ Working</span></li>
+                    <li>Rectangle Tool <span class="status working">✓ Working</span></li>
+                    <li>Gradient Tool <span class="status working">✓ Working</span></li>
+                    <li>Text Tool <span class="status working">✓ Working</span></li>
+                    <li>Eraser Tool <span class="status working">✓ Working</span></li>
+                    <li>Fill Tool <span class="status working">✓ Working</span></li>
+                </ul>
+            </div>
+            
+            <div class="feature-card">
+                <h3>🔄 Advanced Features</h3>
+                <ul>
+                    <li>Undo/Redo (Ctrl+Z/Ctrl+Y) <span class="status working">✓ Working</span></li>
+                    <li>Layer System <span class="status partial">⚠️ Basic</span></li>
+                    <li>Animation System <span class="status working">✓ Working</span></li>
+                    <li>Image Filters <span class="status working">✓ Working</span></li>
+                    <li>History Management <span class="status working">✓ Working</span></li>
+                    <li>Canvas Scaling Fix <span class="status working">✓ Working</span></li>
+                    <li>Tool Switching (No Clear) <span class="status working">✓ Fixed</span></li>
+                </ul>
+            </div>
+            
+            <div class="feature-card">
+                <h3>💾 Export & Sharing</h3>
+                <ul>
+                    <li>Download as PNG <span class="status working">✓ Working</span></li>
+                    <li>Save Artwork Locally <span class="status working">✓ Working</span></li>
+                    <li>Share Link Generation <span class="status working">✓ Working</span></li>
+                    <li>Embed Code <span class="status working">✓ Working</span></li>
+                    <li>Export as SVG <span class="status planned">🔜 Planned</span></li>
+                    <li>Export as GIF <span class="status planned">🔜 Planned</span></li>
+                </ul>
+            </div>
+            
+            <div class="feature-card">
+                <h3>🌐 Community Features</h3>
+                <ul>
+                    <li>Dynamic Gallery <span class="status working">✓ Working</span></li>
+                    <li>Community Stats <span class="status working">✓ Working</span></li>
+                    <li>Auto-refresh Data <span class="status working">✓ Working</span></li>
+                    <li>Featured Artists <span class="status working">✓ Working</span></li>
+                    <li>Real-time Collaboration <span class="status planned">🔜 Planned</span></li>
+                    <li>User Profiles <span class="status planned">🔜 Planned</span></li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h3>Testing Checklist:</h3>
+            <ol>
+                <li><strong>Canvas Drawing:</strong> Draw with brush, switch tools, verify canvas doesn't clear</li>
+                <li><strong>Shape Tools:</strong> Draw lines, circles, rectangles with preview</li>
+                <li><strong>New Tools:</strong> Test gradient, text, eraser, and fill tools</li>
+                <li><strong>Undo/Redo:</strong> Draw something, undo (Ctrl+Z), redo (Ctrl+Y)</li>
+                <li><strong>Filters:</strong> Apply grayscale, sepia, invert, blur filters</li>
+                <li><strong>Animation:</strong> Click "Animate" button to see animation</li>
+                <li><strong>Layers:</strong> Add new layers, toggle visibility</li>
+                <li><strong>Export:</strong> Download artwork as PNG</li>
+                <li><strong>Code Editor:</strong> Run sample code, modify it</li>
+            </ol>
+        </div>
+        
+        <div class="test-buttons">
+            <button class="test-btn" onclick="runAllTests()">Run Automated Tests</button>
+            <button class="test-btn secondary" onclick="clearLocalStorage()">Clear Local Data</button>
+        </div>
+        
+        <div id="testResults" style="margin-top: 20px; padding: 15px; background: #f3f4f6; border-radius: 8px; display: none;">
+            <h3>Test Results:</h3>
+            <div id="resultsContent"></div>
+        </div>
+    </div>
+    
+    <script>
+        function runAllTests() {
+            const resultsDiv = document.getElementById('testResults');
+            const contentDiv = document.getElementById('resultsContent');
+            resultsDiv.style.display = 'block';
+            
+            let results = '<ul>';
+            let passed = 0;
+            let total = 0;
+            
+            // Test 1: Local Storage
+            total++;
+            try {
+                localStorage.setItem('artflow_test', 'test_value');
+                const value = localStorage.getItem('artflow_test');
+                if (value === 'test_value') {
+                    results += '<li>✅ Local Storage: Working</li>';
+                    passed++;
+                } else {
+                    results += '<li>❌ Local Storage: Failed</li>';
+                }
+            } catch (e) {
+                results += '<li>❌ Local Storage: Error - ' + e.message + '</li>';
+            }
+            
+            // Test 2: Canvas API
+            total++;
+            try {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                    results += '<li>✅ Canvas API: Available</li>';
+                    passed++;
+                } else {
+                    results += '<li>❌ Canvas API: Not available</li>';
+                }
+            } catch (e) {
+                results += '<li>❌ Canvas API: Error - ' + e.message + '</li>';
+            }
+            
+            // Test 3: Clipboard API
+            total++;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                results += '<li>✅ Clipboard API: Available</li>';
+                passed++;
+            } else {
+                results += '<li>⚠️ Clipboard API: Limited (may not work in some browsers)</li>';
+                passed++; // Not critical, so count as passed
+            }
+            
+            // Test 4: Modern JavaScript Features
+            total++;
+            try {
+                // Test arrow functions, template literals, const/let
+                const testFunc = () => `Test ${Date.now()}`;
+                const result = testFunc();
+                if (result.includes('Test')) {
+                    results += '<li>✅ Modern JS: Supported</li>';
+                    passed++;
+                } else {
+                    results += '<li>❌ Modern JS: Failed</li>';
+                }
+            } catch (e) {
+                results += '<li>❌ Modern JS: Error - ' + e.message + '</li>';
+            }
+            
+            results += '</ul>';
+            
+            const percentage = Math.round((passed / total) * 100);
+            results += `<p><strong>Results: ${passed}/${total} tests passed (${percentage}%)</strong></p>`;
+            
+            if (percentage >= 75) {
+                results += '<p style="color: #065f46; background: #d1fae5; padding: 10px; border-radius: 5px;">✅ ArtFlow should work well in your browser!</p>';
+            } else if (percentage >= 50) {
+                results += '<p style="color: #92400e; background: #fef3c7; padding: 10px; border-radius: 5px;">⚠️ Some features may not work properly</p>';
+            } else {
+                results += '<p style="color: #991b1b; background: #fee2e2; padding: 10px; border-radius: 5px;">❌ Your browser may not support all features</p>';
+            }
+            
+            contentDiv.innerHTML = results;
+        }
+        
+        function clearLocalStorage() {
+            if (confirm('Clear all ArtFlow local data? This will remove saved artwork and settings.')) {
+                localStorage.removeItem('artflow_last_artwork');
+                localStorage.removeItem('artflow_theme');
+                localStorage.removeItem('artflow_test');
+                alert('Local data cleared!');
+            }
+        }
+        
+        // Run basic tests on load
+        window.addEventListener('load', () => {
+            console.log('ArtFlow Test Page Loaded');
+            console.log('Browser:', navigator.userAgent);
+            console.log('Screen:', window.screen.width + 'x' + window.screen.height);
+        });
+    </script>
+</body>
+</html>

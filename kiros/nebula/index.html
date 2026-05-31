@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nebula</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <h1 class="title">Nebula</h1>
+      <button id="theme-toggle" class="icon-btn" aria-label="Toggle theme">
+        <svg class="icon" viewBox="0 0 24 24">
+          <path id="theme-icon" d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+        </svg>
+      </button>
+    </header>
+    
+    <div class="editor-container">
+      <textarea id="editor" placeholder="Start typing your thoughts..."></textarea>
+      <div id="preview" class="preview"></div>
+    </div>
+    
+    <div class="status-bar">
+      <span id="word-count">0 words</span>
+      <span id="last-saved">Saved</span>
+    </div>
+  </div>
+  
+  <script src="script.js"></script>
+</body>
+</html>

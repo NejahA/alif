@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BridgeIt - Community-Led Infrastructure Planner</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2E7D32">
+</head>
+<body>
+    <header>
+        <h1>🌍 BridgeIt</h1>
+        <p class="tagline">Engineering solutions, powered by the people</p>
+        <div class="status-indicator">
+            <span id="onlineStatus">●</span>
+            <span id="statusText">Online</span>
+        </div>
+    </header>
+
+    <nav class="tab-nav">
+        <button class="tab-btn active" data-tab="needs">📋 Needs</button>
+        <button class="tab-btn" data-tab="designs">📐 Designs</button>
+        <button class="tab-btn" data-tab="projects">🛠️ Projects</button>
+        <button class="tab-btn" data-tab="map">🌐 Map</button>
+        <button class="tab-btn" data-tab="library">📚 Library</button>
+    </nav>
+
+    <main>
+        <!-- Needs Assessment Tab -->
+        <section id="needs" class="tab-content active">
+            <h2>🌱 Needs Assessment</h2>
+            <form id="needsForm">
+                <label>Community Name:</label>
+                <input type="text" id="communityName" required>
+                
+                <label>Primary Need:</label>
+                <select id="primaryNeed" required>
+                    <option value="">Select...</option>
+                    <option value="water">Water System</option>
+                    <option value="sanitation">Sanitation</option>
+                    <option value="bridge">Bridge/Road</option>
+                    <option value="energy">Solar Energy</option>
+                </select>
+                
+                <label>Description:</label>
+                <textarea id="needDescription" rows="4"></textarea>
+                
+                <label>Upload Photo (optional):</label>
+                <input type="file" id="needPhoto" accept="image/*" capture="environment">
+                
+                <button type="submit">Save Assessment</button>
+            </form>
+            
+            <div id="assessmentsList"></div>
+        </section>
+
+        <!-- Design Templates Tab -->
+        <section id="designs" class="tab-content">
+            <h2>📐 Simple Design Templates</h2>
+            <div class="design-grid">
+                <div class="design-card" data-design="rainwater">
+                    <h3>💧 Rainwater Harvesting</h3>
+                    <p>Collect and store rainwater for household use</p>
+                    <p class="cost">Est. Cost: $200-500</p>
+                    <button class="view-design-btn">View Details</button>
+                </div>
+                
+                <div class="design-card" data-design="toilet">
+                    <h3>🚽 Composting Toilet</h3>
+                    <p>Eco-friendly sanitation solution</p>
+                    <p class="cost">Est. Cost: $150-300</p>
+                    <button class="view-design-btn">View Details</button>
+                </div>
+                
+                <div class="design-card" data-design="solar">
+                    <h3>☀️ Solar Charging Station</h3>
+                    <p>Community phone charging hub</p>
+                    <p class="cost">Est. Cost: $300-600</p>
+                    <button class="view-design-btn">View Details</button>
+                </div>
+                
+                <div class="design-card" data-design="bridge">
+                    <h3>🌉 Pedestrian Bridge</h3>
+                    <p>Safe river crossing for foot traffic</p>
+                    <p class="cost">Est. Cost: $1000-3000</p>
+                    <button class="view-design-btn">View Details</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Projects Tab -->
+        <section id="projects" class="tab-content">
+            <h2>🛠️ Project Management</h2>
+            <button id="newProjectBtn" class="primary-btn">+ New Project</button>
+            <div id="projectsList"></div>
+        </section>
+
+        <!-- Map Tab -->
+        <section id="map" class="tab-content">
+            <h2>🌐 Community Map</h2>
+            <div id="mapContainer">
+                <p class="placeholder">Interactive map showing nearby projects and resources</p>
+                <div id="projectMarkers"></div>
+            </div>
+        </section>
+
+        <!-- Library Tab -->
+        <section id="library" class="tab-content">
+            <h2>📚 Maintenance & Training</h2>
+            <div class="library-list">
+                <div class="library-item">
+                    <h3>🎥 Solar Panel Maintenance</h3>
+                    <p>How to clean and maintain solar panels</p>
+                    <button>Watch Video</button>
+                </div>
+                <div class="library-item">
+                    <h3>📖 Water Filter Cleaning</h3>
+                    <p>Monthly maintenance checklist</p>
+                    <button>View Guide</button>
+                </div>
+                <div class="library-item">
+                    <h3>🔧 Basic Tool Safety</h3>
+                    <p>Safety guidelines for construction</p>
+                    <button>Read More</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal for Design Details -->
+    <div id="designModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="designDetails"></div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

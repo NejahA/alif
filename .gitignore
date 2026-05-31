@@ -1,0 +1,207 @@
+# Java crash logs and replay logs (crucial for this folder!)
+hs_err_pid*.log
+replay_pid*.log
+
+# Monorepo / Nested project exclusions
+# Ignore node_modules anywhere in the tree
+**/node_modules/
+**/jspm_packages/
+**/.vscode
+# Ignore production builds anywhere in the tree
+**/dist/
+**/dist-ssr/
+**/dist-electron/
+**/dist_electron/
+**/build/
+**/out/
+**/.next/
+**/.nuxt/
+**/.docusaurus/
+**/.cache/
+**/target/
+
+# Native Platform Project Boilerplate Folders - Ignore only build/dependency/cache outputs
+# This keeps native configs & custom platform code tracked while avoiding binary bloat
+**/ios/build/
+**/ios/Pods/
+**/ios/.symlinks/
+**/android/build/
+**/android/.gradle/
+**/android/app/build/
+**/windows/out/
+**/windows/flutter/ephemeral/
+**/macos/Flutter/ephemeral/
+**/linux/flutter/ephemeral/
+
+# Python caching
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+
+# Flutter / Dart intermediate outputs
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.packages
+**/pubspec.lock
+
+# Gradle files (Caches, Wrappers, Configurations, and Scripts)
+**/.gradle/
+**/gradle/
+**/gradlew
+**/gradlew.bat
+**/*.gradle
+**/*.gradle.kts
+**/gradle.properties
+**/local.properties
+
+# Android intermediates & builds
+**/*.apk
+**/*.aab
+**/*.ap_
+**/*.aar
+**/*.keystore
+**/*.jks
+**/.cxx/
+**/captures/
+**/*.class
+**/*.dex
+**/android/app/build/
+**/android/.gradle/
+**/android/local.properties
+
+# Diagnostic logs and error logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment and local configurations (Ignore secrets across all apps)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.local
+/All_er
+# Editor directories and workspaces
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Visual Studio / Windows desktop compilation outputs
+**/.vs/
+**/bin/
+**/obj/
+**/packages/
+**/x64/
+**/x86/
+**/ARM/
+**/ARM64/
+**/Debug/
+**/Release/
+**/*.user
+**/*.useros
+**/*.suo
+**/*.aps
+**/*.pdb
+**/*.ilk
+**/*.tlog
+**/cmake-build-debug/
+**/cmake-build-release/
+**/_ReSharper*/
+
+# Windows Build Artifacts & Binaries (Compiled outputs, libraries, and installers)
+**/*.exe
+**/*.dll
+**/*.lib
+**/*.sys
+**/*.obj
+**/*.msi
+**/*.msix
+**/*.appx
+**/*.cab
+**/*.manifest
+**/*.exp
+**/*.res
+**/*.pch
+**/*.idb
+**/ipch/
+**/*.sdf
+**/*.opensdf
+
+# OS metadata
+.DS_Store
+Thumbs.db
+desktop.ini
+Ehthumbs.db
+
+# =========================================================================
+# ULTRA BARE MINIMUM SOURCE-ONLY CODE FILTER
+# =========================================================================
+# Ignore all assets, media, fonts, images, and archives globally to save space
+**/*.png
+**/*.jpg
+**/*.jpeg
+**/*.gif
+**/*.svg
+**/*.ico
+**/*.webp
+**/*.bmp
+**/*.mp3
+**/*.wav
+**/*.ogg
+**/*.mp4
+**/*.mov
+**/*.ttf
+**/*.woff
+**/*.woff2
+**/*.eot
+**/*.otf
+**/*.zip
+**/*.tar.gz
+**/*.tgz
+**/*.rar
+**/*.7z
+# Ignore all documentation, guides, text, and log files globally
+**/*.md
+**/*.txt
+**/*.pdf
+**/*.csv
+**/*.log
+**/*.xlsx
+**/*.docx
+
+# Ignore all package locks and lockfiles globally
+**/*.lock
+**/package-lock.json
+**/yarn.lock
+**/pnpm-lock.yaml
+
+# Ignore secondary configuration and project metadata (excluding root .gitignore)
+*/**/.gitignore
+**/*.metadata
+**/*.spec
+
+# Ignore all testing, spec, and guide folders globally
+**/test/
+**/tests/
+**/__tests__/
+**/spec/
+**/specs/
+**/.kiro/
+**/docs/
+**/guides/
+**/*.bat
+**/*.sh
+**/*.ps1
+

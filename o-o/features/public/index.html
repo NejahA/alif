@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="default">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Features | Dynamic Feature Dashboard</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="logo">
+                <i data-lucide="layers"></i>
+                <h2>Features.</h2>
+            </div>
+            
+            <nav class="nav-menu">
+                <a href="#" class="nav-item active" data-target="dashboard">
+                    <i data-lucide="layout-dashboard"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" class="nav-item" data-target="ab-tests">
+                    <i data-lucide="split"></i>
+                    <span>A/B Tests</span>
+                </a>
+                <a href="#" class="nav-item" data-target="roadmap">
+                    <i data-lucide="map"></i>
+                    <span>Roadmap</span>
+                </a>
+                <a href="#" class="nav-item" data-target="analytics">
+                    <i data-lucide="bar-chart-2"></i>
+                    <span>Analytics</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="theme-switcher">
+                    <button class="theme-btn active" data-theme="default" title="Deep Space">
+                        <span style="background: #8b5cf6;"></span>
+                    </button>
+                    <button class="theme-btn" data-theme="cyberpunk" title="Cyberpunk">
+                        <span style="background: #facc15;"></span>
+                    </button>
+                    <button class="theme-btn" data-theme="ocean" title="Ocean">
+                        <span style="background: #06b6d4;"></span>
+                    </button>
+                </div>
+                <button class="glass-btn command-btn" id="open-command">
+                    <i data-lucide="search"></i>
+                    <span>Search</span>
+                    <kbd>Ctrl+K</kbd>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <header class="top-header">
+                <div class="header-info">
+                    <h1 id="page-title">Feature Dashboard</h1>
+                    <p id="page-subtitle">Manage feature flags and global configurations.</p>
+                </div>
+                <div class="user-profile">
+                    <!-- Environment Switcher -->
+                    <div class="env-switcher">
+                        <select id="env-select" class="glass-select">
+                            <option value="Production">Production</option>
+                            <option value="Staging">Staging</option>
+                            <option value="Development">Development</option>
+                        </select>
+                    </div>
+
+                    <button class="glass-btn icon-btn" id="toggle-audit" title="Audit Log">
+                        <i data-lucide="activity"></i>
+                    </button>
+
+                    <div class="status-indicator">
+                        <span class="pulse"></span>
+                        <span id="env-status">System Online</span>
+                    </div>
+                    <img src="https://i.pravatar.cc/150?img=11" alt="User Profile" class="avatar">
+                </div>
+            </header>
+
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="content-section active-section">
+                <div class="stats-grid">
+                    <div class="stat-card glass-card">
+                        <div class="stat-icon" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">
+                            <i data-lucide="check-circle"></i>
+                        </div>
+                        <div class="stat-details">
+                            <h3>Active Features</h3>
+                            <p class="stat-value" id="stat-active">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card glass-card">
+                        <div class="stat-icon" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;">
+                            <i data-lucide="clock"></i>
+                        </div>
+                        <div class="stat-details">
+                            <h3>In Beta</h3>
+                            <p class="stat-value" id="stat-beta">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card glass-card">
+                        <div class="stat-icon" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6;">
+                            <i data-lucide="users"></i>
+                        </div>
+                        <div class="stat-details">
+                            <h3>Impacted Users</h3>
+                            <p class="stat-value" id="stat-users">0K</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-header">
+                    <h2>Global Feature Flags</h2>
+                    <div class="filter-group">
+                        <button class="filter-btn active">All</button>
+                        <button class="filter-btn">Production</button>
+                        <button class="filter-btn">Beta</button>
+                        <button class="filter-btn">Development</button>
+                    </div>
+                </div>
+
+                <div class="feature-grid" id="feature-toggles-container">
+                    <!-- Feature toggle cards injected by JS -->
+                </div>
+            </section>
+
+            <!-- A/B Tests Section -->
+            <section id="ab-tests" class="content-section">
+                <div class="ab-container glass-card">
+                    <div class="section-header">
+                        <h2>A/B Testing Rollouts</h2>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem;">Gradually roll out features to a percentage of your user base.</p>
+                    </div>
+                    <div class="ab-grid" id="ab-tests-container">
+                        <!-- A/B sliders injected by JS -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Roadmap Section -->
+            <section id="roadmap" class="content-section">
+                <div class="timeline-container glass-card">
+                    <h2>Product Roadmap</h2>
+                    <div class="timeline" id="timeline-container">
+                        <!-- Timeline items injected by JS -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Analytics Section -->
+            <section id="analytics" class="content-section">
+                <div class="analytics-container glass-card">
+                    <div class="section-header">
+                        <h2>Usage Analytics</h2>
+                        <span id="chart-env-label" style="color: var(--accent-primary); font-size: 0.9rem; font-weight: bold;">Production</span>
+                    </div>
+                    <div class="chart-wrapper">
+                        <!-- Custom CSS/JS Chart -->
+                        <div class="bar-chart" id="usage-chart">
+                            <!-- Bars injected by JS -->
+                        </div>
+                        <div class="chart-labels" id="chart-labels">
+                            <!-- Labels injected by JS -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Audit Log Sidebar -->
+        <aside class="audit-sidebar" id="audit-sidebar">
+            <div class="audit-header">
+                <h2>Activity Log</h2>
+                <button class="close-btn" id="close-audit"><i data-lucide="x"></i></button>
+            </div>
+            <div class="audit-content" id="audit-log-container">
+                <!-- Log entries injected by JS -->
+            </div>
+        </aside>
+    </div>
+
+    <!-- Command Palette Modal -->
+    <div class="command-palette-overlay" id="command-overlay">
+        <div class="command-palette">
+            <div class="search-box">
+                <i data-lucide="search"></i>
+                <input type="text" id="command-input" placeholder="Search features, commands... (Esc to close)">
+            </div>
+            <div class="search-results" id="search-results">
+                <!-- Search results injected by JS -->
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

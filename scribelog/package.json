@@ -1,0 +1,14 @@
+{
+  "name": "scribelog",
+  "version": "1.0.0",
+  "description": "A lightning-fast CLI dev diary/journal. Log work, generate standup reports, and track productivity.",
+  "bin": {
+    "scribelog": "bin/scribelog.js"
+  },
+  "files": [
+    "bin/",
+    "lib/"
+  ],
+  "keywords": ["diary", "journal", "standup", "cli", "productivity"],
+  "license": "MIT"
+}
