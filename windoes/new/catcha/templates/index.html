@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catcha - Smart Fishing Logbook</title>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        h1 {
+            color: #667eea;
+            font-size: 32px;
+        }
+        
+        h1 span {
+            font-size: 36px;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .tab-btn {
+            padding: 12px 24px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .tab-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+        
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        
+        input, select, textarea {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border 0.3s;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        .btn {
+            padding: 14px 28px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .catch-list {
+            display: grid;
+            gap: 15px;
+        }
+        
+        .catch-item {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 20px;
+            align-items: center;
+        }
+        
+        .catch-icon {
+            font-size: 40px;
+        }
+        
+        .catch-details h3 {
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        
+        .catch-meta {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .catch-stats {
+            text-align: right;
+        }
+        
+        .catch-weight {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .chart-container {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        .weather-widget {
+            background: linear-gradient(135deg, #56ccf2 0%, #2f80ed 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .weather-widget input::placeholder {
+            color: rgba(255,255,255,0.7);
+        }
+        
+        .weather-widget button:hover {
+            background: rgba(255,255,255,0.4);
+        }
+        
+        .weather-main {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .weather-temp {
+            font-size: 48px;
+            font-weight: bold;
+        }
+        
+        .fishing-score {
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            text-align: center;
+        }
+        
+        .score-value {
+            font-size: 36px;
+            font-weight: bold;
+        }
+        
+        .spots-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .spot-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border-top: 4px solid #667eea;
+        }
+        
+        .spot-card h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .rating {
+            color: #ffd700;
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><span>🎣</span> Catcha</h1>
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('log')">📝 Log Catch</button>
+                <button class="tab-btn" onclick="switchTab('catches')">🐟 My Catches</button>
+                <button class="tab-btn" onclick="switchTab('analytics')">📊 Analytics</button>
+                <button class="tab-btn" onclick="switchTab('spots')">📍 Spots</button>
+            </div>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <span style="color: #667eea; font-weight: 600;">👤 {{ username }}</span>
+                <button onclick="logout()" style="padding: 10px 20px; background: #f44336; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Logout</button>
+            </div>
+        </header>
+        
+        <!-- Log Catch Tab -->
+        <div id="log-tab" class="tab-content active">
+            <div class="weather-widget">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input type="text" id="location-input" placeholder="Enter city name" 
+                               style="padding: 8px 12px; border: 2px solid rgba(255,255,255,0.3); 
+                                      background: rgba(255,255,255,0.2); color: white; border-radius: 6px;">
+                        <button onclick="updateWeather()" 
+                                style="padding: 8px 16px; background: rgba(255,255,255,0.3); 
+                                       color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                            🔄 Update
+                        </button>
+                        <button onclick="getLocationWeather()" 
+                                style="padding: 8px 16px; background: rgba(255,255,255,0.3); 
+                                       color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                            📍 Use My Location
+                        </button>
+                    </div>
+                    <div id="weather-location" style="font-size: 14px; opacity: 0.9;"></div>
+                </div>
+                <div class="weather-main">
+                    <div>
+                        <div class="weather-temp" id="weather-temp">--°C</div>
+                        <div id="weather-conditions">Loading...</div>
+                        <div style="font-size: 14px; margin-top: 5px; opacity: 0.9;">
+                            💨 <span id="weather-wind">--</span> km/h | 
+                            🌡️ <span id="weather-humidity">--</span>% | 
+                            📊 <span id="weather-pressure">--</span> hPa
+                        </div>
+                    </div>
+                    <div style="font-size: 60px;" id="weather-icon">⛅</div>
+                </div>
+                <div class="fishing-score">
+                    <div>Fishing Activity Score</div>
+                    <div class="score-value" id="fishing-score">--/10</div>
+                    <div style="font-size: 14px; margin-top: 5px;" id="fishing-advice">Checking conditions...</div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>Log New Catch</h2>
+                <form id="catch-form">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Date</label>
+                            <input type="date" id="date" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Time</label>
+                            <input type="time" id="time" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Species</label>
+                            <select id="species" required>
+                                <option value="">Select species...</option>
+                                <option value="Bass">Bass</option>
+                                <option value="Trout">Trout</option>
+                                <option value="Pike">Pike</option>
+                                <option value="Carp">Carp</option>
+                                <option value="Catfish">Catfish</option>
+                                <option value="Salmon">Salmon</option>
+                                <option value="Perch">Perch</option>
+                                <option value="Walleye">Walleye</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Weight (kg)</label>
+                            <input type="number" id="weight" step="0.1" placeholder="e.g., 2.5">
+                        </div>
+                        <div class="form-group">
+                            <label>Length (cm)</label>
+                            <input type="number" id="length" step="0.1" placeholder="e.g., 45">
+                        </div>
+                        <div class="form-group">
+                            <label>Bait Used</label>
+                            <input type="text" id="bait" placeholder="e.g., Worm, Lure">
+                        </div>
+                        <div class="form-group">
+                            <label>Location</label>
+                            <input type="text" id="location" placeholder="e.g., Lake Michigan">
+                        </div>
+                        <div class="form-group">
+                            <label>Water Temperature (°C)</label>
+                            <input type="number" id="water-temp" step="0.1" placeholder="e.g., 18">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Notes</label>
+                        <textarea id="notes" placeholder="Add any additional notes about this catch..."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Photos (up to 3)</label>
+                        <input type="file" id="photos" multiple accept="image/*">
+                        <small style="color: #666; font-size: 12px;">Select up to 3 photos to upload with your catch</small>
+                        <div id="photo-preview" style="display: flex; gap: 12px; margin-top: 12px; flex-wrap: wrap; min-height: 80px;"></div>
+                    </div>
+                    
+                    <button type="submit" class="btn">🎣 Log Catch</button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- My Catches Tab -->
+        <div id="catches-tab" class="tab-content">
+            <div class="card">
+                <h2>Recent Catches</h2>
+                <div id="catches-list" class="catch-list">
+                    <!-- Catches will be loaded here -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Analytics Tab -->
+        <div id="analytics-tab" class="tab-content">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="total-catches">0</div>
+                    <div class="stat-label">Total Catches</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="top-species">-</div>
+                    <div class="stat-label">Top Species</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="best-bait">-</div>
+                    <div class="stat-label">Best Bait</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="best-time">-</div>
+                    <div class="stat-label">Best Time</div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>Catches by Species</h2>
+                <div id="species-chart" class="chart-container"></div>
+            </div>
+            
+            <div class="card">
+                <h2>Success by Time of Day</h2>
+                <div id="time-chart" class="chart-container"></div>
+            </div>
+        </div>
+        
+        <!-- Spots Tab -->
+        <div id="spots-tab" class="tab-content">
+            <div class="card">
+                <h2>Add Fishing Spot</h2>
+                <form id="spot-form">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Spot Name</label>
+                            <input type="text" id="spot-name" required placeholder="e.g., North Shore">
+                        </div>
+                        <div class="form-group">
+                            <label>Depth (m)</label>
+                            <input type="number" id="spot-depth" step="0.1" placeholder="e.g., 5.5">
+                        </div>
+                        <div class="form-group">
+                            <label>Water Clarity</label>
+                            <select id="spot-clarity">
+                                <option value="Clear">Clear</option>
+                                <option value="Slightly Murky">Slightly Murky</option>
+                                <option value="Murky">Murky</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Rating (1-5)</label>
+                            <input type="number" id="spot-rating" min="1" max="5" value="3">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Structure/Notes</label>
+                        <textarea id="spot-notes" placeholder="Describe the structure, obstacles, etc."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Photos (up to 3)</label>
+                        <input type="file" id="spot-photos" multiple accept="image/*">
+                        <small style="color: #666; font-size: 12px;">Select up to 3 photos to upload with your spot</small>
+                        <div id="spot-photo-preview" style="display: flex; gap: 12px; margin-top: 12px; flex-wrap: wrap; min-height: 80px;"></div>
+                    </div>
+                    
+                    <button type="submit" class="btn">📍 Save Spot</button>
+                </form>
+            </div>
+            
+            <div class="card">
+                <h2>My Fishing Spots</h2>
+                <div id="spots-list" class="spots-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Set today's date and current time
+        document.getElementById('date').valueAsDate = new Date();
+        document.getElementById('time').value = new Date().toTimeString().slice(0,5);
+        
+        // Photo preview functionality for catches
+        const photoInput = document.getElementById('photos');
+        const photoPreview = document.getElementById('photo-preview');
+        
+        photoInput.addEventListener('change', function() {
+            const files = this.files;
+            photoPreview.innerHTML = '';
+            
+            if (files.length > 0) {
+                const maxPhotos = Math.min(files.length, 3);
+                
+                for (let i = 0; i < maxPhotos; i++) {
+                    const file = files[i];
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(e) {
+                        const imgContainer = document.createElement('div');
+                        imgContainer.style.cssText = `
+                            position: relative;
+                            width: 100px;
+                            height: 100px;
+                            border-radius: 12px;
+                            overflow: hidden;
+                            border: 3px solid #667eea;
+                            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+                            transition: transform 0.2s, box-shadow 0.2s;
+                        `;
+                        
+                        imgContainer.onmouseover = function() {
+                            this.style.transform = 'scale(1.05)';
+                            this.style.boxShadow = '0 6px 16px rgba(102, 126, 234, 0.5)';
+                        };
+                        
+                        imgContainer.onmouseout = function() {
+                            this.style.transform = 'scale(1)';
+                            this.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.3)';
+                        };
+                        
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.style.cssText = `
+                            width: 100%;
+                            height: 100%;
+                            object-fit: cover;
+                        `;
+                        
+                        const removeBtn = document.createElement('button');
+                        removeBtn.textContent = '×';
+                        removeBtn.style.cssText = `
+                            position: absolute;
+                            top: 4px;
+                            right: 4px;
+                            background: rgba(255, 0, 0, 0.9);
+                            color: white;
+                            border: none;
+                            border-radius: 50%;
+                            width: 24px;
+                            height: 24px;
+                            font-size: 16px;
+                            font-weight: bold;
+                            cursor: pointer;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            transition: background 0.2s;
+                        `;
+                        
+                        removeBtn.onmouseover = function() {
+                            this.style.background = 'rgba(255, 0, 0, 1)';
+                        };
+                        
+                        removeBtn.onmouseout = function() {
+                            this.style.background = 'rgba(255, 0, 0, 0.9)';
+                        };
+                        
+                        removeBtn.onclick = function(e) {
+                            e.stopPropagation();
+                            imgContainer.remove();
+                            // Update files list
+                            const newFiles = Array.from(files).filter(f => f !== file);
+                            const dt = new DataTransfer();
+                            newFiles.forEach(f => dt.items.add(f));
+                            photoInput.files = dt.files;
+                        };
+                        
+                        imgContainer.appendChild(img);
+                        imgContainer.appendChild(removeBtn);
+                        photoPreview.appendChild(imgContainer);
+                    };
+                    
+                    reader.readAsDataURL(file);
+                }
+            }
+        });
+        
+        // Photo preview functionality for spots
+        const spotPhotoInput = document.getElementById('spot-photos');
+        const spotPhotoPreview = document.getElementById('spot-photo-preview');
+        
+        spotPhotoInput.addEventListener('change', function() {
+            const files = this.files;
+            spotPhotoPreview.innerHTML = '';
+            
+            if (files.length > 0) {
+                const maxPhotos = Math.min(files.length, 3);
+                
+                for (let i = 0; i < maxPhotos; i++) {
+                    const file = files[i];
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(e) {
+                        const imgContainer = document.createElement('div');
+                        imgContainer.style.cssText = `
+                            position: relative;
+                            width: 80px;
+                            height: 80px;
+                            border-radius: 10px;
+                            overflow: hidden;
+                            border: 2px solid #764ba2;
+                            box-shadow: 0 3px 10px rgba(118, 75, 162, 0.3);
+                            transition: transform 0.2s;
+                        `;
+                        
+                        imgContainer.onmouseover = function() {
+                            this.style.transform = 'scale(1.1)';
+                        };
+                        
+                        imgContainer.onmouseout = function() {
+                            this.style.transform = 'scale(1)';
+                        };
+                        
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.style.cssText = `
+                            width: 100%;
+                            height: 100%;
+                            object-fit: cover;
+                        `;
+                        
+                        const removeBtn = document.createElement('button');
+                        removeBtn.textContent = '×';
+                        removeBtn.style.cssText = `
+                            position: absolute;
+                            top: 2px;
+                            right: 2px;
+                            background: rgba(255, 0, 0, 0.8);
+                            color: white;
+                            border: none;
+                            border-radius: 50%;
+                            width: 20px;
+                            height: 20px;
+                            font-size: 14px;
+                            cursor: pointer;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                        `;
+                        
+                        removeBtn.onclick = function(e) {
+                            e.stopPropagation();
+                            imgContainer.remove();
+                            const newFiles = Array.from(files).filter(f => f !== file);
+                            const dt = new DataTransfer();
+                            newFiles.forEach(f => dt.items.add(f));
+                            spotPhotoInput.files = dt.files;
+                        };
+                        
+                        imgContainer.appendChild(img);
+                        imgContainer.appendChild(removeBtn);
+                        spotPhotoPreview.appendChild(imgContainer);
+                    };
+                    
+                    reader.readAsDataURL(file);
+                }
+            }
+        });
+        
+        // Tab switching
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName + '-tab').classList.add('active');
+            
+            if (tabName === 'catches') loadCatches();
+            if (tabName === 'analytics') loadAnalytics();
+            if (tabName === 'spots') loadSpots();
+        }
+        
+        // Log catch form
+        document.getElementById('catch-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const data = {
+                date: document.getElementById('date').value,
+                time: document.getElementById('time').value,
+                species: document.getElementById('species').value,
+                weight: parseFloat(document.getElementById('weight').value) || null,
+                length: parseFloat(document.getElementById('length').value) || null,
+                bait: document.getElementById('bait').value,
+                location: document.getElementById('location').value,
+                water_temp: parseFloat(document.getElementById('water-temp').value) || null,
+                notes: document.getElementById('notes').value
+            };
+            
+            const response = await fetch('/api/catches', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                const catchId = result.id;
+                
+                // Upload photos if any were selected
+                const photoInput = document.getElementById('photos');
+                if (photoInput.files.length > 0) {
+                    const formData = new FormData();
+                    for (let i = 0; i < photoInput.files.length; i++) {
+                        formData.append('photos', photoInput.files[i]);
+                    }
+                    
+                    try {
+                        const photoResponse = await fetch(`/api/catches/${catchId}/photos`, {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        const photoResult = await photoResponse.json();
+                        if (photoResponse.ok) {
+                            console.log('Photos uploaded:', photoResult.photos);
+                            alert(`🎣 Catch logged successfully with ${photoResult.photos.length} photo(s)!`);
+                        } else {
+                            alert(`🎣 Catch logged successfully! (Photo upload failed: ${photoResult.message || 'Unknown error'})`);
+                        }
+                    } catch (error) {
+                        console.error('Photo upload error:', error);
+                        alert(`🎣 Catch logged successfully! (Photo upload failed: ${error.message})`);
+                    }
+                } else {
+                    alert('🎣 Catch logged successfully!');
+                }
+                
+                document.getElementById('catch-form').reset();
+                document.getElementById('date').valueAsDate = new Date();
+                document.getElementById('time').value = new Date().toTimeString().slice(0,5);
+                document.getElementById('photos').value = '';
+                document.getElementById('photo-preview').innerHTML = '';
+                
+                // Reload catches to show the new catch with photos
+                loadCatches();
+            } else {
+                const errorData = await response.json();
+                alert(`Failed to log catch: ${errorData.message || 'Unknown error'}`);
+            }
+        });
+        
+        // Load catches
+        async function loadCatches() {
+            const response = await fetch('/api/catches');
+            const catches = await response.json();
+            
+            const list = document.getElementById('catches-list');
+            list.innerHTML = '';
+            
+            if (catches.length === 0) {
+                list.innerHTML = '<div style="text-align: center; padding: 40px; color: #999;">No catches logged yet. Start logging your catches!</div>';
+                return;
+            }
+            
+            catches.forEach(catch_ => {
+                const item = document.createElement('div');
+                item.className = 'catch-item';
+                
+                // Build photo gallery HTML
+                let photoGallery = '';
+                if (catch_.photos && catch_.photos.length > 0) {
+                    photoGallery = '<div style="display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap;">';
+                    catch_.photos.forEach((photoUrl, index) => {
+                        photoGallery += `
+                            <div style="position: relative; width: 90px; height: 90px; border-radius: 12px; overflow: hidden; border: 3px solid #667eea; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onclick="window.open('${photoUrl}', '_blank')">
+                                <img src="${photoUrl}" style="width: 100%; height: 100%; object-fit: cover;" alt="Catch photo ${index + 1}">
+                                <div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent); color: white; font-size: 11px; text-align: center; padding: 8px 4px;">Photo ${index + 1}</div>
+                            </div>
+                        `;
+                    });
+                    photoGallery += '</div>';
+                }
+                
+                item.innerHTML = `
+                    <div class="catch-icon">🐟</div>
+                    <div class="catch-details">
+                        <h3>${catch_.species}</h3>
+                        <div class="catch-meta">
+                            📅 ${catch_.date} at ${catch_.time} | 
+                            📍 ${catch_.location || 'Unknown'} | 
+                            🎣 ${catch_.bait || 'N/A'}
+                        </div>
+                        ${catch_.notes ? `<div style="margin-top: 5px; font-size: 14px; color: #555;">${catch_.notes}</div>` : ''}
+                        ${photoGallery}
+                    </div>
+                    <div class="catch-stats">
+                        ${catch_.weight ? `<div class="catch-weight">${catch_.weight} kg</div>` : ''}
+                        ${catch_.length ? `<div>${catch_.length} cm</div>` : ''}
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+        }
+        
+        // Load analytics
+        async function loadAnalytics() {
+            const response = await fetch('/api/analytics');
+            const data = await response.json();
+            
+            document.getElementById('total-catches').textContent = data.total_catches;
+            document.getElementById('top-species').textContent = data.by_species[0]?.species || '-';
+            document.getElementById('best-bait').textContent = data.best_baits[0]?.bait || '-';
+            document.getElementById('best-time').textContent = data.by_time[0]?.period || '-';
+            
+            // Simple bar chart for species
+            const speciesChart = document.getElementById('species-chart');
+            speciesChart.innerHTML = '';
+            data.by_species.forEach(item => {
+                const bar = document.createElement('div');
+                bar.style.cssText = `
+                    display: flex;
+                    align-items: center;
+                    margin-bottom: 10px;
+                `;
+                bar.innerHTML = `
+                    <div style="width: 150px; font-weight: 600;">${item.species}</div>
+                    <div style="flex: 1; background: #667eea; height: 30px; border-radius: 5px; 
+                                width: ${(item.count / data.total_catches) * 100}%; 
+                                display: flex; align-items: center; padding: 0 10px; color: white;">
+                        ${item.count}
+                    </div>
+                `;
+                speciesChart.appendChild(bar);
+            });
+            
+            // Time chart
+            const timeChart = document.getElementById('time-chart');
+            timeChart.innerHTML = '';
+            data.by_time.forEach(item => {
+                const bar = document.createElement('div');
+                bar.style.cssText = `
+                    display: flex;
+                    align-items: center;
+                    margin-bottom: 10px;
+                `;
+                bar.innerHTML = `
+                    <div style="width: 150px; font-weight: 600;">${item.period}</div>
+                    <div style="flex: 1; background: #764ba2; height: 30px; border-radius: 5px; 
+                                width: ${(item.count / data.total_catches) * 100}%; 
+                                display: flex; align-items: center; padding: 0 10px; color: white;">
+                        ${item.count}
+                    </div>
+                `;
+                timeChart.appendChild(bar);
+            });
+        }
+        
+        // Spot form
+        document.getElementById('spot-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const data = {
+                name: document.getElementById('spot-name').value,
+                latitude: 0, // You can add geolocation here
+                longitude: 0,
+                depth: parseFloat(document.getElementById('spot-depth').value) || null,
+                water_clarity: document.getElementById('spot-clarity').value,
+                notes: document.getElementById('spot-notes').value,
+                rating: parseInt(document.getElementById('spot-rating').value)
+            };
+            
+            const response = await fetch('/api/spots', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                const spotId = result.id;
+                
+                // Upload photos if any were selected
+                const photoInput = document.getElementById('spot-photos');
+                if (photoInput.files.length > 0) {
+                    const formData = new FormData();
+                    for (let i = 0; i < photoInput.files.length; i++) {
+                        formData.append('photos', photoInput.files[i]);
+                    }
+                    
+                    try {
+                        const photoResponse = await fetch(`/api/spots/${spotId}/photos`, {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        const photoResult = await photoResponse.json();
+                        if (photoResponse.ok) {
+                            console.log('Spot photos uploaded:', photoResult.photos);
+                            alert(`📍 Spot saved successfully with ${photoResult.photos.length} photo(s)!`);
+                        } else {
+                            alert(`📍 Spot saved successfully! (Photo upload failed: ${photoResult.message || 'Unknown error'})`);
+                        }
+                    } catch (error) {
+                        console.error('Spot photo upload error:', error);
+                        alert(`📍 Spot saved successfully! (Photo upload failed: ${error.message})`);
+                    }
+                } else {
+                    alert('📍 Spot saved successfully!');
+                }
+                
+                document.getElementById('spot-form').reset();
+                document.getElementById('spot-photos').value = '';
+                spotPhotoPreview.innerHTML = '';
+                
+                // Reload spots to show the new spot with photos
+                loadSpots();
+            } else {
+                const errorData = await response.json();
+                alert(`Failed to save spot: ${errorData.message || 'Unknown error'}`);
+            }
+        });
+        
+        // Load spots
+        async function loadSpots() {
+            const response = await fetch('/api/spots');
+            const spots = await response.json();
+            
+            const list = document.getElementById('spots-list');
+            list.innerHTML = '';
+            
+            if (spots.length === 0) {
+                list.innerHTML = '<div style="text-align: center; padding: 40px; color: #999; grid-column: 1/-1;">No fishing spots saved yet. Add your favorite spots!</div>';
+                return;
+            }
+            
+            spots.forEach(spot => {
+                const card = document.createElement('div');
+                card.className = 'spot-card';
+                
+                // Build photo gallery HTML
+                let photoGallery = '';
+                if (spot.photos && spot.photos.length > 0) {
+                    photoGallery = '<div style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;">';
+                    spot.photos.forEach((photoUrl, index) => {
+                        photoGallery += `
+                            <div style="position: relative; width: 70px; height: 70px; border-radius: 10px; overflow: hidden; border: 2px solid #764ba2; box-shadow: 0 3px 10px rgba(118, 75, 162, 0.3); cursor: pointer; transition: transform 0.2s;" onclick="window.open('${photoUrl}', '_blank')">
+                                <img src="${photoUrl}" style="width: 100%; height: 100%; object-fit: cover;" alt="Spot photo ${index + 1}">
+                                <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; font-size: 10px; text-align: center; padding: 4px;">Photo ${index + 1}</div>
+                            </div>
+                        `;
+                    });
+                    photoGallery += '</div>';
+                }
+                
+                card.innerHTML = `
+                    <h3>${spot.name}</h3>
+                    <div class="rating">${'⭐'.repeat(spot.rating || 0)}</div>
+                    <div style="margin-top: 10px; font-size: 14px; color: #666;">
+                        ${spot.depth ? `Depth: ${spot.depth}m<br>` : ''}
+                        ${spot.water_clarity ? `Clarity: ${spot.water_clarity}<br>` : ''}
+                        ${spot.notes ? `<div style="margin-top: 5px;">${spot.notes}</div>` : ''}
+                        ${photoGallery}
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        }
+        
+        // Load weather
+        async function loadWeather(city = null, lat = null, lon = null) {
+            try {
+                let url = '/api/weather';
+                if (lat && lon) {
+                    url += `?lat=${lat}&lon=${lon}`;
+                } else if (city) {
+                    url += `?city=${encodeURIComponent(city)}`;
+                }
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                document.getElementById('weather-temp').textContent = data.temperature + '°C';
+                document.getElementById('weather-conditions').textContent = data.conditions;
+                document.getElementById('weather-wind').textContent = data.wind_speed;
+                document.getElementById('weather-humidity').textContent = data.humidity;
+                document.getElementById('weather-pressure').textContent = data.pressure;
+                document.getElementById('fishing-score').textContent = data.fishing_score + '/10';
+                
+                if (data.location) {
+                    document.getElementById('weather-location').textContent = data.location;
+                }
+                
+                // Update weather icon
+                const icon = getWeatherIcon(data.conditions);
+                document.getElementById('weather-icon').textContent = icon;
+                
+                // Update fishing advice
+                const advice = getFishingAdvice(data.fishing_score);
+                document.getElementById('fishing-advice').textContent = advice;
+                
+                // Save location to localStorage
+                if (city) {
+                    localStorage.setItem('fishing_location', city);
+                }
+            } catch (error) {
+                console.error('Error loading weather:', error);
+                document.getElementById('weather-conditions').textContent = 'Unable to load weather';
+            }
+        }
+        
+        function getWeatherIcon(conditions) {
+            const conditionsLower = conditions.toLowerCase();
+            if (conditionsLower.includes('clear')) return '☀️';
+            if (conditionsLower.includes('cloud')) return '⛅';
+            if (conditionsLower.includes('rain')) return '🌧️';
+            if (conditionsLower.includes('storm')) return '⛈️';
+            if (conditionsLower.includes('snow')) return '❄️';
+            if (conditionsLower.includes('mist') || conditionsLower.includes('fog')) return '🌫️';
+            return '🌤️';
+        }
+        
+        function getFishingAdvice(score) {
+            if (score >= 8) return 'Excellent conditions for fishing! 🎣';
+            if (score >= 6.5) return 'Good conditions for fishing!';
+            if (score >= 5) return 'Fair conditions, give it a try!';
+            if (score >= 3) return 'Challenging conditions, but possible.';
+            return 'Poor conditions, consider waiting.';
+        }
+        
+        function updateWeather() {
+            const city = document.getElementById('location-input').value.trim();
+            if (city) {
+                loadWeather(city);
+            } else {
+                alert('Please enter a city name');
+            }
+        }
+        
+        function getLocationWeather() {
+            if (navigator.geolocation) {
+                document.getElementById('weather-conditions').textContent = 'Getting your location...';
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const lat = position.coords.latitude;
+                        const lon = position.coords.longitude;
+                        loadWeather(null, lat, lon);
+                    },
+                    (error) => {
+                        alert('Unable to get your location. Please enter a city name.');
+                        console.error('Geolocation error:', error);
+                    }
+                );
+            } else {
+                alert('Geolocation is not supported by your browser');
+            }
+        }
+        
+        // Load weather on page load
+        const savedLocation = localStorage.getItem('fishing_location');
+        if (savedLocation) {
+            document.getElementById('location-input').value = savedLocation;
+            loadWeather(savedLocation);
+        } else {
+            loadWeather('London');  // Default location
+        }
+        
+        // Allow Enter key to update weather
+        document.getElementById('location-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                updateWeather();
+            }
+        });
+        
+        // Logout function
+        async function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                const response = await fetch('/api/logout', { method: 'POST' });
+                if (response.ok) {
+                    window.location.href = '/login';
+                }
+            }
+        }
+    </script>
+</body>
+</html>

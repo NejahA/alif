@@ -1,0 +1,56 @@
+{
+  "name": "X-Gone",
+  "version": "0.1.0",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "export": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "electron:dev": "set NODE_ENV=development && electron .",
+    "electron:build": "npm run export && electron-builder build --windows",
+    "cap:init": "cap init X-Gone com.xgone.app --web-dir out",
+    "apk:build": "npm run export && npx cap sync android && cd android && set \"JAVA_HOME=C:\\Program Files\\Android\\Android Studio\\jbr\" && gradlew assembleDebug"
+  },
+  "dependencies": {
+    "framer-motion": "^12.38.0",
+    "lucide-react": "^1.7.0",
+    "mongoose": "^9.4.1",
+    "next": "16.2.2",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^8.3.3",
+    "@capacitor/cli": "^7.6.4",
+    "@capacitor/core": "^8.3.3",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "electron": "^41.5.1",
+    "electron-builder": "^26.8.1",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.2",
+    "typescript": "^5"
+  },
+  "build": {
+    "appId": "com.xgone.app",
+    "productName": "X-Gone",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "out/**/*",
+      "main.js",
+      "preload.js",
+      "package.json",
+      "!node_modules${/*}"
+    ],
+    "win": {
+      "target": "portable"
+    },
+    "asar": true
+  }
+}

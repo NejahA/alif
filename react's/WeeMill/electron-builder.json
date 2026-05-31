@@ -1,0 +1,16 @@
+{
+  "appId": "com.wemill.app",
+  "productName": "WeMill",
+  "directories": {
+    "output": "release"
+  },
+  "files": [
+    "build/**/*",
+    "electron/**/*",
+    "node_modules/**/*"
+  ],
+  "win": {
+    "target": "portable",
+    "icon": "assets/icon.ico"
+  }
+}

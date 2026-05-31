@@ -1,0 +1,83 @@
+{
+  "name": "wemill",
+  "version": "1.0.0",
+  "description": "Video downloader",
+  "main": "electron/main.js",
+  "homepage": "./",
+  "browser": {
+    "undici": false
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "electron": "electron .",
+    "electron-dev": "concurrently \"npm start\" \"wait-on http://localhost:3000 && electron .\"",
+    "pack": "electron-builder --dir",
+    "dist": "npm run build && electron-builder --config electron-builder.json"
+  },
+  "build": {
+    "appId": "com.wemill.app",
+    "productName": "WeMill",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "build/**/*",
+      "electron/**/*",
+      "node_modules/**/*",
+      "!node_modules/undici",
+      "!node_modules/undici-types"
+    ],
+    "extraResources": [
+      {
+        "from": "node_modules/undici",
+        "to": "undici",
+        "filter": [
+          "!**/*"
+        ]
+      },
+      {
+        "from": "node_modules/undici-types",
+        "to": "undici-types",
+        "filter": [
+          "!**/*"
+        ]
+      }
+    ],
+    "win": {
+      "target": "portable",
+      "icon": "assets/icon.ico"
+    }
+  },
+  "dependencies": {
+    "@distube/yt-dlp": "^2.0.1",
+    "@distube/ytdl-core": "^4.16.12",
+    "cheerio": "^1.2.0",
+    "electron-is-dev": "^2.0.0",
+    "htmlparser2": "^10.1.0",
+    "miniget": "^4.2.3",
+    "node-fetch": "^2.7.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-scripts": "5.0.1",
+    "ytdl-core": "^4.11.5"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1",
+    "wait-on": "^7.2.0"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}

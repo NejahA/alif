@@ -1,0 +1,353 @@
+.workspace {
+  min-height: 100vh;
+  padding: 40px;
+  position: relative;
+  background: radial-gradient(circle at 10% 10%, rgba(20, 20, 20, 1) 0%, rgba(5, 5, 5, 1) 100%);
+}
+
+.header {
+  margin-bottom: 60px;
+}
+
+.controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+}
+
+.form {
+  flex: 1;
+  max-width: 600px;
+  display: flex;
+  gap: 10px;
+  background: var(--glass);
+  backdrop-filter: blur(8px);
+  padding: 10px;
+  border-radius: 50px;
+  border: 1px solid var(--border);
+}
+
+.input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 0 20px;
+  color: #fff;
+  font-size: 1.1rem;
+  outline: none;
+}
+
+.addButton {
+  width: 45px;
+  height: 45px;
+  border-radius: 25px;
+  background: var(--foreground);
+  color: #000;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+}
+
+.addButton:hover {
+  transform: scale(1.1);
+  background: var(--accent);
+  color: #fff;
+}
+
+.wipeButton {
+  background: transparent;
+  width: 45px;
+  height: 45px;
+  border: 1px solid var(--accent);
+  border-radius: 25px;
+  color: var(--accent);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+}
+
+.wipeButton:hover {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 0 20px var(--accent-glow);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 30px;
+}
+
+.item {
+  padding: 24px;
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 0.3s;
+}
+
+.item:hover {
+  box-shadow: 0 0 30px rgba(255, 0, 60, 0.1);
+}
+
+.itemHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.type {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  letter-spacing: 0.1rem;
+}
+
+.xButton {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 5px;
+  transition: color 0.2s;
+}
+
+.xButton:hover {
+  color: var(--accent);
+}
+
+.itemContent {
+  flex: 1;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 20px;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.lifeBarContainer {
+  height: 2px;
+  flex: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 1px;
+}
+
+.lifeBar {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 1px;
+  transition: width 1s linear;
+}
+
+.timeLeft {
+  font-size: 0.7rem;
+  font-family: monospace;
+  color: var(--text-dim);
+}
+
+.wipeOverlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.wipeCircle {
+  background: var(--accent);
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+}
+
+.wipeText {
+  position: absolute;
+  color: #fff;
+  font-size: 8rem;
+  font-weight: 900;
+  letter-spacing: -0.5rem;
+  z-index: 1001;
+}
+
+/* Type Selector Styles */
+.typeSelector {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.typeBtn {
+  background: var(--glass);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.typeBtn:hover {
+  border-color: var(--accent);
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+.typeBtn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 4px 15px var(--accent-glow);
+}
+
+/* Edit Mode Styles */
+.editInput {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  color: #fff;
+  font-size: 1rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 100px;
+  outline: none;
+  margin-bottom: 15px;
+  transition: border-color 0.2s;
+}
+
+.editInput:focus {
+  border-color: var(--accent);
+}
+
+.editActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.itemActions {
+  display: flex;
+  gap: 8px;
+}
+
+.actionBtn {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.actionBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.saveBtn:hover {
+  background: rgba(0, 255, 136, 0.1);
+  border-color: #00ff88;
+  color: #00ff88;
+}
+
+.cancelBtn:hover {
+  background: rgba(255, 0, 60, 0.1);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Build Integration Styles */
+.buildBtn {
+  margin-top: 15px;
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  transition: all 0.3s;
+}
+
+.buildBtn:hover:not(:disabled) {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 15px var(--accent-glow);
+}
+
+.buildBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.buildStatus {
+  margin-top: 15px;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  background: rgba(0, 0, 0, 0.3);
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
+.statusHeader {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.statusStarting { color: #aaa; }
+.statusProgress { color: #00d2ff; }
+.statusSuccess { color: #00ff88; }
+.statusError { color: #ff003c; }
+.statusWarning { color: #ffcc00; }
+
+.statusMessage {
+  display: block;
+  font-family: monospace;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 60px;
+  overflow-y: auto;
+  font-size: 0.65rem;
+  opacity: 0.8;
+}
+

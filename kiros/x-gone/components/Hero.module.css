@@ -1,0 +1,55 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  width: 100%;
+  position: relative;
+  background: var(--background);
+}
+
+.heroX {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon {
+  color: var(--accent);
+  opacity: 0.1;
+  filter: blur(2px);
+  animation: pulse 4s infinite ease-in-out;
+}
+
+.glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 150px;
+  height: 150px;
+  background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
+  opacity: 0.2;
+  filter: blur(40px);
+}
+
+.content {
+  text-align: center;
+  z-index: 10;
+  margin-top: -50px;
+}
+
+.content h1 {
+  font-size: 5rem;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+
+.content p {
+  color: var(--text-dim);
+  font-size: 1.2rem;
+  letter-spacing: 0.2rem;
+  text-transform: uppercase;
+}
