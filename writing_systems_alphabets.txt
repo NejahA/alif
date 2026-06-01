@@ -1,0 +1,153 @@
+# Comprehensive List of Known Alphabets and Writing Systems
+# Compiled by Grok - June 2026
+
+## 1. Proto-Writing and Early Systems (Before 3000 BCE)
+- Nsibidi (Nigeria, Cameroon) - Ideographic system
+- Adinkra symbols (Akan people, Ghana)
+- Vinča symbols (Europe, ~5500 BCE) - disputed
+- Jiahu symbols (China, ~6600 BCE)
+- Tartaria tablets (Romania)
+
+## 2. Ancient Logographic Systems
+- Egyptian Hieroglyphs (~3200 BCE)
+- Sumerian Cuneiform (~3400 BCE)
+- Chinese Oracle Bone Script (~1200 BCE) → Modern Chinese characters
+- Mayan Hieroglyphs (Mesoamerica)
+- Hittite / Anatolian Hieroglyphs
+- Dongba (Naxi people, China)
+
+## 3. Syllabaries
+- Linear B (Mycenaean Greek, ~1400 BCE)
+- Cypriot syllabary
+- Japanese Kana:
+  - Hiragana
+  - Katakana
+- Cherokee syllabary (Sequoyah, 1821)
+- Vai syllabary (Liberia)
+- Yi syllabary (China)
+
+## 4. Abjads (Consonant Alphabets)
+- Phoenician ( ~1050 BCE) - Ancestor of most Western alphabets
+- Aramaic
+- Hebrew
+- Arabic
+- Nabataean
+- Syriac
+- Ugaritic cuneiform alphabet (~1300 BCE)
+- Ancient South Arabian
+- Ancient North Arabian
+
+## 5. True Alphabets (Consonant + Vowel)
+- Greek (~800 BCE)
+- Latin (Roman) - Most used today
+- Etruscan
+- Runic (Elder Futhark, ~150 CE)
+- Ogham (Ireland, ~4th century)
+- Gothic (Ulfilas, 4th century)
+- Armenian (Mesrop Mashtots, 405 CE)
+- Georgian (Asomtavruli, Nuskhuri, Mkhedruli)
+- Coptic
+- Old Hungarian (Szekely)
+- Glagolitic (9th century)
+
+## 6. Cyrillic and Related
+- Cyrillic (9th-10th century)
+- Glagolitic (predecessor)
+- Modern variants: Russian, Ukrainian, Bulgarian, Serbian, etc.
+
+## 7. Abugidas (Aksara / Alphasyllabaries)
+- Brahmi script (India, ~3rd century BCE) - Ancestor of many
+  - Devanagari (Hindi, Sanskrit, Marathi, Nepali)
+  - Bengali-Assamese
+  - Tamil
+  - Telugu
+  - Kannada
+  - Malayalam
+  - Sinhala
+- Thai
+- Lao
+- Khmer
+- Tibetan
+- Ethiopic / Ge'ez (Ethiopia, Eritrea)
+- Javanese
+- Balinese
+
+## 8. Featural Alphabets
+- Hangul (Korean, 1443 CE) - Most scientifically designed
+- Canadian Aboriginal Syllabics
+
+## 9. Other / Modern
+- Braille
+- International Phonetic Alphabet (IPA)
+- Deseret Alphabet (Mormon, 19th century)
+- Shavian Alphabet
+- Manual alphabets (Sign languages)
+- Blissymbols
+
+## Historical Timeline Summary
+- ~3400 BCE: Cuneiform (earliest)
+- ~3200 BCE: Egyptian Hieroglyphs
+- ~1800 BCE: Proto-Sinaitic (first alphabet-like)
+- ~1050 BCE: Phoenician
+- ~800 BCE: Greek (first true alphabet with vowels)
+- 405 CE: Armenian
+- 1443: Hangul
+- 19th-21st century: Many indigenous scripts created
+
+Note: This is a high-level overview. There are over 100 distinct writing systems historically. Many scripts have evolved into multiple variants.
+
+## Individual Letters / Characters for Major Scripts
+
+1. Phoenician (Ancestor)
+Letters: 𐤀 𐤁 𐤂 𐤃 𐤄 𐤅 𐤆 𐤇 𐤈 𐤉 𐤊 𐤋 𐤌 𐤍 𐤎 𐤏 𐤐 𐤑 𐤒 𐤓 𐤔 𐤕
+Link: https://en.wikipedia.org/wiki/Phoenician_alphabet
+
+2. Hebrew
+Letters: א ב ג ד ה ו ז ח ט י כ ל מ נ ס ע פ צ ק ר ש ת
+Link: https://en.wikipedia.org/wiki/Hebrew_alphabet
+
+3. Arabic
+Letters: ا ب ت ث ج ح خ د ذ ر ز س ش ص ض ط ظ ع غ ف ق ك ل م ن ه و ي
+Link: https://en.wikipedia.org/wiki/Arabic_alphabet
+
+4. Greek
+Letters: Α Β Γ Δ Ε Ζ Η Θ Ι Κ Λ Μ Ν Ξ Ο Π Ρ Σ Τ Υ Φ Χ Ψ Ω
+Link: https://en.wikipedia.org/wiki/Greek_alphabet
+
+5. Latin (English)
+Letters: A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
+Link: https://en.wikipedia.org/wiki/Latin_alphabet
+
+6. Cyrillic
+Letters: А Б В Г Д Е Ё Ж З И Й К Л М Н О П Р С Т У Ф Х Ц Ч Ш Щ Ъ Ы Ь Э Ю Я
+Link: https://en.wikipedia.org/wiki/Cyrillic_script
+
+7. Armenian
+Letters: Ա Բ Գ Դ Ե Զ Է Ը Թ Ժ Ի Լ Խ Ծ Կ Հ Ձ Ղ Ճ Մ Յ Ն Շ Ո Չ Պ Ջ Ռ Ս Վ Տ Ր Ց Ւ Փ Ք Օ Ֆ
+Link: https://en.wikipedia.org/wiki/Armenian_alphabet
+
+8. Hiragana (Japanese)
+Letters: あ い う え お か き く け こ さ し す せ そ た ち つ て と な に ぬ ね の は ひ ふ へ ほ ま み む め も や ゆ よ ら り る れ ろ わ を ん
+Link: https://en.wikipedia.org/wiki/Hiragana
+
+9. Hangul (Korean)
+Basic: ㄱ ㄴ ㄷ ㄹ ㅁ ㅂ ㅅ ㅇ ㅈ ㅊ ㅋ ㅌ ㅍ ㅎ  ㅏ ㅑ ㅓ ㅕ ㅗ ㅛ ㅜ ㅡ ㅣ
+Link: https://en.wikipedia.org/wiki/Hangul
+
+10. Devanagari
+Letters: अ आ इ ई उ ऊ ए ऐ ओ औ क ख ग घ ङ च छ ज झ ञ ट ठ ड ढ ण त थ द ध न प फ ब भ म य र ल व श ष स ह
+Link: https://en.wikipedia.org/wiki/Devanagari
+
+For more scripts and complete character sets, visit:
+- Unicode Charts: https://unicode.org/charts/
+- Omniglot (best resource for writing systems): https://omniglot.com/
+
+## All Letters Combined (One Big Text Block)
+ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz
+ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ αβγδεζηθικλμνξοπρστυφχψω
+АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ абвгдеёжзийклмнопрстуфхцчшщъыьэюя
+אבגדהוזחטיכלמנסעפצקרשת
+اب ت ث ج ح خ د ذ ر ز س ش ص ض ط ظ ع غ ف ق ك ل م ن ه و ي
+あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん
+ᚠᚢᚦᚨᚱᚲᚷᚹᚺᚾᛁᛃᛇᛈᛉᛊᛏᛒᛖᛗᛚᛜᛟ
+
