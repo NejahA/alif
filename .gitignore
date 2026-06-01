@@ -139,6 +139,8 @@ pnpm-debug.log*
 **/*.sdf
 **/*.opensdf
 
+
+
 # OS metadata
 .DS_Store
 Thumbs.db
@@ -204,3 +206,4 @@ Ehthumbs.db
 **/*.sh
 **/*.ps1
 
+.gitignore
