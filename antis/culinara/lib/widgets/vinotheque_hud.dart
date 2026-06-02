@@ -14,51 +14,21 @@ class VinothequeHUD extends ConsumerWidget {
     final session = ref.watch(chefSessionProvider);
     final wine = session.currentStep.wineInfo;
 
-    if (wine == null) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SectionHeader(title: "Wine Pairing", icon: LucideIcons.glassWater),
-          const SizedBox(height: 24),
-          Center(
-            child: Column(
-              children: [
-                Icon(LucideIcons.wineOff, size: 32, color: CuisineTheme.cream.withValues(alpha: 0.1)),
-                const SizedBox(height: 12),
-                Text(
-                  "No Pairing",
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: CuisineTheme.cream.withValues(alpha: 0.2),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  "No wine pairing for this step.",
-                  style: GoogleFonts.inter(
-                    fontSize: 11,
-                    color: CuisineTheme.cream.withValues(alpha: 0.4),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      );
-    }
+    if (wine == null) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SectionHeader(title: "Wine Pairing", icon: LucideIcons.glassWater),
+        const SectionHeader(title: "GRAND_VINOTHEQUE", icon: LucideIcons.glassWater),
         const SizedBox(height: 24),
+        
+        // Wine Display Card
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: CuisineTheme.paprika.withValues(alpha: 0.08),
+            color: GourmetTheme.bordeaux.withOpacity(0.1),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: CuisineTheme.saffron.withValues(alpha: 0.15)),
+            border: Border.all(color: GourmetTheme.goldLeaf.withOpacity(0.2)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -68,22 +38,22 @@ class VinothequeHUD extends ConsumerWidget {
                 children: [
                   Text(
                     wine.vintage,
-                    style: GoogleFonts.inter(
+                    style: GoogleFonts.firaCode(
                       fontSize: 10,
                       fontWeight: FontWeight.w900,
-                      color: CuisineTheme.saffron,
+                      color: GourmetTheme.goldLeaf,
                     ),
                   ),
-                  const Icon(LucideIcons.grape, size: 14, color: CuisineTheme.saffron),
+                  const Icon(LucideIcons.grape, size: 14, color: GourmetTheme.goldLeaf),
                 ],
               ),
               const SizedBox(height: 8),
               Text(
-                wine.label,
+                wine.label.toUpperCase(),
                 style: GoogleFonts.playfairDisplay(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
-                  color: CuisineTheme.cream,
+                  color: GourmetTheme.parchment,
                 ),
               ),
               const SizedBox(height: 12),
@@ -93,16 +63,19 @@ class VinothequeHUD extends ConsumerWidget {
                   fontSize: 11,
                   fontStyle: FontStyle.italic,
                   height: 1.4,
-                  color: CuisineTheme.cream.withValues(alpha: 0.7),
+                  color: GourmetTheme.parchment.withOpacity(0.7),
                 ),
               ),
             ],
           ),
         ),
+        
         const SizedBox(height: 24),
-        _buildLiquidStat("Serving Temp", wine.optimalTemp, LucideIcons.thermometerSnowflake),
+        
+        // Liquid Telemetry
+        _buildLiquidStat("CELLAR_TEMP", wine.optimalTemp, LucideIcons.thermometerSnowflake),
         const SizedBox(height: 16),
-        _buildDecantProgress(ref, wine.decantProgress),
+        _buildDecantProgress(wine.decantProgress),
       ],
     );
   }
@@ -113,71 +86,66 @@ class VinothequeHUD extends ConsumerWidget {
       children: [
         Row(
           children: [
-            Icon(icon, size: 12, color: CuisineTheme.saffron.withValues(alpha: 0.5)),
+            Icon(icon, size: 12, color: GourmetTheme.goldLeaf.withOpacity(0.5)),
             const SizedBox(width: 8),
             Text(
               label,
               style: GoogleFonts.inter(
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-                color: CuisineTheme.cream.withValues(alpha: 0.4),
+                fontSize: 9,
+                fontWeight: FontWeight.w800,
+                color: GourmetTheme.parchment.withOpacity(0.4),
               ),
             ),
           ],
         ),
         Text(
           value,
-          style: GoogleFonts.inter(
+          style: GoogleFonts.firaCode(
             fontSize: 11,
             fontWeight: FontWeight.w700,
-            color: CuisineTheme.saffron,
+            color: GourmetTheme.goldLeaf,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildDecantProgress(WidgetRef ref, double progress) {
-    return GestureDetector(
-      onTap: () => ref.read(chefSessionProvider.notifier).boostDecanting(),
-      behavior: HitTestBehavior.opaque,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                "Decanting",
-                style: GoogleFonts.inter(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: CuisineTheme.saffron.withValues(alpha: 0.4),
-                ),
+  Widget _buildDecantProgress(double progress) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              "OXYGEN_RESONANCE",
+              style: GoogleFonts.inter(
+                fontSize: 9,
+                fontWeight: FontWeight.w800,
+                color: GourmetTheme.goldLeaf.withOpacity(0.4),
               ),
-              Text(
-                "${(progress * 100).toInt()}%",
-                style: GoogleFonts.inter(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  color: CuisineTheme.saffron,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 3,
-              backgroundColor: CuisineTheme.darkWalnut,
-              valueColor:
-                  const AlwaysStoppedAnimation<Color>(CuisineTheme.saffron),
             ),
+            Text(
+              "${(progress * 100).toInt()}%",
+              style: GoogleFonts.inter(
+                fontSize: 9,
+                fontWeight: FontWeight.w800,
+                color: GourmetTheme.goldLeaf,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(2),
+          child: LinearProgressIndicator(
+            value: progress,
+            minHeight: 2,
+            backgroundColor: Colors.white.withOpacity(0.05),
+            valueColor: const AlwaysStoppedAnimation<Color>(GourmetTheme.goldLeaf),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

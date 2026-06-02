@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:culinara/core/theme.dart';
-import 'package:culinara/screens/app_shell.dart';
+import 'package:culinara/screens/nexus_home.dart';
 
 void main() {
   runApp(
@@ -17,12 +17,12 @@ class Culinara extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Culinara — V Cooks Cuisine',
+      title: 'Culinara: Epicurean Nexus',
       debugShowCheckedModeBanner: false,
       themeMode: ThemeMode.dark,
-      theme: CuisineTheme.dark,
-      darkTheme: CuisineTheme.dark,
-      home: const AppShell(),
+      theme: GourmetTheme.dark,
+      darkTheme: GourmetTheme.dark,
+      home: const NexusHome(),
     );
   }
 }

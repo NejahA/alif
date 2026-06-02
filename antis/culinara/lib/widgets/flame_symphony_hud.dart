@@ -16,48 +16,48 @@ class FlameSymphonyHUD extends ConsumerWidget {
 
     return Column(
       children: [
-        const SectionHeader(title: "Heat Control", icon: LucideIcons.flame),
+        const SectionHeader(title: "THE_FLAME_SYMPHONY", icon: LucideIcons.flame),
         const SizedBox(height: 24),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _buildHeatRipple("Current Temp", hearth.flameTemper, CuisineTheme.terracotta),
-            _buildHeatRipple("Target Temp", hearth.perfectionApex, CuisineTheme.paprika),
+            _buildHeatRipple("FLAME_TEMPER", hearth.flameTemper, GourmetTheme.copper),
+            _buildHeatRipple("PERFECTION_APEX", hearth.perfectionApex, GourmetTheme.bordeaux),
           ],
         ),
         const SizedBox(height: 24),
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: CuisineTheme.darkWalnut.withValues(alpha: 0.3),
+            color: Colors.white.withOpacity(0.02),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: CuisineTheme.cream.withValues(alpha: 0.04)),
+            border: Border.all(color: Colors.white.withOpacity(0.05)),
           ),
           child: Row(
             children: [
               Icon(
-                LucideIcons.chefHat,
-                size: 16,
-                color: hearth.isAtTemperature ? CuisineTheme.olive : CuisineTheme.terracotta,
+                LucideIcons.chefHat, 
+                size: 16, 
+                color: hearth.isAtTemperature ? GourmetTheme.accentSage : GourmetTheme.copper
               ),
               const SizedBox(width: 12),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "Copper Sautoir 24cm",
-                    style: GoogleFonts.inter(
-                      fontSize: 11,
+                    hearth.culinaryTool,
+                    style: GoogleFonts.firaCode(
+                      fontSize: 10,
                       fontWeight: FontWeight.w700,
-                      color: CuisineTheme.cream.withValues(alpha: 0.9),
+                      color: GourmetTheme.parchment.withOpacity(0.9),
                     ),
                   ),
                   Text(
-                    hearth.isAtTemperature ? "Temperature optimal" : "Heating up...",
+                    hearth.isAtTemperature ? "STATUS: OPTIMAL_TEMPER" : "STATUS: REFINING_FLAME",
                     style: GoogleFonts.inter(
-                      fontSize: 9,
+                      fontSize: 8,
                       fontWeight: FontWeight.w500,
-                      color: CuisineTheme.cream.withValues(alpha: 0.4),
+                      color: GourmetTheme.parchment.withOpacity(0.4),
                     ),
                   ),
                 ],
@@ -67,9 +67,9 @@ class FlameSymphonyHUD extends ConsumerWidget {
         ),
         const SizedBox(height: 24),
         GourmetDial(
-          label: "TARGET CALIBRATION",
-          value: hearth.perfectionApex,
-          color: CuisineTheme.terracotta,
+          label: "GOURMET_REFINEMENT_CALIBRATION", 
+          value: hearth.perfectionApex, 
+          color: GourmetTheme.copper, 
           onChanged: (val) => ref.read(hearthProvider.notifier).updatePerfectionApex(val),
         ),
       ],
@@ -91,10 +91,10 @@ class FlameSymphonyHUD extends ConsumerWidget {
             ),
             Text(
               "${(value * 450).toInt()}°C",
-              style: GoogleFonts.inter(
+              style: GoogleFonts.firaCode(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: CuisineTheme.cream,
+                color: GourmetTheme.parchment,
               ),
             ),
           ],
@@ -104,9 +104,9 @@ class FlameSymphonyHUD extends ConsumerWidget {
           label,
           style: GoogleFonts.inter(
             fontSize: 9,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0.5,
-            color: CuisineTheme.cream.withValues(alpha: 0.3),
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1,
+            color: GourmetTheme.parchment.withOpacity(0.3),
           ),
         ),
       ],
@@ -124,22 +124,24 @@ class HeatRipplePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
-
+    
+    // Static base ring
     final basePaint = Paint()
-      ..color = CuisineTheme.cream.withValues(alpha: 0.05)
+      ..color = Colors.white.withOpacity(0.05)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
     canvas.drawCircle(center, radius, basePaint);
 
+    // Heat Ripples (3 layers)
     for (var i = 0; i < 3; i++) {
       final rippleValue = (value - (i * 0.1)).clamp(0.0, 1.0);
       if (rippleValue <= 0) continue;
 
       final paint = Paint()
-        ..color = color.withValues(alpha: 0.6 - (i * 0.2))
+        ..color = color.withOpacity(0.6 - (i * 0.2))
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2 + (i * 1.5);
-
+      
       canvas.drawArc(
         Rect.fromCircle(center: center, radius: radius - (i * 6)),
         -math.pi / 2,
@@ -149,8 +151,9 @@ class HeatRipplePainter extends CustomPainter {
       );
     }
 
+    // Inner glow
     final glowPaint = Paint()
-      ..color = color.withValues(alpha: 0.1 * value)
+      ..color = color.withOpacity(0.1 * value)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
     canvas.drawCircle(center, radius * 0.7 * value, glowPaint);
   }

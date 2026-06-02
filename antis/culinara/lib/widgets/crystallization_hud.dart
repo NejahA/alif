@@ -16,47 +16,44 @@ class CrystallizationHUD extends ConsumerWidget {
 
     return Column(
       children: [
-        const SectionHeader(title: "Sugar Work", icon: LucideIcons.snowflake),
+        const SectionHeader(title: "CRYSTALLIZATION_PHYSICS", icon: LucideIcons.snowflake),
         const SizedBox(height: 24),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _buildCrystalRadar("Alignment", hearth.flameTemper, CuisineTheme.saffron),
-            _buildCrystalRadar(
-                "Viscosity", (1.0 - hearth.flameTemper).clamp(0.0, 1.0), CuisineTheme.terracotta),
+            _buildCrystalRadar("ALIGNMENT", hearth.flameTemper, GourmetTheme.goldLeaf),
+            _buildCrystalRadar("VISCOSITY", (1.0 - hearth.flameTemper).clamp(0.0, 1.0), GourmetTheme.copper),
           ],
         ),
         const SizedBox(height: 24),
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: CuisineTheme.darkWalnut.withValues(alpha: 0.3),
+            color: Colors.white.withOpacity(0.02),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: CuisineTheme.cream.withValues(alpha: 0.04)),
+            border: Border.all(color: Colors.white.withOpacity(0.05)),
           ),
           child: Row(
             children: [
-              const Icon(LucideIcons.thermometer, size: 16, color: CuisineTheme.saffron),
+              const Icon(LucideIcons.thermometer, size: 16, color: GourmetTheme.goldLeaf),
               const SizedBox(width: 12),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "Sugar Work — 154°C Target",
-                    style: GoogleFonts.inter(
-                      fontSize: 11,
+                    "SUGAR_WORK: 154°C_TARGET",
+                    style: GoogleFonts.firaCode(
+                      fontSize: 10,
                       fontWeight: FontWeight.w700,
-                      color: CuisineTheme.cream.withValues(alpha: 0.9),
+                      color: GourmetTheme.parchment.withOpacity(0.9),
                     ),
                   ),
                   Text(
-                    hearth.isAtTemperature
-                        ? "Crystal structure stable"
-                        : "Molecular transition in progress...",
+                    hearth.isAtTemperature ? "STATUS: CRYSTAL_STABLE" : "STATUS: MOLECULAR_TRANSITION",
                     style: GoogleFonts.inter(
-                      fontSize: 9,
+                      fontSize: 8,
                       fontWeight: FontWeight.w500,
-                      color: CuisineTheme.saffron.withValues(alpha: 0.4),
+                      color: GourmetTheme.goldLeaf.withOpacity(0.4),
                     ),
                   ),
                 ],
@@ -66,9 +63,9 @@ class CrystallizationHUD extends ConsumerWidget {
         ),
         const SizedBox(height: 24),
         GourmetDial(
-          label: "MOLECULAR BOND REFINEMENT",
-          value: hearth.perfectionApex,
-          color: CuisineTheme.saffron,
+          label: "MOLECULAR_BOND_REFINEMENT", 
+          value: hearth.perfectionApex, 
+          color: GourmetTheme.goldLeaf, 
           onChanged: (val) => ref.read(hearthProvider.notifier).updatePerfectionApex(val),
         ),
       ],
@@ -90,9 +87,9 @@ class CrystallizationHUD extends ConsumerWidget {
           label,
           style: GoogleFonts.inter(
             fontSize: 9,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0.5,
-            color: CuisineTheme.cream.withValues(alpha: 0.3),
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1,
+            color: GourmetTheme.parchment.withOpacity(0.3),
           ),
         ),
       ],
@@ -110,15 +107,16 @@ class CrystalGeometryPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
-
+    
     final paint = Paint()
-      ..color = color.withValues(alpha: 0.2)
+      ..color = color.withOpacity(0.3)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
 
-    const points = 6;
-    const angleStep = (2 * math.pi) / points;
-
+    // Draw Hexagonal Grid
+    final points = 6;
+    final angleStep = (2 * math.pi) / points;
+    
     for (var i = 1; i <= 3; i++) {
       final r = radius * (i / 3);
       final path = Path();
@@ -126,37 +124,33 @@ class CrystalGeometryPainter extends CustomPainter {
         final angle = j * angleStep;
         final x = center.dx + r * math.cos(angle);
         final y = center.dy + r * math.sin(angle);
-        if (j == 0) {
-          path.moveTo(x, y);
-        } else {
-          path.lineTo(x, y);
-        }
+        if (j == 0) path.moveTo(x, y); else path.lineTo(x, y);
       }
       path.close();
       canvas.drawPath(path, paint);
     }
 
+    // Draw Active Crystal
     final activePaint = Paint()
       ..color = color
       ..style = PaintingStyle.fill;
-
+    
     final activeRadius = radius * value;
-    canvas.drawCircle(center, 2, activePaint);
-
+    canvas.drawCircle(center, 2, activePaint); // Core
+    
     final starPaint = Paint()
-      ..color = color.withValues(alpha: 0.6)
+      ..color = color.withOpacity(0.6)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
-
+      
     for (var i = 0; i < points; i++) {
-      final angle = i * angleStep;
-      final x = center.dx + activeRadius * math.cos(angle);
-      final y = center.dy + activeRadius * math.sin(angle);
-      canvas.drawLine(center, Offset(x, y), starPaint);
+        final angle = i * angleStep;
+        final x = center.dx + activeRadius * math.cos(angle);
+        final y = center.dy + activeRadius * math.sin(angle);
+        canvas.drawLine(center, Offset(x, y), starPaint);
     }
   }
 
   @override
-  bool shouldRepaint(covariant CrystalGeometryPainter oldDelegate) =>
-      oldDelegate.value != value;
+  bool shouldRepaint(covariant CrystalGeometryPainter oldDelegate) => oldDelegate.value != value;
 }

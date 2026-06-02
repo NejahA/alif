@@ -17,9 +17,12 @@ class IngredientManifest extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SectionHeader(title: "Mise en Place", icon: LucideIcons.box),
+        const SectionHeader(title: "INGREDIENT_MANIFEST", icon: LucideIcons.box),
         const SizedBox(height: 24),
+        
+        // Mise en Place Progress
         _MiseEnPlaceProgress(progress: progress),
+        
         const SizedBox(height: 24),
         Expanded(
           child: ListView.separated(
@@ -55,31 +58,31 @@ class _MiseEnPlaceProgress extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              "Prep Progress",
+              "MISE_EN_PLACE",
               style: GoogleFonts.inter(
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-                color: CuisineTheme.cream.withValues(alpha: 0.4),
+                fontSize: 9,
+                fontWeight: FontWeight.w800,
+                color: GourmetTheme.parchment.withOpacity(0.4),
               ),
             ),
             Text(
               "${(progress * 100).toInt()}%",
               style: GoogleFonts.inter(
-                fontSize: 10,
+                fontSize: 9,
                 fontWeight: FontWeight.w800,
-                color: CuisineTheme.terracotta,
+                color: GourmetTheme.copper,
               ),
             ),
           ],
         ),
         const SizedBox(height: 8),
         ClipRRect(
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(2),
           child: LinearProgressIndicator(
             value: progress,
-            minHeight: 3,
-            backgroundColor: CuisineTheme.darkWalnut,
-            valueColor: const AlwaysStoppedAnimation<Color>(CuisineTheme.terracotta),
+            minHeight: 2,
+            backgroundColor: Colors.white.withOpacity(0.05),
+            valueColor: const AlwaysStoppedAnimation<Color>(GourmetTheme.copper),
           ),
         ),
       ],
@@ -99,24 +102,19 @@ class _IngredientItem extends ConsumerWidget {
     final subs = session.currentStep.substitutions;
     final hasSub = subs.keys.any((key) => ingredient.name.contains(key));
 
-    return GestureDetector(
+    return InkWell(
       onTap: onToggle,
-      onLongPress: hasSub
-          ? () => _showSubstitution(context, ingredient.name, subs)
-          : null,
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+      onLongPress: hasSub ? () => _showSubstitution(context, ingredient.name, subs) : null,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: ingredient.isPrepped
-              ? CuisineTheme.olive.withValues(alpha: 0.05)
-              : CuisineTheme.darkWalnut.withValues(alpha: 0.3),
+          color: Colors.white.withOpacity(0.02),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: ingredient.isPrepped
-                ? CuisineTheme.olive.withValues(alpha: 0.2)
-                : CuisineTheme.cream.withValues(alpha: 0.04),
+            color: ingredient.isPrepped 
+              ? GourmetTheme.copper.withOpacity(0.2) 
+              : Colors.white.withOpacity(0.05)
           ),
         ),
         child: Row(
@@ -127,9 +125,7 @@ class _IngredientItem extends ConsumerWidget {
                 Icon(
                   ingredient.isPrepped ? LucideIcons.checkCircle2 : LucideIcons.circle,
                   size: 14,
-                  color: ingredient.isPrepped
-                      ? CuisineTheme.olive
-                      : CuisineTheme.cream.withValues(alpha: 0.2),
+                  color: ingredient.isPrepped ? GourmetTheme.accentSage : GourmetTheme.parchment.withOpacity(0.2),
                 ),
                 const SizedBox(width: 12),
                 Column(
@@ -140,18 +136,18 @@ class _IngredientItem extends ConsumerWidget {
                       style: GoogleFonts.inter(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: CuisineTheme.cream
-                            .withValues(alpha: ingredient.isPrepped ? 0.3 : 0.9),
+                        color: GourmetTheme.parchment.withOpacity(ingredient.isPrepped ? 0.3 : 0.9),
                         decoration: ingredient.isPrepped ? TextDecoration.lineThrough : null,
                       ),
                     ),
                     if (hasSub && !ingredient.isPrepped)
                       Text(
-                        "Substitution available",
-                        style: GoogleFonts.inter(
-                          fontSize: 8,
-                          fontWeight: FontWeight.w600,
-                          color: CuisineTheme.saffron.withValues(alpha: 0.5),
+                        "SUBSTITUTION_AVAILABLE",
+                        style: GoogleFonts.firaCode(
+                          fontSize: 7,
+                          fontWeight: FontWeight.w700,
+                          color: GourmetTheme.goldLeaf.withOpacity(0.5),
+                          letterSpacing: 0.5,
                         ),
                       ),
                   ],
@@ -160,10 +156,10 @@ class _IngredientItem extends ConsumerWidget {
             ),
             Text(
               ingredient.qty,
-              style: GoogleFonts.inter(
+              style: GoogleFonts.firaCode(
                 fontSize: 11,
-                fontWeight: FontWeight.w500,
-                color: CuisineTheme.terracotta.withValues(alpha: 0.8),
+                fontWeight: FontWeight.w400,
+                color: GourmetTheme.copper.withOpacity(0.8),
               ),
             ),
           ],
@@ -179,21 +175,21 @@ class _IngredientItem extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: CuisineTheme.darkWalnut,
+        backgroundColor: GourmetTheme.onyx,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
-          side: BorderSide(color: CuisineTheme.saffron.withValues(alpha: 0.2)),
+          side: const BorderSide(color: GourmetTheme.goldLeaf, width: 0.5),
         ),
         title: Row(
           children: [
-            const Icon(LucideIcons.sparkles, color: CuisineTheme.saffron, size: 18),
+            const Icon(LucideIcons.sparkles, color: GourmetTheme.goldLeaf, size: 18),
             const SizedBox(width: 12),
             Text(
-              "Chef's Suggestion",
-              style: GoogleFonts.playfairDisplay(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: CuisineTheme.cream,
+              "MICHELIN_INTELLIGENCE",
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+                color: GourmetTheme.goldLeaf,
               ),
             ),
           ],
@@ -203,10 +199,10 @@ class _IngredientItem extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "If $subKey is unavailable, try:",
+              "If $subKey is unavailable, Chef de Cuisine recommends:",
               style: GoogleFonts.inter(
-                fontSize: 12,
-                color: CuisineTheme.cream.withValues(alpha: 0.6),
+                fontSize: 11,
+                color: GourmetTheme.parchment.withOpacity(0.6),
               ),
             ),
             const SizedBox(height: 16),
@@ -214,19 +210,25 @@ class _IngredientItem extends ConsumerWidget {
               padding: const EdgeInsets.all(16),
               width: double.infinity,
               decoration: BoxDecoration(
-                color: CuisineTheme.saffron.withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: CuisineTheme.saffron.withValues(alpha: 0.15),
-                ),
+                color: GourmetTheme.goldLeaf.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 subValue!,
                 style: GoogleFonts.playfairDisplay(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: CuisineTheme.cream,
+                  color: GourmetTheme.parchment,
                 ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              "PRO_TIP: Ensure visual consistency is maintained with the original plating guide.",
+              style: GoogleFonts.inter(
+                fontSize: 9,
+                fontStyle: FontStyle.italic,
+                color: GourmetTheme.goldLeaf.withOpacity(0.5),
               ),
             ),
           ],
@@ -235,11 +237,11 @@ class _IngredientItem extends ConsumerWidget {
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
-              "Got it",
-              style: GoogleFonts.inter(
-                fontSize: 12,
+              "ACKNOWLEDGE",
+              style: GoogleFonts.firaCode(
+                fontSize: 10,
                 fontWeight: FontWeight.w700,
-                color: CuisineTheme.saffron,
+                color: GourmetTheme.goldLeaf,
               ),
             ),
           ),
@@ -258,7 +260,7 @@ class ChefVisionBranding extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [CuisineTheme.terracotta.withValues(alpha: 0.05), Colors.transparent],
+          colors: [GourmetTheme.copper.withOpacity(0.05), Colors.transparent],
           begin: Alignment.bottomCenter,
           end: Alignment.topCenter,
         ),
@@ -273,16 +275,16 @@ class ChefVisionBranding extends StatelessWidget {
               fontSize: 10,
               fontWeight: FontWeight.w900,
               letterSpacing: 4,
-              color: CuisineTheme.terracotta,
+              color: GourmetTheme.copper,
             ),
           ),
           const SizedBox(height: 4),
           Text(
-            "Culinara v4.0 — Cuisine Edition",
-            style: GoogleFonts.inter(
+            "HIGH_GASTRONOMY_OS_v2.0",
+            style: GoogleFonts.firaCode(
               fontSize: 8,
               fontWeight: FontWeight.w400,
-              color: CuisineTheme.cream.withValues(alpha: 0.3),
+              color: GourmetTheme.parchment.withOpacity(0.3),
             ),
           ),
         ],

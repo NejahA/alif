@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ashcil — Ancient Cipher Forge</title>
+  <meta name="description" content="Ashcil: Encode and decode messages using historical and modern ciphers — Caesar, Vigenère, Morse, Polybius, and more." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #050608;
+      --bg2:     #0a0c10;
+      --bg3:     #0f1118;
+      --surf:    #131620;
+      --surf2:   #1a1d2e;
+      --surf3:   #21253a;
+      --border:  rgba(255,255,255,0.06);
+      --border2: rgba(255,255,255,0.10);
+
+      --green:   #00e676;
+      --green2:  #69ffb0;
+      --green-d: rgba(0,230,118,0.12);
+      --amber:   #ffab00;
+      --amber2:  #ffd740;
+      --amber-d: rgba(255,171,0,0.12);
+      --purple:  #9c6bff;
+      --purple2: #c4a3ff;
+      --purple-d:rgba(156,107,255,0.12);
+      --red:     #ff5252;
+      --teal:    #00e5ff;
+      --teal-d:  rgba(0,229,255,0.10);
+
+      --text:    #e2e4f0;
+      --text2:   #878aaa;
+      --text3:   #3d4060;
+      --mono:    'JetBrains Mono', monospace;
+      --sans:    'Inter', sans-serif;
+      --radius:  12px;
+    }
+
+    html, body {
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 14px;
+      overflow-x: hidden;
+    }
+
+    /* ── MATRIX CANVAS ── */
+    #matrix-canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      opacity: 0.18;
+      pointer-events: none;
+    }
+
+    /* ── GLOW ORBS ── */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(120px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .orb-1 { width:500px;height:500px;top:-100px;left:-150px;background:rgba(0,230,118,0.06); }
+    .orb-2 { width:400px;height:400px;bottom:-80px;right:-100px;background:rgba(156,107,255,0.07); }
+    .orb-3 { width:300px;height:300px;top:40%;left:50%;transform:translate(-50%,-50%);background:rgba(255,171,0,0.04); }
+
+    /* ── LAYOUT ── */
+    #app {
+      position: relative;
+      z-index: 1;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 32px 20px 64px;
+    }
+
+    /* ── HEADER ── */
+    header {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+    .logo-line {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      margin-bottom: 8px;
+    }
+    .logo-icon {
+      font-size: 2rem;
+      animation: flicker 4s ease-in-out infinite;
+    }
+    @keyframes flicker {
+      0%,95%,100% { opacity:1; }
+      96% { opacity:0.4; }
+      98% { opacity:0.9; }
+    }
+    h1 {
+      font-family: var(--mono);
+      font-size: 2.4rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      background: linear-gradient(90deg, var(--green) 0%, var(--amber) 50%, var(--purple2) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-transform: uppercase;
+    }
+    .tagline {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--text3);
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+    .header-badges {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+    .badge {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      padding: 4px 12px;
+      border-radius: 50px;
+      text-transform: uppercase;
+      border: 1px solid;
+    }
+    .badge-green  { color:var(--green);  border-color:rgba(0,230,118,0.3);  background:var(--green-d); }
+    .badge-amber  { color:var(--amber);  border-color:rgba(255,171,0,0.3);  background:var(--amber-d); }
+    .badge-purple { color:var(--purple2);border-color:rgba(156,107,255,0.3);background:var(--purple-d);}
+    .badge-teal   { color:var(--teal);   border-color:rgba(0,229,255,0.25); background:var(--teal-d); }
+
+    /* ── CIPHER SELECTOR ── */
+    .cipher-selector {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+      gap: 8px;
+      margin-bottom: 28px;
+    }
+    .cipher-card {
+      background: var(--surf);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 13px 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      user-select: none;
+      position: relative;
+      overflow: hidden;
+    }
+    .cipher-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .cipher-card:hover { border-color: var(--border2); background: var(--surf2); transform: translateY(-1px); }
+    .cipher-card:hover::before { opacity: 1; }
+    .cipher-card.active {
+      border-color: var(--green);
+      background: var(--green-d);
+      box-shadow: 0 0 20px rgba(0,230,118,0.12), inset 0 0 20px rgba(0,230,118,0.04);
+    }
+    .cipher-card.active .cc-name { color: var(--green2); }
+    .cc-icon { font-size: 1.3rem; margin-bottom: 5px; }
+    .cc-name {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .cc-desc {
+      font-size: 0.65rem;
+      color: var(--text3);
+      margin-top: 3px;
+      line-height: 1.4;
+    }
+
+    /* ── MAIN FORGE PANEL ── */
+    .forge {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+    @media (max-width: 680px) { .forge { grid-template-columns: 1fr; } }
+
+    .panel {
+      background: var(--surf);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surf2);
+    }
+    .panel-label {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--text2);
+    }
+    .panel-label.green { color: var(--green); }
+    .panel-label.amber { color: var(--amber); }
+
+    .panel-actions { display: flex; gap: 6px; align-items: center; }
+    .icon-btn {
+      background: var(--surf3);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      color: var(--text2);
+      cursor: pointer;
+      font-size: 0.75rem;
+      padding: 5px 9px;
+      font-family: var(--mono);
+      transition: all 0.15s;
+    }
+    .icon-btn:hover { color: var(--text); border-color: var(--border2); background: var(--surf2); }
+    .icon-btn.copied { color: var(--green); border-color: var(--green); }
+
+    textarea.forge-input {
+      background: transparent;
+      border: none;
+      color: var(--text);
+      flex: 1;
+      font-family: var(--mono);
+      font-size: 0.9rem;
+      line-height: 1.7;
+      min-height: 200px;
+      outline: none;
+      padding: 16px;
+      resize: none;
+      width: 100%;
+    }
+    textarea.forge-input::placeholder { color: var(--text3); }
+
+    .forge-output {
+      background: transparent;
+      color: var(--green2);
+      flex: 1;
+      font-family: var(--mono);
+      font-size: 0.9rem;
+      line-height: 1.7;
+      min-height: 200px;
+      padding: 16px;
+      white-space: pre-wrap;
+      word-break: break-all;
+      overflow-y: auto;
+    }
+    .forge-output.empty { color: var(--text3); font-style: italic; }
+    .forge-output.error { color: var(--red); }
+
+    /* ── CONTROLS BAR ── */
+    .controls-bar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      background: var(--surf);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      margin-bottom: 14px;
+    }
+    .ctrl-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .ctrl-label {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      color: var(--text3);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      white-space: nowrap;
+    }
+    input[type="number"], input[type="text"].ctrl-input {
+      background: var(--bg3);
+      border: 1px solid var(--border2);
+      border-radius: 7px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      padding: 6px 10px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input[type="number"] { width: 68px; }
+    input[type="text"].ctrl-input { min-width: 120px; }
+    input[type="number"]:focus,
+    input[type="text"].ctrl-input:focus { border-color: var(--green); }
+
+    .mode-toggle {
+      display: flex;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .mode-btn {
+      background: none;
+      border: none;
+      color: var(--text2);
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      padding: 7px 14px;
+      text-transform: uppercase;
+      transition: all 0.15s;
+    }
+    .mode-btn.active { background: var(--green); color: #000; }
+    .mode-btn:not(.active):hover { color: var(--text); background: var(--surf3); }
+
+    /* ── CIPHER INFO ── */
+    .cipher-info {
+      background: var(--surf);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--amber);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      margin-bottom: 14px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: start;
+    }
+    .ci-title {
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--amber);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 5px;
+    }
+    .ci-body {
+      font-size: 0.78rem;
+      color: var(--text2);
+      line-height: 1.6;
+    }
+    .ci-meta {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--text3);
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    /* ── STATS BAR ── */
+    .stats-bar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .stat-chip {
+      background: var(--surf);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+    }
+    .stat-chip .sv { color: var(--green2); font-weight: 700; font-size: 1rem; display: block; }
+    .stat-chip .sl { color: var(--text3); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.1em; }
+
+    /* ── POLYBIUS SQUARE ── */
+    .polybius-grid {
+      display: none;
+      margin-top: 14px;
+    }
+    .polybius-grid.show { display: block; }
+    .pb-table {
+      border-collapse: collapse;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      margin: 0 auto;
+    }
+    .pb-table td {
+      border: 1px solid var(--border2);
+      width: 38px;
+      height: 38px;
+      text-align: center;
+      vertical-align: middle;
+    }
+    .pb-table td.pb-head {
+      background: var(--surf2);
+      color: var(--amber);
+      font-weight: 700;
+    }
+    .pb-table td.pb-cell { color: var(--green2); }
+    .pb-table td.pb-cell.highlight { background: rgba(0,230,118,0.18); color: var(--green); }
+
+    /* ── MORSE LEGEND ── */
+    .morse-legend {
+      display: none;
+      grid-template-columns: repeat(auto-fill, minmax(90px,1fr));
+      gap: 5px;
+      margin-top: 14px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .morse-legend.show { display: grid; }
+    .ml-item {
+      background: var(--surf2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 5px 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .ml-char { color: var(--amber); font-family: var(--mono); font-weight: 700; font-size: 0.8rem; }
+    .ml-code { color: var(--text2); font-family: var(--mono); font-size: 0.72rem; }
+
+    /* ── VIGENERE VISUAL ── */
+    .vig-key-display {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      color: var(--text2);
+      margin-top: 8px;
+      letter-spacing: 0.1em;
+      display: none;
+    }
+    .vig-key-display.show { display: block; }
+    .vig-key-display span.vc { color: var(--purple2); }
+
+    /* ── SWAP BUTTON ── */
+    .swap-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--surf2);
+      border: 1px solid var(--border2);
+      border-radius: 50%;
+      color: var(--green);
+      cursor: pointer;
+      font-size: 1.1rem;
+      height: 38px;
+      width: 38px;
+      margin: auto;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    .swap-btn:hover { background: var(--green-d); border-color: var(--green); transform: rotate(180deg); }
+
+    .forge-row {
+      display: flex;
+      align-items: stretch;
+      gap: 14px;
+    }
+    .forge-row .panel { flex: 1; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--surf3); border-radius: 4px; }
+
+    /* ── CHAR COUNT ── */
+    .char-count {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--text3);
+      padding: 4px 16px 8px;
+    }
+
+    /* footer */
+    footer {
+      text-align: center;
+      margin-top: 40px;
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--text3);
+      letter-spacing: 0.1em;
+    }
+    footer a { color: var(--green); text-decoration: none; }
+
+    /* Divider */
+    .sep {
+      height: 1px;
+      background: var(--border);
+      margin: 20px 0;
+    }
+
+    .section-title {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--text3);
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="matrix-canvas"></canvas>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<div id="app">
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo-line">
+      <span class="logo-icon">🔐</span>
+      <h1>Ashcil</h1>
+      <span class="logo-icon">🔐</span>
+    </div>
+    <div class="tagline">Ancient Cipher Forge — Encode · Decode · Encrypt</div>
+    <div class="header-badges">
+      <span class="badge badge-green">Caesar</span>
+      <span class="badge badge-amber">Vigenère</span>
+      <span class="badge badge-purple">Morse</span>
+      <span class="badge badge-teal">Polybius</span>
+      <span class="badge badge-green">Atbash</span>
+      <span class="badge badge-amber">Rail Fence</span>
+      <span class="badge badge-purple">Binary</span>
+      <span class="badge badge-teal">Base64</span>
+    </div>
+  </header>
+
+  <!-- CIPHER SELECTOR -->
+  <div class="section-title">⚙ Select Cipher</div>
+  <div class="cipher-selector" id="cipherSelector"></div>
+
+  <!-- CIPHER INFO -->
+  <div class="cipher-info" id="cipherInfo">
+    <div>
+      <div class="ci-title" id="ciTitle">Caesar Cipher</div>
+      <div class="ci-body" id="ciBody">—</div>
+    </div>
+    <div class="ci-meta" id="ciMeta">—</div>
+  </div>
+
+  <!-- CONTROLS -->
+  <div class="controls-bar" id="controlsBar">
+    <div class="ctrl-group" id="ctrlShift">
+      <span class="ctrl-label">Shift</span>
+      <input type="number" id="shiftInput" value="3" min="1" max="25" oninput="forge()" />
+    </div>
+    <div class="ctrl-group" id="ctrlKey" style="display:none;">
+      <span class="ctrl-label">Key</span>
+      <input type="text" class="ctrl-input" id="keyInput" value="SECRET" placeholder="Enter key..." oninput="forge()" />
+    </div>
+    <div class="ctrl-group" id="ctrlRails" style="display:none;">
+      <span class="ctrl-label">Rails</span>
+      <input type="number" id="railsInput" value="3" min="2" max="10" oninput="forge()" />
+    </div>
+    <div class="ctrl-group" id="ctrlMode">
+      <span class="ctrl-label">Mode</span>
+      <div class="mode-toggle">
+        <button class="mode-btn active" id="btnEncode" onclick="setMode('encode')">Encode</button>
+        <button class="mode-btn" id="btnDecode" onclick="setMode('decode')">Decode</button>
+      </div>
+    </div>
+    <div class="ctrl-group" style="margin-left:auto;">
+      <button class="icon-btn" onclick="clearAll()" title="Clear">✕ Clear</button>
+      <button class="icon-btn" onclick="swapIO()" title="Swap">⇅ Swap</button>
+    </div>
+  </div>
+
+  <!-- FORGE PANELS -->
+  <div class="forge">
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-label">▶ Plaintext Input</span>
+        <div class="panel-actions">
+          <button class="icon-btn" onclick="pasteInput()" title="Paste">⎘ Paste</button>
+        </div>
+      </div>
+      <textarea class="forge-input" id="inputText"
+        placeholder="Type your message here..."
+        oninput="forge()"
+        spellcheck="false"
+      ></textarea>
+      <div class="char-count" id="inputCount">0 chars</div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-label amber">◀ Ciphertext Output</span>
+        <div class="panel-actions">
+          <button class="icon-btn" id="copyBtn" onclick="copyOutput()" title="Copy">⎘ Copy</button>
+          <button class="icon-btn" onclick="downloadOutput()" title="Download">↓ Save</button>
+        </div>
+      </div>
+      <div class="forge-output empty" id="outputText">Output will appear here...</div>
+      <div class="char-count" id="outputCount">0 chars</div>
+    </div>
+  </div>
+
+  <!-- POLYBIUS VISUAL -->
+  <div class="polybius-grid" id="polybiusGrid">
+    <div class="section-title">◈ Polybius Square</div>
+    <div style="overflow-x:auto;text-align:center;">
+      <table class="pb-table" id="pbTable"></table>
+    </div>
+  </div>
+
+  <!-- MORSE LEGEND -->
+  <div class="morse-legend" id="morseLegend"></div>
+
+  <!-- Vigenère key visual -->
+  <div class="vig-key-display" id="vigKeyDisplay"></div>
+
+  <!-- STATS -->
+  <div class="sep"></div>
+  <div class="section-title">◈ Statistics</div>
+  <div class="stats-bar" id="statsBar">
+    <div class="stat-chip"><span class="sv" id="statIn">0</span><span class="sl">Input chars</span></div>
+    <div class="stat-chip"><span class="sv" id="statOut">0</span><span class="sl">Output chars</span></div>
+    <div class="stat-chip"><span class="sv" id="statWords">0</span><span class="sl">Words</span></div>
+    <div class="stat-chip"><span class="sv" id="statLines">1</span><span class="sl">Lines</span></div>
+    <div class="stat-chip"><span class="sv" id="statLetters">0</span><span class="sl">Letters</span></div>
+    <div class="stat-chip"><span class="sv" id="statRatio">1.0×</span><span class="sl">Size ratio</span></div>
+  </div>
+
+</div><!-- #app -->
+
+<footer>
+  <p>⚡ Ashcil — Ancient Cipher Forge &nbsp;|&nbsp; All encryption runs client-side, in your browser &nbsp;|&nbsp; No data is sent anywhere</p>
+</footer>
+
+<script>
+// ─────────────────────────────────────────────
+//  MATRIX RAIN BACKGROUND
+// ─────────────────────────────────────────────
+(function(){
+  const canvas = document.getElementById('matrix-canvas');
+  const ctx = canvas.getContext('2d');
+  const chars = '01アイウエオカキクケコサシスセソタチツテトナニヌネノABCDEFGHIJKLMNOPQRSTUVWXYZ∑∆Ω∞§¶†‡◊♦♠♣♥';
+  let cols, drops;
+  function resize() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+    cols = Math.floor(canvas.width / 18);
+    drops = Array(cols).fill(1);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+  function draw() {
+    ctx.fillStyle = 'rgba(5,6,8,0.05)';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = '#00e676';
+    ctx.font = '13px JetBrains Mono, monospace';
+    for(let i=0;i<drops.length;i++){
+      const c = chars[Math.floor(Math.random()*chars.length)];
+      ctx.fillStyle = Math.random()>0.98 ? '#fff' : `rgba(0,230,118,${Math.random()*0.6+0.2})`;
+      ctx.fillText(c, i*18, drops[i]*18);
+      if(drops[i]*18>canvas.height && Math.random()>0.975) drops[i]=0;
+      drops[i]++;
+    }
+  }
+  setInterval(draw, 55);
+})();
+
+// ─────────────────────────────────────────────
+//  CIPHER DEFINITIONS
+// ─────────────────────────────────────────────
+const CIPHERS = [
+  {
+    id:'caesar', icon:'🏛', name:'Caesar', desc:'Shift letters by N positions',
+    origin:'Roman, 50 BC', type:'classical',
+    controls:['shift'],
+    info:'Julius Caesar used this cipher to protect military communications. Each letter is shifted by a fixed amount in the alphabet. Simple but historically significant — the foundation of substitution ciphers.',
+  },
+  {
+    id:'atbash', icon:'✡', name:'Atbash', desc:'Mirror the alphabet (A↔Z)',
+    origin:'Hebrew, 600 BC', type:'classical',
+    controls:[],
+    info:'Atbash is one of the oldest known ciphers, used in the Hebrew Bible. The name comes from the first two and last two letters of the Hebrew alphabet (Aleph-Tav, Beth-Shin). A=Z, B=Y, C=X…',
+  },
+  {
+    id:'rot13', icon:'🔄', name:'ROT13', desc:'Rotate 13 positions (self-inverse)',
+    origin:'Usenet, 1980s', type:'classical',
+    controls:[],
+    info:'ROT13 is a special case of Caesar cipher with shift=13. Because there are 26 letters, encoding and decoding are identical operations — apply ROT13 twice to get the original text back.',
+  },
+  {
+    id:'vigenere', icon:'📜', name:'Vigenère', desc:'Key-based polyalphabetic cipher',
+    origin:'French, 16th century', type:'polyalphabetic',
+    controls:['key'],
+    info:'The "Unbreakable Cipher" for 300 years. Uses a repeating keyword to shift each letter by a different amount. Invented by Giovan Battista Bellaso (1553), later misattributed to Blaise de Vigenère.',
+  },
+  {
+    id:'morse', icon:'📡', name:'Morse Code', desc:'Dots and dashes',
+    origin:'USA, 1837', type:'encoding',
+    controls:[],
+    info:'Developed by Samuel Morse and Alfred Vail for the electric telegraph. International Morse Code (ITU) was standardized in 1865. Each letter/digit maps to a unique pattern of dots (·) and dashes (−).',
+  },
+  {
+    id:'polybius', icon:'⬛', name:'Polybius', desc:'5×5 grid coordinate cipher',
+    origin:'Greek, 200 BC', type:'classical',
+    controls:[],
+    info:'Invented by Greek historian Polybius. Each letter maps to its row and column in a 5×5 grid (I and J share a cell). Later inspired the ADFGVX cipher used by Germany in WWI.',
+  },
+  {
+    id:'railfence', icon:'🚂', name:'Rail Fence', desc:'Zigzag transposition cipher',
+    origin:'Unknown, Civil War era', type:'transposition',
+    controls:['rails'],
+    info:'A transposition cipher that writes the message in a zigzag pattern across N "rails" (rows), then reads off each rail sequentially. The number of rails determines the security level.',
+  },
+  {
+    id:'binary', icon:'💾', name:'Binary', desc:'Text to binary (8-bit ASCII)',
+    origin:'Modern digital', type:'encoding',
+    controls:[],
+    info:'Converts each character to its 8-bit binary ASCII representation. Every character becomes a sequence of 0s and 1s, separated by spaces. The fundamental language of computers.',
+  },
+  {
+    id:'hex', icon:'🔢', name:'Hexadecimal', desc:'Text to hex bytes',
+    origin:'Modern digital', type:'encoding',
+    controls:[],
+    info:'Converts each character to its hexadecimal (base-16) ASCII value. Hex is widely used in computing, memory dumps, color codes, and cryptographic hashes. 0-9 and A-F represent 16 values.',
+  },
+  {
+    id:'base64', icon:'📦', name:'Base64', desc:'Binary-to-text encoding scheme',
+    origin:'Internet era, RFC 1341 (1992)', type:'encoding',
+    controls:[],
+    info:'Encodes binary data using 64 printable ASCII characters (A-Z, a-z, 0-9, +, /). Widely used for encoding email attachments, images in CSS/HTML, and API authentication tokens.',
+  },
+  {
+    id:'reverse', icon:'🔃', name:'Reverse', desc:'Mirror text backwards',
+    origin:'Steganographic technique', type:'simple',
+    controls:[],
+    info:'The simplest form of obfuscation — text written or printed backwards. Used in mirror writing (as practiced by Leonardo da Vinci) and as a steganographic technique to hide simple messages.',
+  },
+  {
+    id:'bacon', icon:'🥓', name:"Bacon's", desc:"Bilateral cipher using A/B",
+    origin:'Francis Bacon, 1605', type:'classical',
+    controls:[],
+    info:"Francis Bacon's bilateral cipher encodes each letter as a 5-character sequence of A's and B's. For example, A=AAAAA, B=AAAAB, Z=BBBBB. Often used to hide secret messages inside innocent text.",
+  },
+];
+
+// ─────────────────────────────────────────────
+//  MORSE TABLE
+// ─────────────────────────────────────────────
+const MORSE = {
+  'A':'.-','B':'-...','C':'-.-.','D':'-..','E':'.','F':'..-.','G':'--.','H':'....','I':'..','J':'.---',
+  'K':'-.-','L':'.-..','M':'--','N':'-.','O':'---','P':'.--.','Q':'--.-','R':'.-.','S':'...','T':'-',
+  'U':'..-','V':'...-','W':'.--','X':'-..-','Y':'-.--','Z':'--..',
+  '0':'-----','1':'.----','2':'..---','3':'...--','4':'....-','5':'.....','6':'-....','7':'--...','8':'---..','9':'----.',
+  '.':'.-.-.-',',':'--..--','?':'..--..','!':'-.-.--','/':'-..-.','@':'.--.-.','&':'.-...',
+};
+const MORSE_REV = Object.fromEntries(Object.entries(MORSE).map(([k,v])=>[v,k]));
+
+// Bacon cipher
+const BACON_MAP = {};
+const ALPHA = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+for(let i=0;i<26;i++){
+  let b='';
+  let n=i;
+  for(let j=0;j<5;j++){b=(n&1?'B':'A')+b;n>>=1;}
+  BACON_MAP[ALPHA[i]]=b;
+}
+const BACON_REV=Object.fromEntries(Object.entries(BACON_MAP).map(([k,v])=>[v,k]));
+
+// Polybius
+const POLYBIUS_ALPHA='ABCDEFGHIKLMNOPQRSTUVWXYZ'; // no J
+function polyEncode(t){
+  return t.toUpperCase().split('').map(c=>{
+    if(c==='J')c='I';
+    const i=POLYBIUS_ALPHA.indexOf(c);
+    if(i<0)return c;
+    return `${Math.floor(i/5)+1}${(i%5)+1}`;
+  }).join(' ');
+}
+function polyDecode(t){
+  const tokens=t.trim().split(/\s+/);
+  return tokens.map(tok=>{
+    if(/^\d\d$/.test(tok)){
+      const r=parseInt(tok[0])-1, c2=parseInt(tok[1])-1;
+      return POLYBIUS_ALPHA[r*5+c2]||'?';
+    }
+    return tok;
+  }).join('');
+}
+
+// Rail Fence
+function railEncode(text,rails){
+  if(rails<2)return text;
+  const fence=Array.from({length:rails},()=>[]);
+  let r=0,dir=1;
+  for(const c of text){
+    fence[r].push(c);
+    if(r===0)dir=1;
+    else if(r===rails-1)dir=-1;
+    r+=dir;
+  }
+  return fence.map(row=>row.join('')).join('');
+}
+function railDecode(text,rails){
+  if(rails<2)return text;
+  const n=text.length;
+  const indices=[];
+  let r=0,dir=1;
+  for(let i=0;i<n;i++){
+    indices.push(r);
+    if(r===0)dir=1;
+    else if(r===rails-1)dir=-1;
+    r+=dir;
+  }
+  const fence=Array.from({length:rails},()=>[]);
+  const sorted=[...Array(n).keys()].sort((a,b)=>indices[a]-indices[b]||a-b);
+  let pos=0;
+  for(let i=0;i<n;i++){fence[indices[sorted[i]]].push('');}
+  const ptrs=Array(rails).fill(0);
+  for(let i=0;i<n;i++){
+    const ri=indices[sorted[i]];
+    fence[ri][ptrs[ri]++]=text[pos++];
+  }
+  const result=[];
+  const counters=Array(rails).fill(0);
+  for(let i=0;i<n;i++){
+    result.push(fence[indices[i]][counters[indices[i]]++]);
+  }
+  return result.join('');
+}
+
+// ─────────────────────────────────────────────
+//  STATE
+// ─────────────────────────────────────────────
+let currentCipher = 'caesar';
+let currentMode   = 'encode';
+
+// ─────────────────────────────────────────────
+//  BUILD CIPHER SELECTOR
+// ─────────────────────────────────────────────
+(function buildSelector(){
+  const grid = document.getElementById('cipherSelector');
+  for(const c of CIPHERS){
+    const card = document.createElement('div');
+    card.className = 'cipher-card' + (c.id==='caesar'?' active':'');
+    card.id = 'cc-'+c.id;
+    card.innerHTML=`<div class="cc-icon">${c.icon}</div><div class="cc-name">${c.name}</div><div class="cc-desc">${c.desc}</div>`;
+    card.onclick=()=>selectCipher(c.id);
+    grid.appendChild(card);
+  }
+  updateInfo('caesar');
+  buildPolybiusTable();
+  buildMorseLegend();
+})();
+
+function selectCipher(id){
+  currentCipher=id;
+  document.querySelectorAll('.cipher-card').forEach(c=>c.classList.remove('active'));
+  document.getElementById('cc-'+id).classList.add('active');
+  updateInfo(id);
+  updateControls(id);
+  forge();
+}
+
+function updateInfo(id){
+  const c=CIPHERS.find(x=>x.id===id);
+  document.getElementById('ciTitle').textContent=c.icon+' '+c.name+' Cipher';
+  document.getElementById('ciBody').textContent=c.info;
+  document.getElementById('ciMeta').innerHTML=`<div style="color:var(--amber)">Origin</div>${c.origin}<br><br><div style="color:var(--amber)">Type</div>${c.type}`;
+}
+
+function updateControls(id){
+  const c=CIPHERS.find(x=>x.id===id);
+  document.getElementById('ctrlShift').style.display   = c.controls.includes('shift')  ?'flex':'none';
+  document.getElementById('ctrlKey').style.display     = c.controls.includes('key')    ?'flex':'none';
+  document.getElementById('ctrlRails').style.display   = c.controls.includes('rails')  ?'flex':'none';
+  // Polybius/Morse visuals
+  document.getElementById('polybiusGrid').classList.toggle('show', id==='polybius');
+  document.getElementById('morseLegend').classList.toggle('show', id==='morse');
+  document.getElementById('vigKeyDisplay').classList.toggle('show', id==='vigenere');
+  // Mode toggle — some ciphers are encode-only
+  const encodeOnly=['binary','hex','base64'];
+  document.getElementById('ctrlMode').style.display = 'flex';
+}
+
+// ─────────────────────────────────────────────
+//  MAIN FORGE FUNCTION
+// ─────────────────────────────────────────────
+function forge(){
+  const raw = document.getElementById('inputText').value;
+  const shift= parseInt(document.getElementById('shiftInput').value)||3;
+  const key  = document.getElementById('keyInput').value||'KEY';
+  const rails= parseInt(document.getElementById('railsInput').value)||3;
+  const enc  = currentMode==='encode';
+
+  let output='';
+  try {
+    switch(currentCipher){
+      case 'caesar':    output=enc?caesarEnc(raw,shift):caesarDec(raw,shift); break;
+      case 'atbash':    output=atbash(raw); break;
+      case 'rot13':     output=rot13(raw); break;
+      case 'vigenere':  output=enc?vigenereEnc(raw,key):vigenereDec(raw,key); break;
+      case 'morse':     output=enc?morseEnc(raw):morseDec(raw); break;
+      case 'polybius':  output=enc?polyEncode(raw):polyDecode(raw); break;
+      case 'railfence': output=enc?railEncode(raw,rails):railDecode(raw,rails); break;
+      case 'binary':    output=enc?textToBin(raw):binToText(raw); break;
+      case 'hex':       output=enc?textToHex(raw):hexToText(raw); break;
+      case 'base64':    output=enc?btoa(unescape(encodeURIComponent(raw))):decodeURIComponent(escape(atob(raw))); break;
+      case 'reverse':   output=raw.split('').reverse().join(''); break;
+      case 'bacon':     output=enc?baconEnc(raw):baconDec(raw); break;
+    }
+    const el=document.getElementById('outputText');
+    el.textContent=output||'';
+    el.className='forge-output'+(output?'':' empty');
+    if(!output)el.textContent='Output will appear here...';
+  } catch(e){
+    const el=document.getElementById('outputText');
+    el.textContent='Error: '+e.message;
+    el.className='forge-output error';
+  }
+
+  // Stats
+  const inLen=raw.length, outLen=output.length;
+  document.getElementById('inputCount').textContent=inLen+' chars';
+  document.getElementById('outputCount').textContent=outLen+' chars';
+  document.getElementById('statIn').textContent=inLen;
+  document.getElementById('statOut').textContent=outLen;
+  document.getElementById('statWords').textContent=(raw.match(/\S+/g)||[]).length;
+  document.getElementById('statLines').textContent=(raw.match(/\n/g)||[]).length+1;
+  document.getElementById('statLetters').textContent=(raw.match(/[a-zA-Z]/g)||[]).length;
+  document.getElementById('statRatio').textContent=inLen?((outLen/inLen).toFixed(1)+'×'):'—';
+
+  // Vigenère key visual
+  if(currentCipher==='vigenere' && raw){
+    const cleanKey=key.toUpperCase().replace(/[^A-Z]/g,'');
+    if(cleanKey){
+      let kv='<span style="color:var(--text3);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;">Key pattern: </span>';
+      for(let i=0;i<Math.min(raw.length,60);i++){
+        if(raw[i].match(/[a-zA-Z]/)) kv+=`<span class="vc">${cleanKey[i%cleanKey.length]}</span>`;
+        else kv+=`<span style="color:var(--text3)">·</span>`;
+      }
+      if(raw.length>60)kv+='<span style="color:var(--text3)">…</span>';
+      document.getElementById('vigKeyDisplay').innerHTML=kv;
+    }
+  }
+}
+
+// ─────────────────────────────────────────────
+//  CIPHER IMPLEMENTATIONS
+// ─────────────────────────────────────────────
+function caesarEnc(text,n){
+  return text.replace(/[a-zA-Z]/g,c=>{
+    const base=c<='Z'?65:97;
+    return String.fromCharCode((c.charCodeAt(0)-base+n)%26+base);
+  });
+}
+function caesarDec(text,n){ return caesarEnc(text,26-(n%26)); }
+
+function atbash(text){
+  return text.replace(/[a-zA-Z]/g,c=>{
+    const base=c<='Z'?65:97;
+    return String.fromCharCode(base+25-(c.charCodeAt(0)-base));
+  });
+}
+
+function rot13(text){ return caesarEnc(text,13); }
+
+function vigenereEnc(text,key){
+  const k=key.toUpperCase().replace(/[^A-Z]/g,'');
+  if(!k)throw new Error('Key must contain letters');
+  let ki=0;
+  return text.replace(/[a-zA-Z]/g,c=>{
+    const base=c<='Z'?65:97;
+    const shift=k[ki%k.length].charCodeAt(0)-65;
+    ki++;
+    return String.fromCharCode((c.charCodeAt(0)-base+shift)%26+base);
+  });
+}
+function vigenereDec(text,key){
+  const k=key.toUpperCase().replace(/[^A-Z]/g,'');
+  if(!k)throw new Error('Key must contain letters');
+  let ki=0;
+  return text.replace(/[a-zA-Z]/g,c=>{
+    const base=c<='Z'?65:97;
+    const shift=k[ki%k.length].charCodeAt(0)-65;
+    ki++;
+    return String.fromCharCode((c.charCodeAt(0)-base-shift+26)%26+base);
+  });
+}
+
+function morseEnc(text){
+  return text.toUpperCase().split('').map(c=>{
+    if(c===' ')return '/';
+    return MORSE[c]||c;
+  }).join(' ');
+}
+function morseDec(text){
+  return text.split(' / ').map(word=>
+    word.split(' ').map(code=>MORSE_REV[code]||code).join('')
+  ).join(' ');
+}
+
+function textToBin(t){
+  return t.split('').map(c=>c.charCodeAt(0).toString(2).padStart(8,'0')).join(' ');
+}
+function binToText(t){
+  return t.trim().split(/\s+/).map(b=>String.fromCharCode(parseInt(b,2))).join('');
+}
+function textToHex(t){
+  return t.split('').map(c=>c.charCodeAt(0).toString(16).toUpperCase().padStart(2,'0')).join(' ');
+}
+function hexToText(t){
+  return t.trim().split(/\s+/).map(h=>String.fromCharCode(parseInt(h,16))).join('');
+}
+
+function baconEnc(text){
+  return text.toUpperCase().split('').map(c=>{
+    if(BACON_MAP[c])return BACON_MAP[c];
+    if(c===' ')return ' ';
+    return c;
+  }).join(' ');
+}
+function baconDec(text){
+  const tokens=text.trim().split(/\s+/);
+  let result='',buf='';
+  for(const tok of tokens){
+    if(/^[AB]{5}$/.test(tok)){
+      result+=(BACON_REV[tok]||'?');
+    } else {
+      result+=tok;
+    }
+  }
+  return result;
+}
+
+// ─────────────────────────────────────────────
+//  POLYBIUS TABLE
+// ─────────────────────────────────────────────
+function buildPolybiusTable(){
+  const table=document.getElementById('pbTable');
+  table.innerHTML='';
+  const header=document.createElement('tr');
+  header.innerHTML='<td class="pb-head"></td>'+[1,2,3,4,5].map(n=>`<td class="pb-head">${n}</td>`).join('');
+  table.appendChild(header);
+  for(let r=0;r<5;r++){
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td class="pb-head">${r+1}</td>`;
+    for(let c=0;c<5;c++){
+      const ch=POLYBIUS_ALPHA[r*5+c];
+      const td=document.createElement('td');
+      td.className='pb-cell';
+      td.textContent=ch+(ch==='I'?'/J':'');
+      tr.appendChild(td);
+    }
+    table.appendChild(tr);
+  }
+}
+
+// ─────────────────────────────────────────────
+//  MORSE LEGEND
+// ─────────────────────────────────────────────
+function buildMorseLegend(){
+  const leg=document.getElementById('morseLegend');
+  for(const [ch,code] of Object.entries(MORSE)){
+    const div=document.createElement('div');
+    div.className='ml-item';
+    div.innerHTML=`<span class="ml-char">${ch}</span><span class="ml-code">${code}</span>`;
+    leg.appendChild(div);
+  }
+}
+
+// ─────────────────────────────────────────────
+//  UI ACTIONS
+// ─────────────────────────────────────────────
+function setMode(m){
+  currentMode=m;
+  document.getElementById('btnEncode').classList.toggle('active',m==='encode');
+  document.getElementById('btnDecode').classList.toggle('active',m==='decode');
+  forge();
+}
+
+function clearAll(){
+  document.getElementById('inputText').value='';
+  document.getElementById('outputText').textContent='Output will appear here...';
+  document.getElementById('outputText').className='forge-output empty';
+  forge();
+}
+
+function swapIO(){
+  const out=document.getElementById('outputText').textContent;
+  if(out==='Output will appear here...')return;
+  document.getElementById('inputText').value=out;
+  setMode(currentMode==='encode'?'decode':'encode');
+}
+
+async function copyOutput(){
+  const text=document.getElementById('outputText').textContent;
+  if(!text||text==='Output will appear here...')return;
+  try{
+    await navigator.clipboard.writeText(text);
+    const btn=document.getElementById('copyBtn');
+    btn.textContent='✓ Copied!';
+    btn.classList.add('copied');
+    setTimeout(()=>{btn.textContent='⎘ Copy';btn.classList.remove('copied');},2000);
+  }catch(e){}
+}
+
+async function pasteInput(){
+  try{
+    const text=await navigator.clipboard.readText();
+    document.getElementById('inputText').value=text;
+    forge();
+  }catch(e){}
+}
+
+function downloadOutput(){
+  const text=document.getElementById('outputText').textContent;
+  if(!text||text==='Output will appear here...')return;
+  const a=document.createElement('a');
+  a.href='data:text/plain;charset=utf-8,'+encodeURIComponent(text);
+  a.download=`ashcil_${currentCipher}_${currentMode}.txt`;
+  a.click();
+}
+
+// ─────────────────────────────────────────────
+//  KEYBOARD SHORTCUT
+// ─────────────────────────────────────────────
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){forge();}
+  if((e.ctrlKey||e.metaKey)&&e.shiftKey&&e.key==='C'){copyOutput();}
+});
+
+// Init
+forge();
+</script>
+</body>
+</html>

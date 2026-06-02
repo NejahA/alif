@@ -1,155 +1,71 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class CuisineTheme {
-  // ─── Warm Cuisine Palette ───
-  static const Color espresso = Color(0xFF1B1210);
-  static const Color darkWalnut = Color(0xFF2A1F1A);
-  static const Color cream = Color(0xFFFFF8F0);
-  static const Color terracotta = Color(0xFFC4704E);
-  static const Color saffron = Color(0xFFE8A849);
-  static const Color olive = Color(0xFF6B7D5E);
-  static const Color paprika = Color(0xFF8B2E1C);
-  static const Color butterscotch = Color(0xFFD4A760);
-  static const Color rosemary = Color(0xFF3D5A3A);
-  static const Color warmLinen = Color(0xFFF5E6D0);
-  static const Color cinnamonDust = Color(0xFFAA7B5B);
-  static const Color charredAmber = Color(0xFF3A2218);
-  static const Color freshMint = Color(0xFF7FBDA0);
-  static const Color cranberry = Color(0xFFC1292E);
+class GourmetTheme {
+  // Palette: Bordeaux, Copper, Onyx, Gold Leaf, Linen
+  static const Color bordeaux = Color(0xFF4A0E0E);
+  static const Color copper = Color(0xFFB87333);
+  static const Color onyx = Color(0xFF0F0F0F);
+  static const Color parchment = Color(0xFFF5E6CC);
+  static const Color goldLeaf = Color(0xFFD4AF37);
+  static const Color linen = Color(0xFFFAF9F6);
+  static const Color accentSage = Color(0xFF7B8D72);
+  static const Color deepWood = Color(0xFF1A120F);
 
-  // Legacy aliases for backward compat
-  static const Color onyx = espresso;
-  static const Color copper = terracotta;
-  static const Color parchment = cream;
-  static const Color goldLeaf = saffron;
-  static const Color accentSage = olive;
-  static const Color bordeaux = paprika;
-  static const Color deepWood = darkWalnut;
-  static const Color charcoalSmoke = Color(0xFF1C1816);
-  static const Color crimsonFlambe = cranberry;
-  static const Color emeraldBraise = rosemary;
-  static const Color cinnamonHaze = cinnamonDust;
-  static const Color lavenderFrost = Color(0xFF9B8EC0);
-
-  // ─── Decorations ───
   static BoxDecoration glassDecoration(BuildContext context) {
     return BoxDecoration(
-      color: darkWalnut.withValues(alpha: 0.6),
-      borderRadius: BorderRadius.circular(28),
-      border: Border.all(color: saffron.withValues(alpha: 0.08), width: 0.5),
+      color: Colors.white.withOpacity(0.02),
+      borderRadius: BorderRadius.circular(24),
+      border: Border.all(color: Colors.white.withOpacity(0.05), width: 1),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withValues(alpha: 0.35),
+          color: Colors.black.withOpacity(0.4),
           blurRadius: 40,
-          offset: const Offset(0, 16),
+          offset: const Offset(0, 20),
         ),
       ],
     );
   }
 
-  static BoxDecoration warmCardDecoration({
-    Color? glowColor,
-    double borderRadius = 24,
-  }) {
-    return BoxDecoration(
-      color: darkWalnut.withValues(alpha: 0.5),
-      borderRadius: BorderRadius.circular(borderRadius),
-      border: Border.all(
-        color: (glowColor ?? saffron).withValues(alpha: 0.1),
-        width: 0.5,
-      ),
-      boxShadow: [
-        BoxShadow(
-          color: (glowColor ?? terracotta).withValues(alpha: 0.06),
-          blurRadius: 30,
-          offset: const Offset(0, 12),
-        ),
-      ],
-    );
-  }
-
-  // ─── Gradients ───
-  static LinearGradient get paprikaGradient => const LinearGradient(
-        colors: [paprika, Color(0xFF5C1A12)],
+  static LinearGradient get bordeauxGradient => const LinearGradient(
+        colors: [bordeaux, Color(0xFF631414)],
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       );
 
-  static LinearGradient get warmSurfaceGradient => const LinearGradient(
-        colors: [espresso, darkWalnut],
+  static LinearGradient get darkSurfaceGradient => const LinearGradient(
+        colors: [onyx, deepWood],
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
       );
 
-  static LinearGradient get terracottaShimmer => const LinearGradient(
-        colors: [Color(0xFFC4704E), Color(0xFFE8A849), Color(0xFFC4704E)],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      );
-
-  static LinearGradient get kitchenWarmth => LinearGradient(
-        colors: [
-          espresso,
-          darkWalnut.withValues(alpha: 0.95),
-          espresso,
-        ],
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-      );
-
-  // ─── Theme Data ───
   static ThemeData get dark {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      scaffoldBackgroundColor: espresso,
+      scaffoldBackgroundColor: onyx,
       colorScheme: const ColorScheme.dark(
-        primary: terracotta,
-        secondary: olive,
-        surface: Color(0xFF211916),
-        onSurface: cream,
+        primary: copper,
+        secondary: accentSage,
+        surface: Color(0xFF151515),
+        onSurface: parchment,
       ),
       textTheme: GoogleFonts.interTextTheme().copyWith(
         displayLarge: GoogleFonts.playfairDisplay(
-          color: cream,
+          color: parchment,
           fontWeight: FontWeight.w800,
           letterSpacing: -1,
         ),
-        displayMedium: GoogleFonts.cormorantGaramond(
-          color: terracotta,
+        displayMedium: GoogleFonts.playfairDisplay(
+          color: copper,
           fontWeight: FontWeight.w700,
-          fontSize: 28,
         ),
         titleLarge: GoogleFonts.playfairDisplay(
-          color: cream,
+          color: parchment,
           fontWeight: FontWeight.w700,
         ),
-        bodyMedium: GoogleFonts.inter(color: cream.withValues(alpha: 0.8)),
-      ),
-      navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: charredAmber,
-        indicatorColor: terracotta.withValues(alpha: 0.15),
-        labelTextStyle: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) {
-            return GoogleFonts.inter(
-              fontSize: 10,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 1,
-              color: saffron,
-            );
-          }
-          return GoogleFonts.inter(
-            fontSize: 10,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 1,
-            color: cream.withValues(alpha: 0.3),
-          );
-        }),
+        bodyMedium: GoogleFonts.inter(color: parchment.withOpacity(0.8)),
       ),
     );
   }
 }
-
-// Keep backward compat alias
-typedef GourmetTheme = CuisineTheme;

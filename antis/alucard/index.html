@@ -1,0 +1,1353 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Alucard — Advanced Calculator & Gematria</title>
+  <meta name="description" content="Alucard: A premium scientific calculator with Arabic Abjad and multi-alphabet gematria tools." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Naskh+Arabic:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0b0c10;
+      --surface: #13141a;
+      --surface2: #1c1d27;
+      --surface3: #232435;
+      --border: rgba(255,255,255,0.07);
+      --border2: rgba(255,255,255,0.12);
+      --accent: #7b5ea7;
+      --accent2: #a37bd4;
+      --accent3: #c9a8ff;
+      --gold: #d4a84b;
+      --gold2: #f0c96d;
+      --teal: #3ecfcf;
+      --teal2: #72e8e8;
+      --red: #e05c6a;
+      --green: #4ecb8d;
+      --text: #e8e9f0;
+      --text2: #9a9bb5;
+      --text3: #5c5d78;
+      --radius: 14px;
+      --radius-sm: 8px;
+      --shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      overflow-x: hidden;
+    }
+
+    /* Background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 20% 10%, rgba(123,94,167,0.18) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 40% at 80% 80%, rgba(62,207,207,0.1) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 60% at 60% 20%, rgba(212,168,75,0.06) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    #app {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 28px 16px 48px;
+    }
+
+    /* Header */
+    header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    header h1 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      background: linear-gradient(135deg, var(--accent3) 0%, var(--gold2) 50%, var(--teal2) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-transform: uppercase;
+    }
+    header p {
+      color: var(--text2);
+      font-size: 0.82rem;
+      letter-spacing: 0.12em;
+      margin-top: 4px;
+      text-transform: uppercase;
+    }
+
+    /* Tab Nav */
+    .tab-nav {
+      display: flex;
+      gap: 6px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      padding: 5px;
+      margin-bottom: 28px;
+      box-shadow: var(--shadow);
+    }
+    .tab-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text2);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 9px 20px;
+      border-radius: 50px;
+      transition: all 0.25s ease;
+      white-space: nowrap;
+    }
+    .tab-btn:hover { color: var(--text); background: var(--surface3); }
+    .tab-btn.active {
+      background: linear-gradient(135deg, var(--accent) 0%, #5c3d8f 100%);
+      color: #fff;
+      box-shadow: 0 0 20px rgba(123,94,167,0.4);
+    }
+
+    /* Tab Panels */
+    .tab-panel { display: none; width: 100%; max-width: 480px; }
+    .tab-panel.active { display: block; animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+    /* ======= CALCULATOR ======= */
+    .calc-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .calc-display {
+      background: var(--bg);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius-sm);
+      padding: 16px 18px;
+      margin-bottom: 16px;
+      min-height: 90px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      justify-content: flex-end;
+      gap: 6px;
+      position: relative;
+    }
+    .calc-history {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--text3);
+      min-height: 18px;
+      word-break: break-all;
+      text-align: right;
+    }
+    .calc-expr {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+      color: var(--text2);
+      word-break: break-all;
+      text-align: right;
+    }
+    .calc-result {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 2rem;
+      font-weight: 500;
+      color: var(--text);
+      word-break: break-all;
+      text-align: right;
+      line-height: 1.1;
+    }
+    .calc-error { color: var(--red) !important; font-size: 1rem !important; }
+
+    /* Button grid */
+    .calc-grid {
+      display: grid;
+      gap: 8px;
+    }
+    .calc-row { display: grid; gap: 8px; }
+    .row-4 { grid-template-columns: repeat(4, 1fr); }
+    .row-5 { grid-template-columns: repeat(5, 1fr); }
+
+    .btn {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 500;
+      padding: 13px 6px;
+      transition: all 0.15s ease;
+      user-select: none;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0.06);
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+    .btn:hover::after { opacity: 1; }
+    .btn:active { transform: scale(0.96); }
+
+    .btn-num {
+      background: var(--surface2);
+      color: var(--text);
+    }
+    .btn-op {
+      background: rgba(123,94,167,0.2);
+      color: var(--accent3);
+      border-color: rgba(123,94,167,0.3);
+    }
+    .btn-fn {
+      background: rgba(62,207,207,0.1);
+      color: var(--teal);
+      border-color: rgba(62,207,207,0.2);
+      font-size: 0.75rem;
+    }
+    .btn-eq {
+      background: linear-gradient(135deg, var(--accent) 0%, #5c3d8f 100%);
+      color: #fff;
+      border-color: transparent;
+      box-shadow: 0 0 14px rgba(123,94,167,0.35);
+    }
+    .btn-clear {
+      background: rgba(224,92,106,0.15);
+      color: var(--red);
+      border-color: rgba(224,92,106,0.25);
+    }
+    .btn-gold {
+      background: rgba(212,168,75,0.12);
+      color: var(--gold2);
+      border-color: rgba(212,168,75,0.2);
+    }
+    .btn-span2 { grid-column: span 2; }
+
+    /* Calc mode toggle */
+    .mode-toggle {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+    .mode-btn {
+      flex: 1;
+      padding: 7px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface2);
+      color: var(--text2);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      transition: all 0.2s;
+    }
+    .mode-btn.active {
+      background: var(--surface3);
+      color: var(--teal);
+      border-color: var(--teal);
+    }
+
+    /* Advanced panel */
+    .adv-panel { display: none; }
+    .adv-panel.open { display: block; margin-bottom: 8px; }
+
+    /* ======= ABJAD ======= */
+    .abjad-wrap, .gem-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px;
+      box-shadow: var(--shadow);
+    }
+
+    .panel-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--gold2);
+      letter-spacing: 0.05em;
+      margin-bottom: 6px;
+    }
+    .panel-subtitle {
+      font-size: 0.75rem;
+      color: var(--text3);
+      margin-bottom: 18px;
+      line-height: 1.5;
+    }
+
+    .text-input-area {
+      background: var(--bg);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      width: 100%;
+      color: var(--text);
+      font-family: 'Noto Naskh Arabic', 'Inter', sans-serif;
+      font-size: 1.3rem;
+      line-height: 1.8;
+      resize: vertical;
+      min-height: 90px;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+    .text-input-area:focus { border-color: var(--accent2); }
+    .text-input-area.rtl { direction: rtl; text-align: right; }
+
+    .result-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+      margin-top: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .result-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .result-label {
+      font-size: 0.75rem;
+      color: var(--text3);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+    .result-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--gold2);
+    }
+    .result-value.accent { color: var(--accent3); }
+    .result-value.teal { color: var(--teal2); }
+
+    /* Letter breakdown table */
+    .letter-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 14px;
+      font-size: 0.8rem;
+    }
+    .letter-table th {
+      text-align: center;
+      color: var(--text3);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .letter-table td {
+      text-align: center;
+      padding: 5px 8px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+    }
+    .letter-table td.letter-cell {
+      font-family: 'Noto Naskh Arabic', serif;
+      font-size: 1.2rem;
+      color: var(--gold2);
+    }
+    .letter-table td.val-cell {
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--accent3);
+      font-weight: 600;
+    }
+    .letter-table tr:last-child td { border-bottom: none; }
+    .letter-table tbody tr:hover td { background: rgba(255,255,255,0.03); }
+
+    /* Abjad table reference */
+    .ref-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text3);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin: 18px 0 10px;
+    }
+    .abjad-ref-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 5px;
+    }
+    .abjad-ref-cell {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 7px 4px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .abjad-ref-cell:hover { border-color: var(--gold); background: var(--surface3); }
+    .abjad-ref-cell .ar { font-family: 'Noto Naskh Arabic', serif; font-size: 1.1rem; color: var(--gold2); display: block; }
+    .abjad-ref-cell .vl { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--text3); display: block; }
+
+    /* ======= GEMATRIA ======= */
+    .system-select {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      margin-bottom: 16px;
+    }
+    .sys-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text2);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 9px 10px;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      transition: all 0.2s;
+      text-align: center;
+    }
+    .sys-btn:hover { background: var(--surface3); color: var(--text); }
+    .sys-btn.active {
+      background: rgba(62,207,207,0.12);
+      color: var(--teal2);
+      border-color: var(--teal);
+      box-shadow: 0 0 10px rgba(62,207,207,0.15);
+    }
+
+    .gem-script-hint {
+      font-size: 0.72rem;
+      color: var(--text3);
+      margin-bottom: 10px;
+      padding: 8px 12px;
+      background: var(--surface2);
+      border-radius: var(--radius-sm);
+      border-left: 3px solid var(--teal);
+      line-height: 1.5;
+    }
+
+    .multi-result {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .mini-result {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      text-align: center;
+    }
+    .mini-result .ml { font-size: 0.65rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+    .mini-result .mv { font-family: 'JetBrains Mono', monospace; font-size: 1.3rem; font-weight: 700; color: var(--teal2); }
+
+    /* Clear/action buttons */
+    .action-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .action-btn {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface2);
+      color: var(--text2);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .action-btn:hover { background: var(--surface3); color: var(--text); }
+    .action-btn.primary {
+      background: linear-gradient(135deg, var(--gold) 0%, #b08030 100%);
+      color: #fff;
+      border-color: transparent;
+    }
+    .action-btn.primary:hover { box-shadow: 0 0 14px rgba(212,168,75,0.3); }
+    .action-btn.teal-btn {
+      background: rgba(62,207,207,0.12);
+      color: var(--teal2);
+      border-color: rgba(62,207,207,0.25);
+    }
+
+    /* Scrollable table wrap */
+    .table-scroll {
+      max-height: 260px;
+      overflow-y: auto;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      scrollbar-width: thin;
+      scrollbar-color: var(--surface3) transparent;
+    }
+    .table-scroll::-webkit-scrollbar { width: 4px; }
+    .table-scroll::-webkit-scrollbar-track { background: transparent; }
+    .table-scroll::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 4px; }
+
+    /* Responsive */
+    @media (max-width: 500px) {
+      header h1 { font-size: 1.7rem; }
+      .tab-btn { padding: 8px 13px; font-size: 0.7rem; }
+      .calc-result { font-size: 1.6rem; }
+    }
+
+    /* Separator */
+    .sep { height: 1px; background: var(--border); margin: 14px 0; }
+
+    /* Tooltip-like note */
+    .note {
+      font-size: 0.72rem;
+      color: var(--text3);
+      margin-top: 8px;
+      line-height: 1.5;
+    }
+
+    /* Digit root badge */
+    .badge {
+      display: inline-block;
+      background: rgba(163, 123, 212, 0.18);
+      border: 1px solid rgba(163,123,212,0.3);
+      border-radius: 50px;
+      padding: 3px 12px;
+      font-size: 0.75rem;
+      color: var(--accent3);
+      font-family: 'JetBrains Mono', monospace;
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>⚡ Alucard</h1>
+    <p>Scientific Calculator · Abjad · Gematria</p>
+  </header>
+
+  <!-- Tab Nav -->
+  <nav class="tab-nav" role="tablist">
+    <button class="tab-btn active" onclick="switchTab('calc')" id="tab-calc" role="tab">Calculator</button>
+    <button class="tab-btn" onclick="switchTab('abjad')" id="tab-abjad" role="tab">Abjad العربي</button>
+    <button class="tab-btn" onclick="switchTab('gem')" id="tab-gem" role="tab">Gematria</button>
+  </nav>
+
+  <!-- =================== CALCULATOR =================== -->
+  <div class="tab-panel active" id="panel-calc">
+    <div class="calc-wrap">
+      <div class="calc-display" id="calcDisplay">
+        <div class="calc-history" id="calcHistory"></div>
+        <div class="calc-expr" id="calcExpr"></div>
+        <div class="calc-result" id="calcResult">0</div>
+      </div>
+
+      <!-- Mode toggle -->
+      <div class="mode-toggle">
+        <button class="mode-btn active" id="modeBasic" onclick="setMode('basic')">Basic</button>
+        <button class="mode-btn" id="modeAdv" onclick="setMode('adv')">Scientific</button>
+        <button class="mode-btn" id="modeProg" onclick="setMode('prog')">Conversion</button>
+      </div>
+
+      <!-- Advanced fn panel -->
+      <div class="adv-panel" id="advPanel">
+        <div class="calc-row row-5" style="margin-bottom:8px;">
+          <button class="btn btn-fn" onclick="calcFn('sin(')">sin</button>
+          <button class="btn btn-fn" onclick="calcFn('cos(')">cos</button>
+          <button class="btn btn-fn" onclick="calcFn('tan(')">tan</button>
+          <button class="btn btn-fn" onclick="calcFn('asin(')">asin</button>
+          <button class="btn btn-fn" onclick="calcFn('acos(')">acos</button>
+        </div>
+        <div class="calc-row row-5" style="margin-bottom:8px;">
+          <button class="btn btn-fn" onclick="calcFn('atan(')">atan</button>
+          <button class="btn btn-fn" onclick="calcFn('log(')">log</button>
+          <button class="btn btn-fn" onclick="calcFn('ln(')">ln</button>
+          <button class="btn btn-fn" onclick="calcFn('sqrt(')">√</button>
+          <button class="btn btn-fn" onclick="calcFn('cbrt(')">∛</button>
+        </div>
+        <div class="calc-row row-5" style="margin-bottom:8px;">
+          <button class="btn btn-fn" onclick="calcFn('abs(')">|x|</button>
+          <button class="btn btn-fn" onclick="calcFn('fact(')">n!</button>
+          <button class="btn btn-fn" onclick="calcFn('PI')">π</button>
+          <button class="btn btn-fn" onclick="calcFn('E')">e</button>
+          <button class="btn btn-fn" onclick="calcFn('**')">xⁿ</button>
+        </div>
+        <div class="calc-row row-5" style="margin-bottom:8px;">
+          <button class="btn btn-fn" onclick="calcFn('nCr(')">nCr</button>
+          <button class="btn btn-fn" onclick="calcFn('nPr(')">nPr</button>
+          <button class="btn btn-fn" onclick="calcFn('gcd(')">GCD</button>
+          <button class="btn btn-fn" onclick="calcFn('lcm(')">LCM</button>
+          <button class="btn btn-fn" onclick="calcFn('mod(')">mod</button>
+        </div>
+        <div class="sep"></div>
+      </div>
+
+      <!-- Conversion panel -->
+      <div class="adv-panel" id="progPanel">
+        <div style="margin-bottom:10px;">
+          <div style="font-size:0.75rem;color:var(--text3);margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;">Unit Conversion</div>
+          <div class="calc-row row-4" style="margin-bottom:7px;">
+            <button class="btn btn-fn" onclick="calcFn('degToRad(')">°→rad</button>
+            <button class="btn btn-fn" onclick="calcFn('radToDeg(')">rad→°</button>
+            <button class="btn btn-fn" onclick="calcFn('kmToMile(')">km→mi</button>
+            <button class="btn btn-fn" onclick="calcFn('mileToKm(')">mi→km</button>
+          </div>
+          <div class="calc-row row-4" style="margin-bottom:7px;">
+            <button class="btn btn-fn" onclick="calcFn('kgToLb(')">kg→lb</button>
+            <button class="btn btn-fn" onclick="calcFn('lbToKg(')">lb→kg</button>
+            <button class="btn btn-fn" onclick="calcFn('celToFar(')">°C→°F</button>
+            <button class="btn btn-fn" onclick="calcFn('farToCel(')">°F→°C</button>
+          </div>
+        </div>
+        <div style="font-size:0.75rem;color:var(--text3);margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;">Number Bases (type number then convert)</div>
+        <div class="calc-row row-4" style="margin-bottom:7px;">
+          <button class="btn btn-fn" onclick="calcFn('toBin(')">→Bin</button>
+          <button class="btn btn-fn" onclick="calcFn('toOct(')">→Oct</button>
+          <button class="btn btn-fn" onclick="calcFn('toHex(')">→Hex</button>
+          <button class="btn btn-fn" onclick="calcFn('fromBin(')">Bin→</button>
+        </div>
+        <div class="sep"></div>
+      </div>
+
+      <!-- Main button grid -->
+      <div class="calc-grid">
+        <div class="calc-row row-4">
+          <button class="btn btn-clear" onclick="clearAll()">AC</button>
+          <button class="btn btn-gold" onclick="calcDel()">⌫</button>
+          <button class="btn btn-gold" onclick="calcFn('(')">(</button>
+          <button class="btn btn-gold" onclick="calcFn(')')">)</button>
+        </div>
+        <div class="calc-row row-4">
+          <button class="btn btn-num" onclick="calcFn('7')">7</button>
+          <button class="btn btn-num" onclick="calcFn('8')">8</button>
+          <button class="btn btn-num" onclick="calcFn('9')">9</button>
+          <button class="btn btn-op" onclick="calcFn('/')">÷</button>
+        </div>
+        <div class="calc-row row-4">
+          <button class="btn btn-num" onclick="calcFn('4')">4</button>
+          <button class="btn btn-num" onclick="calcFn('5')">5</button>
+          <button class="btn btn-num" onclick="calcFn('6')">6</button>
+          <button class="btn btn-op" onclick="calcFn('*')">×</button>
+        </div>
+        <div class="calc-row row-4">
+          <button class="btn btn-num" onclick="calcFn('1')">1</button>
+          <button class="btn btn-num" onclick="calcFn('2')">2</button>
+          <button class="btn btn-num" onclick="calcFn('3')">3</button>
+          <button class="btn btn-op" onclick="calcFn('-')">−</button>
+        </div>
+        <div class="calc-row row-4">
+          <button class="btn btn-num btn-span2" onclick="calcFn('0')">0</button>
+          <button class="btn btn-num" onclick="calcFn('.')">.</button>
+          <button class="btn btn-op" onclick="calcFn('+')">+</button>
+        </div>
+        <div class="calc-row row-4">
+          <button class="btn btn-gold" onclick="calcFn('%')">%</button>
+          <button class="btn btn-gold" onclick="calcFn('**2')">x²</button>
+          <button class="btn btn-gold" onclick="calcFn('1/')">1/x</button>
+          <button class="btn btn-eq" onclick="calculate()">=</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =================== ABJAD =================== -->
+  <div class="tab-panel" id="panel-abjad">
+    <div class="abjad-wrap">
+      <div class="panel-title">حساب الجُمَّل — Arabic Abjad</div>
+      <div class="panel-subtitle">
+        The ancient Arabic numerological system assigning numerical values to each letter.<br>
+        Type Arabic text below to calculate its Abjad value.
+      </div>
+
+      <textarea
+        class="text-input-area rtl"
+        id="abjadInput"
+        placeholder="اكتب النص العربي هنا..."
+        rows="3"
+        oninput="computeAbjad()"
+        dir="rtl"
+      ></textarea>
+
+      <div class="action-row">
+        <button class="action-btn" onclick="document.getElementById('abjadInput').value='';computeAbjad()">Clear</button>
+        <button class="action-btn primary" onclick="computeAbjad()">Calculate</button>
+      </div>
+
+      <div class="result-card" id="abjadResult" style="display:none;">
+        <div class="result-row">
+          <span class="result-label">Total Abjad Value</span>
+          <span class="result-value" id="abjadTotal">0</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">Letter Count</span>
+          <span class="result-value accent" id="abjadLetterCount">0</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">Digit Root (Takhsis)</span>
+          <span class="badge" id="abjadRoot">0</span>
+        </div>
+      </div>
+
+      <!-- Letter breakdown -->
+      <div id="abjadBreakdown" style="display:none;">
+        <div class="ref-title">Letter Breakdown</div>
+        <div class="table-scroll">
+          <table class="letter-table" id="abjadTable">
+            <thead>
+              <tr>
+                <th>Letter</th>
+                <th>Name</th>
+                <th>Value</th>
+                <th>Count</th>
+                <th>Subtotal</th>
+              </tr>
+            </thead>
+            <tbody id="abjadTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="sep"></div>
+      <div class="ref-title">Reference — Click to Insert</div>
+      <div class="abjad-ref-grid" id="abjadRefGrid"></div>
+    </div>
+  </div>
+
+  <!-- =================== GEMATRIA =================== -->
+  <div class="tab-panel" id="panel-gem">
+    <div class="gem-wrap">
+      <div class="panel-title">Gematria & Alphabet Numerology</div>
+      <div class="panel-subtitle">Compute numerical values across multiple ancient and modern alphabet systems.</div>
+
+      <!-- System selector -->
+      <div class="system-select" id="systemSelect">
+        <button class="sys-btn active" onclick="selectSystem('english')" id="sys-english">English</button>
+        <button class="sys-btn" onclick="selectSystem('hebrew')" id="sys-hebrew">Hebrew עברית</button>
+        <button class="sys-btn" onclick="selectSystem('greek')" id="sys-greek">Greek Ελληνικά</button>
+        <button class="sys-btn" onclick="selectSystem('latin')" id="sys-latin">Latin / Roman</button>
+      </div>
+
+      <div class="gem-script-hint" id="gemHint">
+        English: A=1 … Z=26. Supports multiple modes: Ordinal, Reduction, Primes, and Reverse.
+      </div>
+
+      <textarea
+        class="text-input-area"
+        id="gemInput"
+        placeholder="Type your text here..."
+        rows="3"
+        oninput="computeGematria()"
+        id="gemInput"
+        dir="ltr"
+      ></textarea>
+
+      <div class="action-row">
+        <button class="action-btn" onclick="document.getElementById('gemInput').value='';computeGematria()">Clear</button>
+        <button class="action-btn teal-btn" onclick="computeGematria()">Calculate</button>
+      </div>
+
+      <!-- Multi-mode results -->
+      <div class="multi-result" id="gemResults" style="display:none;"></div>
+
+      <!-- Breakdown -->
+      <div id="gemBreakdown" style="display:none;">
+        <div class="ref-title" style="margin-top:14px;">Letter Breakdown</div>
+        <div class="table-scroll">
+          <table class="letter-table" id="gemTable">
+            <thead>
+              <tr>
+                <th>Char</th>
+                <th>Value</th>
+              </tr>
+            </thead>
+            <tbody id="gemTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="sep"></div>
+      <div class="ref-title">Reference Table</div>
+      <div class="table-scroll" style="max-height:180px;">
+        <table class="letter-table" id="gemRefTable">
+          <thead><tr id="gemRefHead"></tr></thead>
+          <tbody id="gemRefBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// =====================================================
+//  TAB SWITCHING
+// =====================================================
+function switchTab(id) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  document.getElementById('tab-' + id).classList.add('active');
+}
+
+// =====================================================
+//  CALCULATOR ENGINE
+// =====================================================
+let expr = '';
+let lastResult = null;
+let currentMode = 'basic';
+let angleMode = 'deg'; // deg | rad
+
+function setMode(m) {
+  currentMode = m;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('mode' + m.charAt(0).toUpperCase() + m.slice(1)).classList.add('active');
+  document.getElementById('advPanel').classList.toggle('open', m === 'adv');
+  document.getElementById('progPanel').classList.toggle('open', m === 'prog');
+}
+
+function updateDisplay() {
+  document.getElementById('calcExpr').textContent = expr || '';
+  document.getElementById('calcResult').className = 'calc-result';
+  document.getElementById('calcResult').textContent = lastResult !== null ? lastResult : '0';
+}
+
+function calcFn(v) {
+  if (v === '1/') { expr += '1/('; }
+  else if (v === 'PI') { expr += 'π'; }
+  else if (v === 'E') { expr += 'e'; }
+  else if (v === '/') { expr += '÷'; }
+  else if (v === '*') { expr += '×'; }
+  else { expr += v; }
+  updateDisplay();
+}
+
+function calcDel() {
+  expr = expr.slice(0, -1);
+  updateDisplay();
+}
+
+function clearAll() {
+  expr = '';
+  lastResult = null;
+  document.getElementById('calcHistory').textContent = '';
+  updateDisplay();
+}
+
+// Helper math functions
+function fact(n) {
+  n = Math.round(n);
+  if (n < 0) return NaN;
+  if (n === 0 || n === 1) return 1;
+  if (n > 170) return Infinity;
+  let r = 1;
+  for (let i = 2; i <= n; i++) r *= i;
+  return r;
+}
+function nCr(n, r) { return fact(n) / (fact(r) * fact(n - r)); }
+function nPr(n, r) { return fact(n) / fact(n - r); }
+function gcd(a, b) { a = Math.abs(Math.round(a)); b = Math.abs(Math.round(b)); while (b) { [a, b] = [b, a % b]; } return a; }
+function lcm(a, b) { return Math.abs(a * b) / gcd(a, b); }
+function mod(a, b) { return a % b; }
+function toBin(n) { return '0b' + Math.round(n).toString(2); }
+function toOct(n) { return '0o' + Math.round(n).toString(8); }
+function toHex(n) { return '0x' + Math.round(n).toString(16).toUpperCase(); }
+function fromBin(n) { return parseInt(String(n), 2); }
+function degToRad(d) { return d * Math.PI / 180; }
+function radToDeg(r) { return r * 180 / Math.PI; }
+function kmToMile(k) { return k * 0.621371; }
+function mileToKm(m) { return m * 1.60934; }
+function kgToLb(k) { return k * 2.20462; }
+function lbToKg(l) { return l * 0.453592; }
+function celToFar(c) { return c * 9/5 + 32; }
+function farToCel(f) { return (f - 32) * 5/9; }
+
+function toAngle(v) {
+  return angleMode === 'deg' ? v * Math.PI / 180 : v;
+}
+
+function calculate() {
+  if (!expr.trim()) return;
+  try {
+    let raw = expr
+      .replace(/π/g, 'Math.PI')
+      .replace(/e(?![a-zA-Z])/g, 'Math.E')
+      .replace(/÷/g, '/')
+      .replace(/×/g, '*')
+      .replace(/ln\(/g, 'Math.log(')
+      .replace(/log\(/g, 'Math.log10(')
+      .replace(/sqrt\(/g, 'Math.sqrt(')
+      .replace(/cbrt\(/g, 'Math.cbrt(')
+      .replace(/abs\(/g, 'Math.abs(')
+      .replace(/sin\(/g, `Math.sin(toAngle(`)
+      .replace(/cos\(/g, `Math.cos(toAngle(`)
+      .replace(/tan\(/g, `Math.tan(toAngle(`)
+      .replace(/asin\(/g, `radToDeg(Math.asin(`)
+      .replace(/acos\(/g, `radToDeg(Math.acos(`)
+      .replace(/atan\(/g, `radToDeg(Math.atan(`)
+      .replace(/fact\(/g, 'fact(')
+      .replace(/nCr\(/g, 'nCr(')
+      .replace(/nPr\(/g, 'nPr(')
+      .replace(/gcd\(/g, 'gcd(')
+      .replace(/lcm\(/g, 'lcm(')
+      .replace(/mod\(/g, 'mod(')
+      .replace(/toBin\(/g, 'toBin(')
+      .replace(/toOct\(/g, 'toOct(')
+      .replace(/toHex\(/g, 'toHex(')
+      .replace(/fromBin\(/g, 'fromBin(')
+      .replace(/degToRad\(/g, 'degToRad(')
+      .replace(/radToDeg\(/g, 'radToDeg(')
+      .replace(/kmToMile\(/g, 'kmToMile(')
+      .replace(/mileToKm\(/g, 'mileToKm(')
+      .replace(/kgToLb\(/g, 'kgToLb(')
+      .replace(/lbToKg\(/g, 'lbToKg(')
+      .replace(/celToFar\(/g, 'celToFar(')
+      .replace(/farToCel\(/g, 'farToCel(')
+      // fix closing parens for trig functions that need double close
+      ;
+
+    // Fix asin/acos/atan double close paren issue
+    // Count how many extra ) we need from toAngle wrapping vs asin wrapping
+    // Actually let's recount - sin( → Math.sin(toAngle( needs one extra )
+    // asin( → radToDeg(Math.asin( needs one extra )
+    // We handle this by user providing the closing parens themselves
+    // But let's add smart auto-close:
+    let opens = (raw.match(/\(/g) || []).length;
+    let closes = (raw.match(/\)/g) || []).length;
+    while (closes < opens) { raw += ')'; closes++; }
+
+    let result = Function(
+      'fact','nCr','nPr','gcd','lcm','mod','toBin','toOct','toHex','fromBin',
+      'degToRad','radToDeg','kmToMile','mileToKm','kgToLb','lbToKg','celToFar','farToCel','toAngle',
+      '"use strict"; return ' + raw
+    )(fact,nCr,nPr,gcd,lcm,mod,toBin,toOct,toHex,fromBin,
+      degToRad,radToDeg,kmToMile,mileToKm,kgToLb,lbToKg,celToFar,farToCel,toAngle);
+
+    document.getElementById('calcHistory').textContent = expr + ' =';
+    lastResult = (typeof result === 'string') ? result : (isNaN(result) ? 'Error' : smartFormat(result));
+    expr = String(lastResult).replace('0b','').replace('0o','').replace('0x','');
+    updateDisplay();
+  } catch (e) {
+    document.getElementById('calcResult').className = 'calc-result calc-error';
+    document.getElementById('calcResult').textContent = 'Syntax Error';
+    lastResult = null;
+  }
+}
+
+function smartFormat(n) {
+  if (!isFinite(n)) return n === Infinity ? '∞' : '-∞';
+  if (Math.abs(n) >= 1e15 || (Math.abs(n) < 1e-10 && n !== 0)) {
+    return n.toExponential(6).replace(/\.?0+e/, 'e');
+  }
+  // Remove floating point noise
+  let s = parseFloat(n.toPrecision(12));
+  return String(s);
+}
+
+// Keyboard support
+document.addEventListener('keydown', e => {
+  const active = document.querySelector('.tab-panel.active');
+  if (!active || active.id !== 'panel-calc') return;
+  if (e.key >= '0' && e.key <= '9') { calcFn(e.key); return; }
+  if (e.key === '+') { calcFn('+'); return; }
+  if (e.key === '-') { calcFn('-'); return; }
+  if (e.key === '*') { calcFn('*'); return; }
+  if (e.key === '/') { e.preventDefault(); calcFn('/'); return; }
+  if (e.key === '.') { calcFn('.'); return; }
+  if (e.key === '(') { calcFn('('); return; }
+  if (e.key === ')') { calcFn(')'); return; }
+  if (e.key === 'Enter' || e.key === '=') { calculate(); return; }
+  if (e.key === 'Backspace') { calcDel(); return; }
+  if (e.key === 'Escape') { clearAll(); return; }
+  if (e.key === '%') { calcFn('%'); return; }
+});
+
+// =====================================================
+//  ARABIC ABJAD ENGINE
+// =====================================================
+const ABJAD = {
+  // Standard Abjadi order values
+  'ا': 1, 'أ': 1, 'إ': 1, 'آ': 1, 'ء': 1,
+  'ب': 2,
+  'ج': 3,
+  'د': 4,
+  'ه': 5, 'ة': 5,
+  'و': 6,
+  'ز': 7,
+  'ح': 8,
+  'ط': 9,
+  'ي': 10, 'ى': 10, 'ئ': 10,
+  'ك': 20,
+  'ل': 30,
+  'م': 40,
+  'ن': 50,
+  'س': 60,
+  'ع': 70,
+  'ف': 80,
+  'ص': 90,
+  'ق': 100,
+  'ر': 200,
+  'ش': 300,
+  'ت': 400,
+  'ث': 500,
+  'خ': 600,
+  'ذ': 700,
+  'ض': 800,
+  'ظ': 900,
+  'غ': 1000
+};
+
+const ABJAD_NAMES = {
+  'ا': 'Alif', 'أ': 'Alif', 'إ': 'Alif', 'آ': 'Alif', 'ء': 'Hamza',
+  'ب': 'Ba', 'ج': 'Jim', 'د': 'Dal', 'ه': 'Ha', 'ة': "Ta' Marb.",
+  'و': 'Waw', 'ز': 'Zayn', 'ح': 'Ha (ح)', 'ط': 'Ta (ط)',
+  'ي': 'Ya', 'ى': 'Alif Maqsura', 'ئ': 'Ya (ئ)',
+  'ك': 'Kaf', 'ل': 'Lam', 'م': 'Mim', 'ن': 'Nun',
+  'س': 'Sin', 'ع': 'Ayn', 'ف': 'Fa', 'ص': 'Sad',
+  'ق': 'Qaf', 'ر': 'Ra', 'ش': 'Shin', 'ت': 'Ta',
+  'ث': 'Tha', 'خ': 'Kha', 'ذ': 'Dhal', 'ض': 'Dad',
+  'ظ': 'Dha (ظ)', 'غ': 'Ghayn'
+};
+
+const ABJAD_REF = [
+  ['ا',1],['ب',2],['ج',3],['د',4],['ه',5],['و',6],
+  ['ز',7],['ح',8],['ط',9],['ي',10],['ك',20],['ل',30],
+  ['م',40],['ن',50],['س',60],['ع',70],['ف',80],['ص',90],
+  ['ق',100],['ر',200],['ش',300],['ت',400],['ث',500],['خ',600],
+  ['ذ',700],['ض',800],['ظ',900],['غ',1000]
+];
+
+function digitRoot(n) {
+  while (n > 9) { n = String(n).split('').reduce((a,c)=>a+parseInt(c),0); }
+  return n;
+}
+
+function computeAbjad() {
+  const text = document.getElementById('abjadInput').value;
+  if (!text.trim()) {
+    document.getElementById('abjadResult').style.display = 'none';
+    document.getElementById('abjadBreakdown').style.display = 'none';
+    return;
+  }
+
+  let total = 0;
+  let letterCount = 0;
+  const counts = {};
+  for (const ch of text) {
+    if (ABJAD[ch] !== undefined) {
+      total += ABJAD[ch];
+      letterCount++;
+      counts[ch] = (counts[ch] || 0) + 1;
+    }
+  }
+
+  document.getElementById('abjadTotal').textContent = total.toLocaleString();
+  document.getElementById('abjadLetterCount').textContent = letterCount;
+  document.getElementById('abjadRoot').textContent = '✦ ' + digitRoot(total);
+  document.getElementById('abjadResult').style.display = 'flex';
+  document.getElementById('abjadResult').style.flexDirection = 'column';
+
+  // Build breakdown table
+  const tbody = document.getElementById('abjadTableBody');
+  tbody.innerHTML = '';
+  for (const [ch, cnt] of Object.entries(counts)) {
+    const val = ABJAD[ch];
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="letter-cell">${ch}</td>
+      <td>${ABJAD_NAMES[ch] || ''}</td>
+      <td class="val-cell">${val}</td>
+      <td>${cnt}</td>
+      <td class="val-cell">${val * cnt}</td>
+    `;
+    tbody.appendChild(tr);
+  }
+  document.getElementById('abjadBreakdown').style.display = 'block';
+}
+
+// Build abjad reference grid
+(function buildAbjadRef() {
+  const grid = document.getElementById('abjadRefGrid');
+  for (const [ch, val] of ABJAD_REF) {
+    const cell = document.createElement('div');
+    cell.className = 'abjad-ref-cell';
+    cell.innerHTML = `<span class="ar">${ch}</span><span class="vl">${val}</span>`;
+    cell.title = `Insert ${ch} (${val})`;
+    cell.onclick = () => {
+      const ta = document.getElementById('abjadInput');
+      ta.value += ch;
+      computeAbjad();
+      ta.focus();
+    };
+    grid.appendChild(cell);
+  }
+})();
+
+// =====================================================
+//  GEMATRIA ENGINE
+// =====================================================
+let currentSystem = 'english';
+
+const SYSTEMS = {
+  english: {
+    hint: 'English Gematria — A=1…Z=26. Modes: Ordinal, Reduction (digit root), Primes, Reverse (Z=1…A=26).',
+    inputDir: 'ltr',
+    inputPlaceholder: 'Type English text here...',
+    modes: ['Ordinal','Reduction','Primes','Reverse'],
+    compute(text) {
+      const primes = [2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97,101];
+      const chars = [];
+      let ordTotal=0, redTotal=0, primeTotal=0, revTotal=0;
+      for (const ch of text.toUpperCase()) {
+        const code = ch.charCodeAt(0) - 64;
+        if (code >= 1 && code <= 26) {
+          ordTotal += code;
+          revTotal += (27 - code);
+          primeTotal += primes[code-1];
+          chars.push({ ch, val: code });
+        }
+      }
+      redTotal = digitRoot(ordTotal);
+      return {
+        modes: [
+          { label: 'Ordinal', value: ordTotal },
+          { label: 'Reduction', value: redTotal },
+          { label: 'Primes', value: primeTotal },
+          { label: 'Reverse', value: revTotal }
+        ],
+        chars
+      };
+    },
+    refCols: ['Letter','Value'],
+    refData: (() => {
+      const r = [];
+      for (let i=1;i<=26;i++) r.push([String.fromCharCode(64+i), i]);
+      return r;
+    })()
+  },
+
+  hebrew: {
+    hint: 'Hebrew Gematria (גִּימַטְרִיָּה) — Standard values. Type Hebrew characters.',
+    inputDir: 'rtl',
+    inputPlaceholder: 'הקלד טקסט עברי כאן...',
+    modes: ['Standard','MisparGadol','Atbash','Digital Root'],
+    compute(text) {
+      const vals = {
+        'א':1,'ב':2,'ג':3,'ד':4,'ה':5,'ו':6,'ז':7,'ח':8,'ט':9,
+        'י':10,'כ':20,'ך':20,'ל':30,'מ':40,'ם':40,'נ':50,'ן':50,
+        'ס':60,'ע':70,'פ':80,'ף':80,'צ':90,'ץ':90,
+        'ק':100,'ר':200,'ש':300,'ת':400
+      };
+      const gadol = {
+        'א':1,'ב':2,'ג':3,'ד':4,'ה':5,'ו':6,'ז':7,'ח':8,'ט':9,
+        'י':10,'כ':20,'ל':30,'מ':40,'נ':50,'ס':60,'ע':70,'פ':80,'צ':90,
+        'ק':100,'ר':200,'ש':300,'ת':400,
+        'ך':500,'ם':600,'ן':700,'ף':800,'ץ':900
+      };
+      const atbashMap = {};
+      const letters = ['א','ב','ג','ד','ה','ו','ז','ח','ט','י','כ','ל','מ','נ','ס','ע','פ','צ','ק','ר','ש','ת'];
+      letters.forEach((l,i) => { atbashMap[l] = vals[letters[letters.length-1-i]] || 0; });
+
+      let std=0, mgad=0, atb=0;
+      const chars = [];
+      for (const ch of text) {
+        if (vals[ch] !== undefined) {
+          std += vals[ch];
+          mgad += (gadol[ch] || vals[ch]);
+          atb += (atbashMap[ch] || 0);
+          chars.push({ ch, val: vals[ch] });
+        }
+      }
+      return {
+        modes: [
+          { label: 'Standard', value: std },
+          { label: 'Mispar Gadol', value: mgad },
+          { label: 'Atbash', value: atb },
+          { label: 'Digital Root', value: digitRoot(std) }
+        ],
+        chars
+      };
+    },
+    refCols: ['Letter','Value'],
+    refData: [
+      ['א',1],['ב',2],['ג',3],['ד',4],['ה',5],['ו',6],['ז',7],['ח',8],['ט',9],
+      ['י',10],['כ',20],['ל',30],['מ',40],['נ',50],['ס',60],['ע',70],['פ',80],['צ',90],
+      ['ק',100],['ר',200],['ש',300],['ת',400],
+      ['ך',500],['ם',600],['ן',700],['ף',800],['ץ',900]
+    ]
+  },
+
+  greek: {
+    hint: 'Greek Isopsephy (Ἰσοψηφία) — Classical numerical values. Type Greek characters.',
+    inputDir: 'ltr',
+    inputPlaceholder: 'Πληκτρολογήστε ελληνικό κείμενο...',
+    modes: ['Isopsephy','Digital Root'],
+    compute(text) {
+      const vals = {
+        'α':1,'Α':1,'β':2,'Β':2,'γ':3,'Γ':3,'δ':4,'Δ':4,'ε':5,'Ε':5,
+        'ζ':7,'Ζ':7,'η':8,'Η':8,'θ':9,'Θ':9,
+        'ι':10,'Ι':10,'κ':20,'Κ':20,'λ':30,'Λ':30,'μ':40,'Μ':40,'ν':50,'Ν':50,
+        'ξ':60,'Ξ':60,'ο':70,'Ο':70,'π':80,'Π':80,
+        'ρ':100,'Ρ':100,'σ':200,'Σ':200,'ς':200,'τ':300,'Τ':300,
+        'υ':400,'Υ':400,'φ':500,'Φ':500,'χ':600,'Χ':600,'ψ':700,'Ψ':700,'ω':800,'Ω':800
+      };
+      let total=0;
+      const chars = [];
+      for (const ch of text) {
+        if (vals[ch] !== undefined) {
+          total += vals[ch];
+          chars.push({ ch, val: vals[ch] });
+        }
+      }
+      return {
+        modes: [
+          { label: 'Isopsephy', value: total },
+          { label: 'Digital Root', value: digitRoot(total) }
+        ],
+        chars
+      };
+    },
+    refCols: ['Letter','Name','Value'],
+    refData: [
+      ['α','Alpha',1],['β','Beta',2],['γ','Gamma',3],['δ','Delta',4],['ε','Epsilon',5],
+      ['ζ','Zeta',7],['η','Eta',8],['θ','Theta',9],['ι','Iota',10],['κ','Kappa',20],
+      ['λ','Lambda',30],['μ','Mu',40],['ν','Nu',50],['ξ','Xi',60],['ο','Omicron',70],
+      ['π','Pi',80],['ρ','Rho',100],['σ','Sigma',200],['τ','Tau',300],['υ','Upsilon',400],
+      ['φ','Phi',500],['χ','Chi',600],['ψ','Psi',700],['ω','Omega',800]
+    ]
+  },
+
+  latin: {
+    hint: 'Latin / Roman Numerology — Classical letter values used in Latin gematria (A=1, B=2 … Z=23 in classical Latin, skipping J, U, W).',
+    inputDir: 'ltr',
+    inputPlaceholder: 'Type Latin text here...',
+    modes: ['Classical','Modern (A=1…Z=26)','Digital Root'],
+    compute(text) {
+      // Classical Latin: no J, U, W — I=J, V=U, no W
+      const classical = {
+        'A':1,'B':2,'C':3,'D':4,'E':5,'F':6,'G':7,'H':8,'I':9,'J':9,
+        'K':10,'L':11,'M':12,'N':13,'O':14,'P':15,'Q':16,'R':17,
+        'S':18,'T':19,'V':20,'U':20,'X':21,'Y':22,'Z':23
+      };
+      let classTotal=0, modTotal=0;
+      const chars = [];
+      for (const ch of text.toUpperCase()) {
+        if (classical[ch] !== undefined) {
+          classTotal += classical[ch];
+          const mod = ch.charCodeAt(0) - 64;
+          modTotal += (mod >= 1 && mod <= 26) ? mod : 0;
+          chars.push({ ch, val: classical[ch] });
+        }
+      }
+      return {
+        modes: [
+          { label: 'Classical', value: classTotal },
+          { label: 'Modern', value: modTotal },
+          { label: 'Digital Root', value: digitRoot(classTotal) }
+        ],
+        chars
+      };
+    },
+    refCols: ['Letter','Classical','Modern'],
+    refData: (() => {
+      const classical = {
+        'A':1,'B':2,'C':3,'D':4,'E':5,'F':6,'G':7,'H':8,'I':9,
+        'K':10,'L':11,'M':12,'N':13,'O':14,'P':15,'Q':16,'R':17,
+        'S':18,'T':19,'V':20,'X':21,'Y':22,'Z':23
+      };
+      return Object.entries(classical).map(([l,v]) => [l, v, l.charCodeAt(0)-64]);
+    })()
+  }
+};
+
+function selectSystem(sys) {
+  currentSystem = sys;
+  document.querySelectorAll('.sys-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('sys-' + sys).classList.add('active');
+  const s = SYSTEMS[sys];
+  document.getElementById('gemHint').textContent = s.hint;
+  const ta = document.getElementById('gemInput');
+  ta.dir = s.inputDir;
+  ta.style.direction = s.inputDir;
+  ta.style.textAlign = s.inputDir === 'rtl' ? 'right' : 'left';
+  ta.placeholder = s.inputPlaceholder;
+  buildRefTable(sys);
+  computeGematria();
+}
+
+function buildRefTable(sys) {
+  const s = SYSTEMS[sys];
+  const head = document.getElementById('gemRefHead');
+  const body = document.getElementById('gemRefBody');
+  head.innerHTML = s.refCols.map(c => `<th>${c}</th>`).join('');
+  body.innerHTML = '';
+  for (const row of s.refData) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = row.map((c,i) => `<td class="${i===0?'letter-cell':i===row.length-1?'val-cell':''}">${c}</td>`).join('');
+    body.appendChild(tr);
+  }
+}
+
+function computeGematria() {
+  const text = document.getElementById('gemInput').value;
+  const results = document.getElementById('gemResults');
+  const breakdown = document.getElementById('gemBreakdown');
+  if (!text.trim()) {
+    results.style.display = 'none';
+    breakdown.style.display = 'none';
+    return;
+  }
+
+  const s = SYSTEMS[currentSystem];
+  const data = s.compute(text);
+
+  results.innerHTML = '';
+  const tealColors = ['var(--teal2)','var(--accent3)','var(--gold2)','var(--green)'];
+  data.modes.forEach((m, i) => {
+    const div = document.createElement('div');
+    div.className = 'mini-result';
+    div.innerHTML = `<div class="ml">${m.label}</div><div class="mv" style="color:${tealColors[i%4]}">${m.value.toLocaleString()}</div>`;
+    results.appendChild(div);
+  });
+  results.style.display = 'grid';
+
+  // Breakdown
+  const tbody = document.getElementById('gemTableBody');
+  tbody.innerHTML = '';
+  for (const {ch, val} of data.chars) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td class="letter-cell">${ch}</td><td class="val-cell">${val}</td>`;
+    tbody.appendChild(tr);
+  }
+  breakdown.style.display = data.chars.length > 0 ? 'block' : 'none';
+}
+
+// Init
+buildRefTable('english');
+</script>
+</body>
+</html>
