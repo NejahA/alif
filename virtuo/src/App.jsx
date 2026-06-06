@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import * as Tone from 'tone';
-import { Music, Activity, Disc, Zap, Settings2, Music as GuitarIcon, Layout, Palette, Book, HelpCircle, Cloud, Volume2, AudioWaveform, Skull, Cpu, ListMusic, Mic, Folder, Brain, Share2, Sparkles, Target, BarChart3, Lightbulb, Clock, Timer, CheckCircle2, AlertCircle, TrendingUp, Heart, Eye, Download, Star, Users, Headphones, Video, MessageSquare, UserPlus, Crown, Wifi, Radio, StopCircle, Layers, Plus, RefreshCcw, Shield, Camera, Compass, Lock } from 'lucide-react';
+import { Music, Activity, Disc, Zap, Settings2, Music as GuitarIcon, Layout, Palette, Book, HelpCircle, Cloud, Volume2, AudioWaveform, Skull, Cpu, ListMusic, Mic, Folder, Brain, Share2, Sparkles, Target, BarChart3, Lightbulb, Clock, Timer, CheckCircle2, AlertCircle, TrendingUp, Heart, Eye, Download, Star, Users, Headphones, Video, MessageSquare, UserPlus, Crown, Wifi, Radio, StopCircle, Layers, Plus, RefreshCcw, Shield, Camera, Compass, Lock, Sprout, Trophy } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Piano from './components/Piano';
 import Violin from './components/Violin';
@@ -96,10 +96,12 @@ import Virtues from './components/Virtues';
 import VirtueNotification from './components/VirtueNotification';
 import VirtueFamiliar from './components/VirtueFamiliar';
 import VirtueTraining from './components/VirtueTraining';
-  import VirtueRealms from './components/VirtueRealms';
+import VirtueRealms from './components/VirtueRealms';
+import VirtuoGarden from './components/VirtuoGarden';
+import DailyQuests from './components/DailyQuests';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('piano'); // 'piano' | 'violin' | 'cello' | 'guitar' | 'drums' | 'pads' | 'sampler' | 'synth' | 'seq' | 'bass' | 'ambient' | 'vocal' | 'scales' | 'studio' | 'project' | 'theremin' | 'ai' | 'social' | 'workflow' | 'analysis' | 'jam' | 'arranger' | 'market' | 'learning' | 'granular' | 'looper' | 'themes' | 'performance' | 'cloud' | 'virtues' | 'training' | 'realms'
+  const [activeTab, setActiveTab] = useState('piano'); // 'piano' | 'violin' | 'cello' | 'guitar' | 'drums' | 'pads' | 'sampler' | 'synth' | 'seq' | 'bass' | 'ambient' | 'vocal' | 'scales' | 'studio' | 'project' | 'theremin' | 'ai' | 'social' | 'workflow' | 'analysis' | 'jam' | 'arranger' | 'market' | 'learning' | 'granular' | 'looper' | 'themes' | 'performance' | 'cloud' | 'virtues' | 'training' | 'realms' | 'garden' | 'quests'
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [recordings, setRecordings] = useState([]);
   const [showUtilities, setShowUtilities] = useState(false);
@@ -457,6 +459,10 @@ function App() {
   };
 
   const getPowerBackground = () => {
+    if (activePowers.timbre && activePowers.expression && hasSynergy('timbre', 'expression')) {
+      return 'radial-gradient(circle, rgba(245, 158, 11, 0.1) 0%, rgba(236, 72, 153, 0.1) 100%)';
+    }
+
     const activeV = Object.keys(activePowers)[0];
     if (!activeV) return 'transparent';
     
@@ -575,6 +581,19 @@ function App() {
           let synergyMultiplier = 1;
           if (hasSynergy('timbre', 'expression') && activePowers.timbre && activePowers.expression) {
             synergyMultiplier = 2; // Spectral Soul
+            if (!activePowers.spectral_soul_notified) {
+              window.dispatchEvent(new CustomEvent('virtuo-notification', {
+                detail: { title: 'SPECTRAL SOUL ACTIVE', message: '2x XP Multiplier!', type: 'success' }
+              }));
+              setActivePowers(prev => ({ ...prev, spectral_soul_notified: true }));
+              setTimeout(() => {
+                setActivePowers(prev => {
+                  const next = { ...prev };
+                  delete next.spectral_soul_notified;
+                  return next;
+                });
+              }, 10000);
+            }
           }
 
           const xpGain = Math.round(amount * streakMultiplier * gearMultiplier * archetypeMultiplier * prestigeMultiplier * oracleMultiplier * synergyMultiplier);
@@ -1243,6 +1262,46 @@ function App() {
                 <Folder size={14} /> Project
               </button>
               <button 
+                className={`btn-glass ${activeTab === 'virtues' ? 'active' : ''}`}
+                onClick={() => setActiveTab('virtues')}
+                onMouseEnter={() => setHoveredTab('virtues')}
+                onMouseLeave={() => setHoveredTab(null)}
+              >
+                <Shield size={14} /> Virtues
+              </button>
+              <button 
+                className={`btn-glass ${activeTab === 'training' ? 'active' : ''}`}
+                onClick={() => setActiveTab('training')}
+                onMouseEnter={() => setHoveredTab('training')}
+                onMouseLeave={() => setHoveredTab(null)}
+              >
+                <Target size={14} /> Training
+              </button>
+              <button 
+                className={`btn-glass ${activeTab === 'garden' ? 'active' : ''}`}
+                onClick={() => setActiveTab('garden')}
+                onMouseEnter={() => setHoveredTab('garden')}
+                onMouseLeave={() => setHoveredTab(null)}
+              >
+                <Sprout size={14} /> Garden
+              </button>
+              <button 
+                className={`btn-glass ${activeTab === 'quests' ? 'active' : ''}`}
+                onClick={() => setActiveTab('quests')}
+                onMouseEnter={() => setHoveredTab('quests')}
+                onMouseLeave={() => setHoveredTab(null)}
+              >
+                <Trophy size={14} /> Quests
+              </button>
+              <button 
+                className={`btn-glass ${activeTab === 'realms' ? 'active' : ''}`}
+                onClick={() => setActiveTab('realms')}
+                onMouseEnter={() => setHoveredTab('realms')}
+                onMouseLeave={() => setHoveredTab(null)}
+              >
+                <Compass size={14} /> Realms
+              </button>
+              <button 
                 className={`btn-glass ${activeTab === 'social' ? 'active' : ''}`}
                 onClick={() => setActiveTab('social')}
                 onMouseEnter={() => setHoveredTab('social')}
@@ -1816,6 +1875,30 @@ function App() {
                 style={{ width: '100%', display: 'flex', justifyContent: 'center' }}
               >
                 <Virtues stats={sessionStats} />
+              </motion.div>
+            )}
+
+            {activeTab === 'garden' && (
+              <motion.div
+                key="garden"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                style={{ width: '100%', height: '100%', display: 'flex', justifyContent: 'center' }}
+              >
+                <VirtuoGarden />
+              </motion.div>
+            )}
+
+            {activeTab === 'quests' && (
+              <motion.div
+                key="quests"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                style={{ width: '100%', display: 'flex', justifyContent: 'center' }}
+              >
+                <DailyQuests />
               </motion.div>
             )}
 
