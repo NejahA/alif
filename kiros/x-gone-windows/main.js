@@ -27,7 +27,7 @@ function createWindow() {
   });
 
   ipcMain.on('window-minimize', () => {
-    mainWindow.minimize();
+    mainWindow.minimize();  
   });
 
   // Load the web app URL
