@@ -12,32 +12,41 @@ chrome.runtime.onInstalled.addListener((details) => {
   }
 });
 
-// Listen for blocked requests from declarativeNetRequest
-chrome.declarativeNetRequest.onRuleMatchedDebug.addListener((info) => {
-  const tabId = info.request.tabId;
-  if (tabId === -1) return;
+// Track blocked declarativeNetRequest rules (best-effort, only works in developer mode)
+try {
+  if (chrome.declarativeNetRequest && typeof chrome.declarativeNetRequest.onRuleMatchedDebug !== 'undefined') {
+    chrome.declarativeNetRequest.onRuleMatchedDebug.addListener((info) => {
+      const tabId = info.request.tabId;
+      if (tabId === -1) return;
 
-  // Update blocked count for the tab
-  chrome.storage.local.get([STORAGE_KEY], (result) => {
-    const counts = result[STORAGE_KEY] || {};
-    counts[tabId] = (counts[tabId] || 0) + 1;
-    chrome.storage.local.set({ [STORAGE_KEY]: counts });
-  });
-});
+      chrome.storage.local.get([STORAGE_KEY, 'total_blocked'], (result) => {
+        const counts = result[STORAGE_KEY] || {};
+        counts[tabId] = (counts[tabId] || 0) + 1;
+        const totalBlocked = (result.total_blocked || 0) + 1;
+        chrome.storage.local.set({ 
+          [STORAGE_KEY]: counts,
+          total_blocked: totalBlocked
+        });
+      });
+    });
+  }
+} catch (e) {
+  // onRuleMatchedDebug only available when devtools is open, silently ignore
+}
 
-// Track total blocked count
+// Handle messages from popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'getStats') {
     chrome.storage.local.get(['total_blocked', STORAGE_KEY, 'enabled'], (result) => {
       const tabCounts = result[STORAGE_KEY] || {};
-      const currentTabBlocked = tabCounts[sender.tab?.id] || 0;
+      const currentTabBlocked = sender.tab?.id ? (tabCounts[sender.tab.id] || 0) : 0;
       sendResponse({
         totalBlocked: result.total_blocked || 0,
         currentPageBlocked: currentTabBlocked,
         enabled: result.enabled !== false
       });
     });
-    return true; // Keep message channel open for async response
+    return true;
   }
 
   if (message.type === 'toggleEnabled') {
@@ -45,7 +54,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       const newEnabled = result.enabled === false;
       chrome.storage.local.set({ enabled: newEnabled });
       
-      // Update declarativeNetRequest enabled state
       if (newEnabled) {
         chrome.declarativeNetRequest.updateEnabledRulesets({
           enableRulesetIds: ['ads_ruleset', 'tracker_ruleset', 'annoyance_ruleset']
@@ -71,7 +79,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
-// Handle keyboard shortcut commands (optional)
+// Handle keyboard shortcut commands
 chrome.commands.onCommand.addListener((command) => {
   if (command === 'toggle-reni') {
     chrome.runtime.sendMessage({ type: 'toggleEnabled' });

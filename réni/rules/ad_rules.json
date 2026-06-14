@@ -484,14 +484,5 @@
       "urlFilter": "||crazyegg.com^",
       "resourceTypes": ["script", "xmlhttprequest"]
     }
-  },
-  {
-    "id": 1055,
-    "priority": 1,
-    "action": { "type": "block" },
-    "condition": {
-      "urlFilter": "*/ad*",
-      "resourceTypes": ["script", "image", "xmlhttprequest"]
-    }
   }
 ]
