@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inkwell — Markdown Notes</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <h1 class="logo">✒️ Inkwell</h1>
+      <button class="btn btn-primary btn-new" id="newNoteBtn">+ New Note</button>
+    </div>
+
+    <div class="sidebar-search">
+      <input type="text" id="searchInput" placeholder="Search notes..." />
+    </div>
+
+    <div class="sidebar-tags">
+      <span class="tag tag-all active" data-tag="all">All Notes</span>
+      <div id="tagList"></div>
+    </div>
+
+    <div class="sidebar-notes" id="notesList">
+      <!-- Notes rendered by JS -->
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="stats" id="stats"></div>
+      <div class="theme-toggle">
+        <button id="themeToggle" title="Toggle theme">🌙</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Editor Area -->
+  <main class="editor-panel" id="editorPanel">
+    <div class="editor-empty" id="editorEmpty">
+      <div class="empty-state">
+        <span class="empty-icon">📝</span>
+        <h2>Welcome to Inkwell</h2>
+        <p>Select a note or create a new one to get started.</p>
+        <button class="btn btn-primary" id="emptyNewBtn">Create your first note</button>
+      </div>
+    </div>
+
+    <div class="editor-active hidden" id="editorActive">
+      <div class="editor-toolbar">
+        <input type="text" id="noteTitle" class="note-title-input" placeholder="Note title..." />
+        <div class="toolbar-actions">
+          <div class="tags-input-container">
+            <input type="text" id="tagInput" class="tag-input" placeholder="Add tag..." />
+            <div class="tags-display" id="tagsDisplay"></div>
+          </div>
+          <button class="btn btn-icon" id="deleteNoteBtn" title="Delete note">🗑️</button>
+        </div>
+      </div>
+
+      <div class="editor-body">
+        <div class="editor-pane">
+          <div class="pane-header">
+            <span>Markdown</span>
+            <label class="toggle-label">
+              <input type="checkbox" id="previewToggle" checked />
+              <span class="toggle-text">Preview</span>
+            </label>
+          </div>
+          <textarea id="noteContent" class="note-content" placeholder="Write your markdown here..."></textarea>
+        </div>
+        <div class="preview-pane" id="previewPane">
+          <div class="pane-header">
+            <span>Preview</span>
+            <button class="btn btn-icon btn-copy" id="copyBtn" title="Copy content">📋</button>
+          </div>
+          <div class="preview-content" id="previewContent"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
