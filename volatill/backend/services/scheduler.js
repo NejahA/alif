@@ -3,6 +3,7 @@ const coingecko = require('./coingecko');
 const PriceSnapshot = require('../models/PriceSnapshot');
 const Alert = require('../models/Alert');
 const User = require('../models/User');
+const forecaster = require('./forecaster');
 
 /**
  * Fetch top coins and save price snapshots every 5 minutes
@@ -51,7 +52,6 @@ const scheduleAlertCheck = () => {
 
       if (!activeAlerts.length) return;
 
-      // Group by coinId for batch price fetching
       const coinIds = [...new Set(activeAlerts.map(a => a.coinId))];
       const prices = await coingecko.getSimplePrice(coinIds);
 
@@ -73,7 +73,6 @@ const scheduleAlertCheck = () => {
             shouldTrigger = Math.abs(priceData.usd_24h_change || 0) >= alert.condition;
             break;
           case 'volatility':
-            // Approximate: check if 24h change exceeds threshold
             shouldTrigger = Math.abs(priceData.usd_24h_change || 0) >= alert.condition;
             break;
         }
@@ -93,4 +92,43 @@ const scheduleAlertCheck = () => {
   console.log('⏰ Alert scheduler started (every 2 minutes)');
 };
 
-module.exports = { scheduleSnapshots, scheduleAlertCheck };
+/**
+ * Run forecast analysis every 30 minutes
+ */
+const scheduleForecastAnalysis = () => {
+  cron.schedule('*/30 * * * *', async () => {
+    console.log(`[${new Date().toISOString()}] 🔮 Running automated forecast analysis...`);
+    try {
+      await forecaster.analyzeTopCoins(50);
+    } catch (error) {
+      console.error('❌ Forecast analysis error:', error.message);
+    }
+  });
+  console.log('⏰ Forecast analysis scheduler started (every 30 minutes)');
+};
+
+/**
+ * Run an initial forecast analysis immediately (non-blocking)
+ * Seeds forecasts from CoinGecko live data so they show instantly
+ */
+const runInitialForecast = async () => {
+  console.log(`[${new Date().toISOString()}] 🔮 Seeding initial forecasts...`);
+  try {
+    // First check if we already have forecast data
+    const existingCount = await require('../models/VolatilityPrediction').countDocuments();
+    if (existingCount > 10) {
+      console.log(`✅ ${existingCount} forecasts already exist, skipping seed`);
+      return;
+    }
+
+    // Seed from CoinGecko directly (works immediately, no snapshots needed)
+    const results = await forecaster.seedAllForecasts(30);
+    console.log(`✅ Initial forecast seed complete: ${results.length} coins seeded`);
+    return results;
+  } catch (error) {
+    console.error('❌ Initial forecast seed error:', error.message);
+    return [];
+  }
+};
+
+module.exports = { scheduleSnapshots, scheduleAlertCheck, scheduleForecastAnalysis, runInitialForecast };

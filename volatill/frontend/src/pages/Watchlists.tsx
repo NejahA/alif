@@ -24,7 +24,6 @@ export default function Watchlists() {
   const [createName, setCreateName] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [prices, setPrices] = useState<Record<string, { usd: number }>>({});
-
   const fetchWatchlists = async () => {
     try {
       const res = await watchlistAPI.getWatchlists();

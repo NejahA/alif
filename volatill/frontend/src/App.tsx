@@ -7,6 +7,7 @@ import Market from './pages/Market';
 import CoinDetail from './pages/CoinDetail';
 import Watchlists from './pages/Watchlists';
 import Alerts from './pages/Alerts';
+import Forecast from './pages/Forecast';
 import Layout from './components/Layout';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -30,6 +31,7 @@ export default function App() {
         <Route path="market" element={<Market />} />
         <Route path="market/:coinId" element={<CoinDetail />} />
         <Route path="watchlists" element={<Watchlists />} />
+        <Route path="forecast" element={<Forecast />} />
         <Route path="alerts" element={<Alerts />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

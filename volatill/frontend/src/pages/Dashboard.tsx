@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { marketAPI, alertAPI, watchlistAPI } from '../services/api';
+import { marketAPI, alertAPI, watchlistAPI, forecastAPI } from '../services/api';
 
 interface Coin {
   id: string;
@@ -25,24 +25,38 @@ interface Alert {
   currentPrice: number;
 }
 
+interface HotForecast {
+  _id: string;
+  coinId: string;
+  symbol: string;
+  name: string;
+  forecastScore: number;
+  forecastLabel: string;
+  forecastDirection: string;
+  nextEvent: { type: string; probability: number; description: string };
+}
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const [topCoins, setTopCoins] = useState<Coin[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [watchlistCount, setWatchlistCount] = useState(0);
+  const [hotForecasts, setHotForecasts] = useState<HotForecast[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [coinsRes, alertsRes, wlRes] = await Promise.all([
+        const [coinsRes, alertsRes, wlRes, forecastRes] = await Promise.all([
           marketAPI.getTopCoins(10),
           alertAPI.getAlerts({ triggered: 'false', dismissed: 'false' }),
           watchlistAPI.getWatchlists(),
+          forecastAPI.getHotForecasts().catch(() => ({ data: [] })),
         ]);
         setTopCoins(coinsRes.data);
         setAlerts(alertsRes.data);
         setWatchlistCount(wlRes.data.reduce((sum: number, wl: any) => sum + wl.coins.length, 0));
+        setHotForecasts(forecastRes.data);
       } catch (err) {
         console.error('Dashboard fetch error:', err);
       } finally {
@@ -95,7 +109,51 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <h2 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '16px' }}>Top Cryptocurrencies</h2>
+      {hotForecasts.length > 0 && (
+        <div className="dashboard-forecast-widget">
+          <div className="widget-header">
+            <h2>🔮 Hot Forecasts</h2>
+            <button className="btn btn-ghost btn-sm" onClick={() => navigate('/forecast')}>
+              View All →
+            </button>
+          </div>
+          <div className="forecast-widget-grid">
+            {hotForecasts.map((f) => {
+              const fLabel: Record<string, { label: string; color: string }> = {
+                very_low: { label: 'Very Low', color: '#22c55e' },
+                low: { label: 'Low', color: '#4ade80' },
+                moderate: { label: 'Moderate', color: '#facc15' },
+                high: { label: 'High', color: '#fb923c' },
+                extreme: { label: 'Extreme', color: '#ef4444' },
+              };
+              const label = fLabel[f.forecastLabel] || fLabel.moderate;
+              const eventIcons: Record<string, string> = {
+                volatility_spike: '⚡', calm_period: '🌊', breakout: '🚀', reversal: '🔄', none: '✅',
+              };
+              return (
+                <div key={f._id} className="forecast-widget-card" onClick={() => navigate(`/market/${f.coinId}`)}>
+                  <div className="widget-coin-info">
+                    <div>
+                      <div className="widget-coin-name">{f.name}</div>
+                      <div className="widget-coin-symbol">{f.symbol.toUpperCase()}</div>
+                      {f.nextEvent && f.nextEvent.type !== 'none' && (
+                        <div className="widget-event">
+                          {eventIcons[f.nextEvent.type]} {f.nextEvent.type.replace('_', ' ')}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="widget-score" style={{ background: label.color }}>
+                    {f.forecastScore}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <h2 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '16px', marginTop: '24px' }}>Top Cryptocurrencies</h2>
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
         <div className="table-container">
           <table>

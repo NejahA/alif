@@ -8,9 +8,10 @@ const authRoutes = require('./routes/authRoutes');
 const marketRoutes = require('./routes/marketRoutes');
 const watchlistRoutes = require('./routes/watchlistRoutes');
 const alertRoutes = require('./routes/alertRoutes');
+const forecastRoutes = require('./routes/forecastRoutes');
 
 // Scheduler imports
-const { scheduleSnapshots, scheduleAlertCheck } = require('./services/scheduler');
+const { scheduleSnapshots, scheduleAlertCheck, scheduleForecastAnalysis, runInitialForecast } = require('./services/scheduler');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -31,6 +32,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/market', marketRoutes);
 app.use('/api/watchlists', watchlistRoutes);
 app.use('/api/alerts', alertRoutes);
+app.use('/api/forecast', forecastRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -62,6 +64,12 @@ const startServer = async () => {
   // Start scheduled tasks
   scheduleSnapshots();
   scheduleAlertCheck();
+  scheduleForecastAnalysis();
+
+  // Run initial forecast after 10 seconds (to allow snapshot data to exist)
+  setTimeout(() => {
+    runInitialForecast();
+  }, 10000);
 
   app.listen(PORT, () => {
     console.log(`\n🚀 Volatill API Server running on http://localhost:${PORT}`);

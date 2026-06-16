@@ -76,4 +76,13 @@ export const alertAPI = {
   dismissAll: () => api.post('/alerts/dismiss-all'),
 };
 
+// ============ FORECAST (Volatility Forecaster) ============
+export const forecastAPI = {
+  getAllForecasts: (limit = 50) => api.get(`/forecast?limit=${limit}`),
+  getCoinForecast: (coinId: string, hours = 168) => api.get(`/forecast/coin/${coinId}?hours=${hours}`),
+  getHotForecasts: (limit = 6) => api.get(`/forecast/hot?limit=${limit}`),
+  triggerAnalysis: (limit = 30) => api.post('/forecast/analyze', { limit }),
+  seedForecasts: (limit = 50) => api.post('/forecast/seed', { limit }),
+};
+
 export default api;

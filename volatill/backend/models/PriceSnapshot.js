@@ -33,11 +33,10 @@ const priceSnapshotSchema = new mongoose.Schema({
   timestamp: {
     type: Date,
     default: Date.now,
-    index: true,
   },
 });
 
-// TTL index — auto-delete snapshots older than 30 days
+// TTL index — auto-delete snapshots older than 30 days (also serves as index)
 priceSnapshotSchema.index({ timestamp: 1 }, { expireAfterSeconds: 30 * 24 * 60 * 60 });
 
 priceSnapshotSchema.index({ coinId: 1, timestamp: -1 });

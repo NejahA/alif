@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 
 const navItems = [
   { path: '/', label: 'Dashboard', icon: '📊' },
+  { path: '/forecast', label: 'Forecast', icon: '🔮' },
   { path: '/market', label: 'Market', icon: '📈' },
   { path: '/watchlists', label: 'Watchlists', icon: '⭐' },
   { path: '/alerts', label: 'Alerts', icon: '🔔' },

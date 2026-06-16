@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { marketAPI, watchlistAPI, alertAPI } from '../services/api';
+import { marketAPI, watchlistAPI, alertAPI, forecastAPI } from '../services/api';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 interface CoinData {
@@ -28,6 +28,44 @@ interface CoinData {
   };
 }
 
+interface ForecastData {
+  coinId: string;
+  symbol: string;
+  name: string;
+  currentPrice: number;
+  forecastScore: number;
+  forecastLabel: string;
+  forecastDirection: string;
+  patterns: { type: string; label: string; severity: string; confidence: number }[];
+  nextEvent: { type: string; probability: number; estimatedIn: number; description: string };
+  upcomingPeriods: { startTime: string; endTime: string; expectedVolatility: number; expectedVolatilityLabel: string; confidence: number }[];
+  dataPointsUsed: number;
+  lastAnalyzed: string;
+}
+
+const forecastLabelColors: Record<string, { label: string; color: string }> = {
+  very_low: { label: 'Very Low', color: '#22c55e' },
+  low: { label: 'Low', color: '#4ade80' },
+  moderate: { label: 'Moderate', color: '#facc15' },
+  high: { label: 'High', color: '#fb923c' },
+  extreme: { label: 'Extreme', color: '#ef4444' },
+};
+
+const eventIcons: Record<string, string> = {
+  volatility_spike: '⚡',
+  calm_period: '🌊',
+  breakout: '🚀',
+  reversal: '🔄',
+  none: '✅',
+};
+
+const severityColors: Record<string, string> = {
+  low: '#22c55e',
+  moderate: '#facc15',
+  high: '#fb923c',
+  extreme: '#ef4444',
+};
+
 export default function CoinDetail() {
   const { coinId } = useParams<{ coinId: string }>();
   const navigate = useNavigate();
@@ -38,20 +76,27 @@ export default function CoinDetail() {
   const [alertCondition, setAlertCondition] = useState('');
   const [showAlertModal, setShowAlertModal] = useState(false);
   const [addingToList, setAddingToList] = useState(false);
+  const [forecast, setForecast] = useState<ForecastData | null>(null);
+  const [forecastLoading, setForecastLoading] = useState(true);
 
   useEffect(() => {
     if (!coinId) return;
     Promise.all([
       marketAPI.getCoinDetails(coinId),
       marketAPI.getCoinChart(coinId, 7),
+      forecastAPI.getCoinForecast(coinId),
     ])
-      .then(([details, chartRes]) => {
+      .then(([details, chartRes, forecastRes]) => {
         setCoin(details.data);
         const prices = chartRes.data.prices || [];
         setChart(prices.map((p: [number, number]) => ({ time: new Date(p[0]).toLocaleDateString(), price: p[1] })));
+        setForecast(forecastRes.data);
       })
       .catch(console.error)
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setLoading(false);
+        setForecastLoading(false);
+      });
   }, [coinId]);
 
   const addToWatchlist = async () => {
@@ -167,6 +212,101 @@ export default function CoinDetail() {
           <div className="vol-bar">
             <div className="vol-bar-fill" style={{ width: `${Math.min(coin.volatility.score, 30)}%`, background: coin.volatility.color }} />
           </div>
+        </div>
+      )}
+
+      {/* 🔮 Volatility Forecast Section */}
+      {!forecastLoading && forecast && (
+        <div className="card coin-forecast-card" style={{ marginBottom: 24 }}>
+          <div className="coin-forecast-header">
+            <h3 style={{ fontSize: 16, fontWeight: 600 }}>🔮 Volatility Forecast</h3>
+            <div
+              className="forecast-score-badge-sm"
+              style={{
+                background: forecastLabelColors[forecast.forecastLabel]?.color || '#facc15',
+              }}
+            >
+              <span className="forecast-score-sm">{forecast.forecastScore}</span>
+              <span className="forecast-label-sm">
+                {forecastLabelColors[forecast.forecastLabel]?.label || 'Moderate'}
+              </span>
+            </div>
+          </div>
+
+          {/* Next Event */}
+          {forecast.nextEvent && forecast.nextEvent.type !== 'none' && (
+            <div className="next-event-banner-sm">
+              <span className="event-icon-sm">{eventIcons[forecast.nextEvent.type] || '⚡'}</span>
+              <div className="event-info-sm">
+                <div className="event-type-sm">
+                  {forecast.nextEvent.type.replace('_', ' ').toUpperCase()}
+                </div>
+                <div className="event-desc-sm">{forecast.nextEvent.description}</div>
+                <div className="event-prob-sm">
+                  {(forecast.nextEvent.probability * 100).toFixed(0)}% probability · ~
+                  {forecast.nextEvent.estimatedIn}h
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Detected Patterns */}
+          {forecast.patterns && forecast.patterns.length > 0 && (
+            <div className="coin-patterns">
+              <div className="patterns-label">Detected Patterns</div>
+              <div className="patterns-chips">
+                {forecast.patterns.map((p, i) => (
+                  <span
+                    key={i}
+                    className="pattern-chip-sm"
+                    style={{ borderColor: severityColors[p.severity] || '#94a3b8' }}
+                  >
+                    {p.label}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Upcoming Periods (mini timeline) */}
+          {forecast.upcomingPeriods && forecast.upcomingPeriods.length > 0 && (
+            <div className="coin-periods">
+              <div className="periods-label">48h Forecast Timeline</div>
+              <div className="periods-bar">
+                {forecast.upcomingPeriods.slice(0, 8).map((p, i) => {
+                  const volColors: Record<string, string> = {
+                    very_low: '#22c55e',
+                    low: '#4ade80',
+                    moderate: '#facc15',
+                    high: '#fb923c',
+                    extreme: '#ef4444',
+                  };
+                  const barColor = volColors[p.expectedVolatilityLabel] || '#94a3b8';
+                  const height = Math.max(8, (p.expectedVolatility / 100) * 40);
+                  return (
+                    <div key={i} className="period-bar-item" title={`${p.expectedVolatilityLabel} (${p.expectedVolatility}/100)`}>
+                      <div className="period-bar-fill" style={{ height, background: barColor }} />
+                      <div className="period-bar-label">
+                        {i * 6}h
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Footer */}
+          <div className="coin-forecast-footer">
+            <span>📊 {forecast.dataPointsUsed} data points</span>
+            <span>🕐 {new Date(forecast.lastAnalyzed).toLocaleString()}</span>
+          </div>
+        </div>
+      )}
+
+      {!forecastLoading && !forecast && (
+        <div className="card" style={{ marginBottom: 24, textAlign: 'center', padding: '16px 20px', color: 'var(--text-muted)' }}>
+          ⏳ Forecast data will appear once enough price snapshots have been collected.
         </div>
       )}
 
