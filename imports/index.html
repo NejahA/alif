@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Import Tracker</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h1>📦 Import Tracker</h1>
+      </div>
+      <nav>
+        <button class="nav-btn active" onclick="showView('dashboard')">
+          <span class="icon">📊</span> Dashboard
+        </button>
+        <button class="nav-btn" onclick="showView('shipments')">
+          <span class="icon">🚢</span> All Shipments
+        </button>
+        <button class="nav-btn" onclick="showView('add')">
+          <span class="icon">➕</span> New Shipment
+        </button>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="nav-btn" onclick="exportCSV()">
+          <span class="icon">📥</span> Export CSV
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Dashboard View -->
+      <section id="dashboard" class="view active">
+        <h2>Dashboard</h2>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon">📦</div>
+            <div class="stat-info">
+              <span class="stat-label">Total Shipments</span>
+              <span class="stat-value" id="total-shipments">0</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">🔄</div>
+            <div class="stat-info">
+              <span class="stat-label">In Transit</span>
+              <span class="stat-value" id="in-transit">0</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">✅</div>
+            <div class="stat-info">
+              <span class="stat-label">Delivered</span>
+              <span class="stat-value" id="delivered">0</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">⏳</div>
+            <div class="stat-info">
+              <span class="stat-label">Pending</span>
+              <span class="stat-value" id="pending">0</span>
+            </div>
+          </div>
+        </div>
+        <div class="recent-shipments">
+          <h3>Recent Shipments</h3>
+          <div class="table-container">
+            <table id="recent-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Item</th>
+                  <th>Origin</th>
+                  <th>Destination</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="recent-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Shipments View -->
+      <section id="shipments" class="view">
+        <div class="view-header">
+          <h2>All Shipments</h2>
+          <input type="text" id="search-input" placeholder="Search shipments..." oninput="renderShipments()">
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Item Name</th>
+                <th>Origin</th>
+                <th>Destination</th>
+                <th>Qty</th>
+                <th>Weight</th>
+                <th>Status</th>
+                <th>ETA</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="shipments-body"></tbody>
+          </table>
+        </div>
+        <p id="no-shipments" class="empty-state">No shipments yet. Add your first one!</p>
+      </section>
+
+      <!-- Add/Edit View -->
+      <section id="add" class="view">
+        <h2 id="form-title">New Shipment</h2>
+        <form id="shipment-form" onsubmit="saveShipment(event)">
+          <input type="hidden" id="edit-id">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="itemName">Item Name *</label>
+              <input type="text" id="itemName" required>
+            </div>
+            <div class="form-group">
+              <label for="origin">Origin *</label>
+              <input type="text" id="origin" required>
+            </div>
+            <div class="form-group">
+              <label for="destination">Destination *</label>
+              <input type="text" id="destination" required>
+            </div>
+            <div class="form-group">
+              <label for="quantity">Quantity</label>
+              <input type="number" id="quantity" min="1">
+            </div>
+            <div class="form-group">
+              <label for="weight">Weight (kg)</label>
+              <input type="number" id="weight" step="0.1" min="0">
+            </div>
+            <div class="form-group">
+              <label for="status">Status</label>
+              <select id="status">
+                <option value="Pending">Pending</option>
+                <option value="In Transit">In Transit</option>
+                <option value="Customs">Customs</option>
+                <option value="Delivered">Delivered</option>
+                <option value="Cancelled">Cancelled</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="eta">Estimated Arrival</label>
+              <input type="date" id="eta">
+            </div>
+            <div class="form-group">
+              <label for="notes">Notes</label>
+              <textarea id="notes" rows="3"></textarea>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Save Shipment</button>
+            <button type="button" class="btn btn-secondary" onclick="resetForm()">Cancel</button>
+          </div>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

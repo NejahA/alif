@@ -38,7 +38,7 @@ replay_pid*.log
 **/*.pyc
 **/*.pyo
 **/*.pyd
-
+nul
 # Flutter / Dart intermediate outputs
 **/.dart_tool/
 **/.flutter-plugins
@@ -97,7 +97,10 @@ pnpm-debug.log*
 *.njsproj
 *.sln
 *.sw?
-
+**/android
+**/ios
+**/windows
+**/linux
 # Visual Studio / Windows desktop compilation outputs
 **/.vs/
 **/bin/
