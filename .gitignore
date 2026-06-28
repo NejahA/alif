@@ -143,7 +143,6 @@ pnpm-debug.log*
 **/*.opensdf
 
 
-
 # OS metadata
 .DS_Store
 Thumbs.db
