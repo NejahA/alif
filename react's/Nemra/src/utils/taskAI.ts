@@ -29,7 +29,7 @@ export function suggestTags(taskText: string): string[] {
   const tagMap: { [key: string]: string[] } = {
     work: ["meeting", "email", "report", "presentation", "project", "client"],
     personal: ["home", "family", "personal", "self"],
-    health: ["exercise", "workout", "gym", "health", "doctor", "fitness"],
+    health: ["exercise", "workout", "gym", "health", "doctor", "f itness"],
     learning: ["learn", "study", "course", "tutorial", "read", "book"],
     finance: ["pay", "bill", "budget", "money", "invoice", "payment"],
     shopping: ["buy", "purchase", "shop", "order", "get"],
@@ -45,7 +45,7 @@ export function suggestTags(taskText: string): string[] {
   
   return suggestions;
 }
-
+  
 export function suggestDueDate(taskText: string): string | undefined {
   const text = taskText.toLowerCase();
   const today = new Date();
