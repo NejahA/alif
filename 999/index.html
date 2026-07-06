@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>999 — 9×9 Creative Grid</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #0a0a0f;
+      color: #e0e0e0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem;
+    }
+
+    .container {
+      background: #12121a;
+      border-radius: 2rem;
+      padding: 2.5rem;
+      box-shadow: 0 0 60px rgba(100, 60, 255, 0.08), 0 0 120px rgba(100, 60, 255, 0.04);
+      border: 1px solid #1e1e2a;
+      max-width: 520px;
+      width: 100%;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .header h1 {
+      font-size: 2.8rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      background: linear-gradient(135deg, #a78bfa, #6366f1, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .header p {
+      color: #6b7280;
+      font-size: 0.85rem;
+      margin-top: 0.3rem;
+      letter-spacing: 0.05em;
+    }
+
+    .grid-wrapper {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(9, 1fr);
+      gap: 3px;
+      background: #1a1a28;
+      padding: 6px;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 360px;
+      aspect-ratio: 1 / 1;
+    }
+
+    .cell {
+      background: #1e1e2e;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: transform 0.1s ease, box-shadow 0.15s ease;
+      aspect-ratio: 1 / 1;
+    }
+
+    .cell:hover {
+      transform: scale(1.08);
+      box-shadow: 0 0 12px rgba(167, 139, 250, 0.25);
+      z-index: 1;
+    }
+
+    .cell:active {
+      transform: scale(0.92);
+    }
+
+    .palette {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .color-swatch {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all 0.15s ease;
+    }
+
+    .color-swatch:hover {
+      transform: scale(1.15);
+    }
+
+    .color-swatch.active {
+      border-color: #ffffff;
+      box-shadow: 0 0 16px rgba(255, 255, 255, 0.2);
+      transform: scale(1.1);
+    }
+
+    .tools {
+      display: flex;
+      justify-content: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+
+    .btn {
+      background: #1e1e2e;
+      border: 1px solid #2a2a3e;
+      color: #c0c0d0;
+      padding: 0.5rem 1.2rem;
+      border-radius: 2rem;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-family: inherit;
+      letter-spacing: 0.03em;
+    }
+
+    .btn:hover {
+      background: #2a2a3e;
+      border-color: #6366f1;
+      color: #fff;
+    }
+
+    .btn:active {
+      transform: scale(0.95);
+    }
+
+    .btn.primary {
+      background: linear-gradient(135deg, #6366f1, #818cf8);
+      border: none;
+      color: #fff;
+    }
+
+    .btn.primary:hover {
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+    }
+
+    .export-area {
+      margin-top: 1rem;
+    }
+
+    .export-area textarea {
+      width: 100%;
+      height: 80px;
+      background: #0e0e16;
+      border: 1px solid #1e1e2e;
+      border-radius: 10px;
+      color: #a0a0b0;
+      padding: 0.8rem;
+      font-family: 'Courier New', monospace;
+      font-size: 0.7rem;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .export-area textarea:focus {
+      border-color: #6366f1;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 1.2rem;
+      color: #3a3a4a;
+      font-size: 0.7rem;
+      letter-spacing: 0.05em;
+    }
+
+    .footer span {
+      color: #6366f1;
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 1.5rem;
+        border-radius: 1.5rem;
+      }
+      .header h1 {
+        font-size: 2.2rem;
+      }
+      .grid {
+        gap: 2px;
+        padding: 4px;
+      }
+      .color-swatch {
+        width: 28px;
+        height: 28px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>999</h1>
+      <p>9×9 · 9 colors · infinite possibilities</p>
+    </div>
+
+    <div class="grid-wrapper">
+      <div class="grid" id="grid"></div>
+    </div>
+
+    <div class="palette" id="palette"></div>
+
+    <div class="tools">
+      <button class="btn" id="clearBtn">✕ Clear</button>
+      <button class="btn" id="randomBtn">✦ Random</button>
+      <button class="btn primary" id="exportBtn">⬇ Export</button>
+    </div>
+
+    <div class="export-area">
+      <textarea id="exportOutput" placeholder="Click Export to generate…" readonly></textarea>
+    </div>
+
+    <div class="footer">
+      <span>◆</span> click to paint · right-click to erase <span>◆</span>
+    </div>
+  </div>
+
+  <script>
+    const COLORS = [
+      '#1e1e2e', // empty / dark
+      '#ef4444', // red
+      '#f97316', // orange
+      '#eab308', // yellow
+      '#22c55e', // green
+      '#06b6d4', // cyan
+      '#6366f1', // indigo
+      '#a78bfa', // violet
+      '#ec4899', // pink
+    ];
+
+    const COLOR_NAMES = [
+      'void', 'red', 'orange', 'yellow', 'green', 'cyan', 'indigo', 'violet', 'pink'
+    ];
+
+    const GRID_SIZE = 9;
+    let grid = Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill(0));
+    let selectedColor = 4; // start with green
+
+    const gridEl = document.getElementById('grid');
+    const paletteEl = document.getElementById('palette');
+    const exportOutput = document.getElementById('exportOutput');
+
+    // Build palette
+    COLORS.forEach((color, i) => {
+      const swatch = document.createElement('div');
+      swatch.className = 'color-swatch' + (i === selectedColor ? ' active' : '');
+      swatch.style.background = color;
+      swatch.style.borderColor = i === 0 ? '#2a2a3e' : color;
+      swatch.dataset.index = i;
+      swatch.addEventListener('click', () => {
+        document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+        swatch.classList.add('active');
+        selectedColor = i;
+      });
+      paletteEl.appendChild(swatch);
+    });
+
+    // Build grid
+    function renderGrid() {
+      gridEl.innerHTML = '';
+      for (let r = 0; r < GRID_SIZE; r++) {
+        for (let c = 0; c < GRID_SIZE; c++) {
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+          cell.style.background = COLORS[grid[r][c]];
+          cell.dataset.r = r;
+          cell.dataset.c = c;
+
+          cell.addEventListener('click', (e) => {
+            e.preventDefault();
+            grid[r][c] = selectedColor;
+            cell.style.background = COLORS[selectedColor];
+          });
+
+          cell.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            grid[r][c] = 0;
+            cell.style.background = COLORS[0];
+          });
+
+          // Drag painting
+          let painting = false;
+          cell.addEventListener('mousedown', (e) => {
+            if (e.button === 0) painting = true;
+          });
+          cell.addEventListener('mouseenter', () => {
+            if (painting) {
+              grid[r][c] = selectedColor;
+              cell.style.background = COLORS[selectedColor];
+            }
+          });
+          document.addEventListener('mouseup', () => { painting = false; });
+
+          // Touch drag
+          cell.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            grid[r][c] = selectedColor;
+            cell.style.background = COLORS[selectedColor];
+          });
+
+          gridEl.appendChild(cell);
+        }
+      }
+    }
+
+    function refreshGridVisuals() {
+      const cells = gridEl.querySelectorAll('.cell');
+      let idx = 0;
+      for (let r = 0; r < GRID_SIZE; r++) {
+        for (let c = 0; c < GRID_SIZE; c++) {
+          cells[idx].style.background = COLORS[grid[r][c]];
+          idx++;
+        }
+      }
+    }
+
+    function clearGrid() {
+      grid = Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill(0));
+      refreshGridVisuals();
+      exportOutput.value = '';
+    }
+
+    function randomGrid() {
+      grid = Array(GRID_SIZE).fill().map(() =>
+        Array(GRID_SIZE).fill().map(() => Math.floor(Math.random() * COLORS.length))
+      );
+      refreshGridVisuals();
+      exportOutput.value = '';
+    }
+
+    function exportGrid() {
+      let ascii = '';
+      for (let r = 0; r < GRID_SIZE; r++) {
+        for (let c = 0; c < GRID_SIZE; c++) {
+          ascii += grid[r][c] === 0 ? '· ' : '● ';
+        }
+        ascii += '\n';
+      }
+
+      let legend = 'Legend:\n';
+      COLORS.forEach((hex, i) => {
+        if (i > 0) legend += `${i}: ${COLOR_NAMES[i]}\n`;
+      });
+
+      const data = {
+        grid: grid,
+        colors: COLORS,
+        colorNames: COLOR_NAMES,
+        exportedAt: new Date().toISOString(),
+      };
+
+      const jsonExport = JSON.stringify(data, null, 2);
+
+      exportOutput.value = `── ASCII ──\n${ascii}\n── JSON ──\n${jsonExport}`;
+      exportOutput.select();
+    }
+
+    // Event listeners
+    document.getElementById('clearBtn').addEventListener('click', clearGrid);
+    document.getElementById('randomBtn').addEventListener('click', randomGrid);
+    document.getElementById('exportBtn').addEventListener('click', exportGrid);
+
+    // Init
+    renderGrid();
+    randomGrid(); // start with a random pattern for inspiration
+  </script>
+</body>
+</html>
