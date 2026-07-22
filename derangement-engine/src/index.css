@@ -1,0 +1,55 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --de-bg: #0a0a0f;
+  --de-card: rgba(16, 16, 30, 0.8);
+  --de-border: rgba(255, 100, 200, 0.15);
+  --neon-pink: #ff2d95;
+  --neon-cyan: #00f0ff;
+  --neon-lime: #39ff14;
+  --neon-yellow: #ffe600;
+  --neon-purple: #bf00ff;
+  --neon-orange: #ff6600;
+  --text-primary: #e0e0ff;
+  --text-secondary: #9090c0;
+  --text-muted: #606090;
+
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  color: var(--text-primary);
+  background: var(--de-bg);
+}
+
+body {
+  min-height: 100vh;
+  background: var(--de-bg);
+  background-image:
+    radial-gradient(ellipse at 30% 20%, rgba(255, 45, 149, 0.05) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 80%, rgba(0, 240, 255, 0.05) 0%, transparent 50%);
+  overflow-x: hidden;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+::selection {
+  background: var(--neon-pink);
+  color: black;
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--de-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--neon-pink);
+  border-radius: 2px;
+}

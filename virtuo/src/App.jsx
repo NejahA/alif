@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import * as Tone from 'tone';
-import { Music, Activity, Disc, Zap, Settings2, Music as GuitarIcon, Layout, Palette, Book, HelpCircle, Cloud, Volume2, AudioWaveform, Skull, Cpu, ListMusic, Mic, Folder, Brain, Share2, Sparkles, Target, BarChart3, Lightbulb, Clock, Timer, CheckCircle2, AlertCircle, TrendingUp, Heart, Eye, Download, Star, Users, Headphones, Video, MessageSquare, UserPlus, Crown, Wifi, Radio, StopCircle, Layers, Plus, RefreshCcw, Shield, Camera, Compass, Lock, Sprout, Trophy } from 'lucide-react';
+import { Music, Activity, Disc, Zap, Settings2, Music as GuitarIcon, Layout, Palette, Book, HelpCircle, Cloud, Volume2, AudioWaveform, Skull, Cpu, ListMusic, Mic, Folder, Brain, Share2, Sparkles, Target, BarChart3, Lightbulb, Clock, Timer, CheckCircle2, AlertCircle, TrendingUp, Heart, Eye, Download, Star, Users, Headphones, Video, MessageSquare, UserPlus, Crown, Wifi, Radio, StopCircle, Layers, Plus, RefreshCcw, Shield, Camera, Compass, Lock, Sprout, Trophy, Gauge, GitBranch, Sliders, Globe } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Piano from './components/Piano';
 import Violin from './components/Violin';
@@ -99,9 +99,25 @@ import VirtueTraining from './components/VirtueTraining';
 import VirtueRealms from './components/VirtueRealms';
 import VirtuoGarden from './components/VirtuoGarden';
 import DailyQuests from './components/DailyQuests';
+import MixAutomationEditor from './components/MixAutomationEditor';
+import ChordScaleDetector from './components/ChordScaleDetector';
+import FXChainPresetManager from './components/FXChainPresetManager';
+import ShortcutsReference from './components/ShortcutsReference';
+import SmartMeterBridge from './components/SmartMeterBridge';
+import AudioRouter from './components/AudioRouter';
+import SessionAnalytics from './components/SessionAnalytics';
+import SmartTempo from './components/SmartTempo';
+import HarmonyEngine from './components/HarmonyEngine';
+import SoundDesigner from './components/SoundDesigner';
+import PerformanceRecorder from './components/PerformanceRecorder';
+import CollaborationFeed from './components/CollaborationFeed';
+import MusicTheoryGuide from './components/MusicTheoryGuide';
+import CollaborationHub from './components/CollaborationHub';
+import InstrumentFXChain from './components/InstrumentFXChain';
+import PresetManager from './components/PresetManager';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('piano'); // 'piano' | 'violin' | 'cello' | 'guitar' | 'drums' | 'pads' | 'sampler' | 'synth' | 'seq' | 'bass' | 'ambient' | 'vocal' | 'scales' | 'studio' | 'project' | 'theremin' | 'ai' | 'social' | 'workflow' | 'analysis' | 'jam' | 'arranger' | 'market' | 'learning' | 'granular' | 'looper' | 'themes' | 'performance' | 'cloud' | 'virtues' | 'training' | 'realms' | 'garden' | 'quests'
+  const [activeTab, setActiveTab] = useState('piano'); // 'piano' | 'violin' | 'cello' | 'guitar' | 'drums' | 'pads' | 'sampler' | 'synth' | 'seq' | 'bass' | 'ambient' | 'vocal' | 'scales' | 'studio' | 'project' | 'theremin' | 'ai' | 'social' | 'workflow' | 'analysis' | 'jam' | 'arranger' | 'market' | 'learning' | 'granular' | 'looper' | 'themes' | 'performance' | 'cloud' | 'virtues' | 'training' | 'realms' | 'garden' | 'quests' | 'automation' | 'detector' | 'fxchains' | 'shortcuts'
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [recordings, setRecordings] = useState([]);
   const [showUtilities, setShowUtilities] = useState(false);
@@ -1393,6 +1409,42 @@ function App() {
               >
                 <Shield size={14} /> Virtues
               </button>
+              <button 
+                className={`btn-glass ${activeTab === 'automation' ? 'active' : ''}`}
+                onClick={() => setActiveTab('automation')}
+                onMouseEnter={() => setHoveredTab('automation')}
+                onMouseLeave={() => setHoveredTab(null)}
+                style={{ borderColor: '#3b82f6', color: '#3b82f6' }}
+              >
+                <TrendingUp size={14} /> Automation
+              </button>
+              <button 
+                className={`btn-glass ${activeTab === 'detector' ? 'active' : ''}`}
+                onClick={() => setActiveTab('detector')}
+                onMouseEnter={() => setHoveredTab('detector')}
+                onMouseLeave={() => setHoveredTab(null)}
+                style={{ borderColor: '#10b981', color: '#10b981' }}
+              >
+                <Brain size={14} /> Detector
+              </button>
+              <button 
+                className={`btn-glass ${activeTab === 'fxchains' ? 'active' : ''}`}
+                onClick={() => setActiveTab('fxchains')}
+                onMouseEnter={() => setHoveredTab('fxchains')}
+                onMouseLeave={() => setHoveredTab(null)}
+                style={{ borderColor: '#8b5cf6', color: '#8b5cf6' }}
+              >
+                <Layout size={14} /> FX Chains
+              </button>
+              <button 
+                className={`btn-glass ${activeTab === 'shortcuts' ? 'active' : ''}`}
+                onClick={() => setActiveTab('shortcuts')}
+                onMouseEnter={() => setHoveredTab('shortcuts')}
+                onMouseLeave={() => setHoveredTab(null)}
+                style={{ borderColor: '#f59e0b', color: '#f59e0b' }}
+              >
+                <Zap size={14} /> Shortcuts
+              </button>
             </nav>
           </motion.header>
     )}
@@ -1902,6 +1954,54 @@ function App() {
               </motion.div>
             )}
 
+            {activeTab === 'automation' && (
+              <motion.div
+                key="automation"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                style={{ width: '100%', display: 'flex', justifyContent: 'center' }}
+              >
+                <MixAutomationEditor />
+              </motion.div>
+            )}
+
+            {activeTab === 'detector' && (
+              <motion.div
+                key="detector"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                style={{ width: '100%', display: 'flex', justifyContent: 'center' }}
+              >
+                <ChordScaleDetector />
+              </motion.div>
+            )}
+
+            {activeTab === 'fxchains' && (
+              <motion.div
+                key="fxchains"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                style={{ width: '100%', display: 'flex', justifyContent: 'center' }}
+              >
+                <FXChainPresetManager />
+              </motion.div>
+            )}
+
+            {activeTab === 'shortcuts' && (
+              <motion.div
+                key="shortcuts"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                style={{ width: '100%', display: 'flex', justifyContent: 'center' }}
+              >
+                <ShortcutsReference />
+              </motion.div>
+            )}
+
           </AnimatePresence>
         </div>
 
@@ -2025,6 +2125,63 @@ function App() {
                       <MidiCCManager />
                       <ThemeCustomizer />
                       <AccessibilityPanel />
+                    </div>
+                  </div>
+
+                  {/* Smart Tools Group */}
+                  <div className="glass-panel" style={{ padding: '15px', display: 'flex', flexDirection: 'column', gap: '10px', minWidth: '300px' }}>
+                    <h4 style={{ margin: 0, fontSize: '0.8rem', color: '#8b5cf6', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                      <Gauge size={12} /> Smart Tools
+                    </h4>
+                    <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
+                      <SmartMeterBridge />
+                      <SmartTempo />
+                      <SessionAnalytics />
+                    </div>
+                  </div>
+
+                  {/* Audio Routing Group */}
+                  <div className="glass-panel" style={{ padding: '15px', display: 'flex', flexDirection: 'column', gap: '10px', minWidth: '300px' }}>
+                    <h4 style={{ margin: 0, fontSize: '0.8rem', color: '#14b8a6', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                      <GitBranch size={12} /> Routing & Design
+                    </h4>
+                    <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
+                      <AudioRouter />
+                      <SoundDesigner />
+                    </div>
+                  </div>
+
+                  {/* Harmony & Theory Group */}
+                  <div className="glass-panel" style={{ padding: '15px', display: 'flex', flexDirection: 'column', gap: '10px', minWidth: '300px' }}>
+                    <h4 style={{ margin: 0, fontSize: '0.8rem', color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                      <Sliders size={12} /> Harmony & Theory
+                    </h4>
+                    <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
+                      <HarmonyEngine />
+                      <MusicTheoryGuide />
+                    </div>
+                  </div>
+
+                  {/* Recording & Collaboration Group */}
+                  <div className="glass-panel" style={{ padding: '15px', display: 'flex', flexDirection: 'column', gap: '10px', minWidth: '300px' }}>
+                    <h4 style={{ margin: 0, fontSize: '0.8rem', color: '#ec4899', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                      <Radio size={12} /> Recording & Collab
+                    </h4>
+                    <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
+                      <PerformanceRecorder />
+                      <CollaborationFeed />
+                      <CollaborationHub />
+                    </div>
+                  </div>
+
+                  {/* Instrument FX & Presets Group */}
+                  <div className="glass-panel" style={{ padding: '15px', display: 'flex', flexDirection: 'column', gap: '10px', minWidth: '300px' }}>
+                    <h4 style={{ margin: 0, fontSize: '0.8rem', color: '#10b981', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                      <Globe size={12} /> Instrument FX & Presets
+                    </h4>
+                    <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
+                      <InstrumentFXChain />
+                      <PresetManager instrumentType="synth" currentSettings={{}} onLoadPreset={() => {}} />
                     </div>
                   </div>
 

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Applicator - Create Real Apps</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>⚡ Applicator</h1>
+      <p>Create functional mini-apps — run, download, or generate files</p>
+    </header>
+
+    <main>
+      <!-- Toolbar -->
+      <section class="toolbar">
+        <div class="toolbar-row">
+          <button id="openFormBtn" class="btn-primary">+ New App</button>
+          <div class="toolbar-right">
+            <button id="createAllBtn" class="btn-success" title="Generate all apps as .html files">📁 Create Files</button>
+            <button id="statsBtn" class="btn-secondary" title="Dashboard">📊</button>
+            <button id="exportBtn" class="btn-secondary" title="Export all apps">⬇ Export</button>
+            <button id="importBtn" class="btn-secondary" title="Import apps">⬆ Import</button>
+            <input type="file" id="importFile" accept=".json" style="display:none">
+            <button id="themeToggle" class="btn-secondary" title="Toggle theme">🌓</button>
+          </div>
+        </div>
+        <div class="toolbar-row search-row">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="searchInput" placeholder="Search apps by name...">
+          </div>
+          <select id="filterTemplate">
+            <option value="all">All Templates</option>
+            <option value="todo">✅ Todo List</option>
+            <option value="counter">🔢 Counter</option>
+            <option value="timer">⏱️ Timer</option>
+            <option value="notes">📝 Notes</option>
+            <option value="calculator">🧮 Calculator</option>
+            <option value="colorpicker">🎨 Color Picker</option>
+            <option value="password">🔐 Password Gen</option>
+            <option value="weather">🌤️ Weather</option>
+            <option value="pomodoro">🍅 Pomodoro</option>
+            <option value="quiz">❓ Quiz</option>
+            <option value="tictactoe">✖️ Tic-Tac-Toe</option>
+            <option value="markdown">📄 Markdown Preview</option>
+            <option value="converter">🔄 Unit Converter</option>
+            <option value="memory">🧠 Memory Game</option>
+          </select>
+          <select id="sortSelect">
+            <option value="newest">Newest</option>
+            <option value="oldest">Oldest</option>
+            <option value="az">A-Z</option>
+            <option value="za">Z-A</option>
+          </select>
+        </div>
+      </section>
+
+      <!-- Stats Dashboard -->
+      <section id="statsPanel" class="stats-panel" style="display:none;">
+        <div class="stats-grid" id="statsGrid"></div>
+      </section>
+
+      <section class="app-grid" id="appGrid">
+        <!-- Apps will be rendered here -->
+      </section>
+    </main>
+
+    <!-- Create/Edit Modal -->
+    <div id="appModal" class="modal">
+      <div class="modal-content">
+        <span class="close-btn" id="closeModalBtn">&times;</span>
+        <h2 id="modalTitle">Create a New App</h2>
+        <form id="appForm">
+          <input type="hidden" id="appId">
+
+          <div class="form-group">
+            <label for="appName">App Name *</label>
+            <input type="text" id="appName" placeholder="e.g. TodoMaster" required>
+          </div>
+
+          <div class="form-group">
+            <label for="appDescription">Description</label>
+            <textarea id="appDescription" rows="2" placeholder="What does it do?"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="appTemplate">App Template *</label>
+            <select id="appTemplate" required>
+              <option value="">— Select a template —</option>
+              <option value="todo">✅ Todo List</option>
+              <option value="counter">🔢 Counter</option>
+              <option value="timer">⏱️ Timer / Stopwatch</option>
+              <option value="notes">📝 Notes App</option>
+              <option value="calculator">🧮 Calculator</option>
+              <option value="colorpicker">🎨 Color Picker</option>
+              <option value="password">🔐 Password Generator</option>
+              <option value="weather">🌤️ Weather Widget (Demo)</option>
+              <option value="pomodoro">🍅 Pomodoro Timer</option>
+              <option value="quiz">❓ Quiz App</option>
+              <option value="tictactoe">✖️ Tic-Tac-Toe</option>
+              <option value="markdown">📄 Markdown Previewer</option>
+              <option value="converter">🔄 Unit Converter</option>
+              <option value="memory">🧠 Memory Game</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="appIcon">Icon (emoji)</label>
+            <input type="text" id="appIcon" placeholder="e.g. 🚀" maxlength="2">
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn-primary" id="submitBtn">Create App</button>
+            <button type="button" class="btn-secondary" id="cancelBtn">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Detail Modal (View/Launch generated app) -->
+    <div id="detailModal" class="modal">
+      <div class="modal-content detail-content">
+        <span class="close-btn" id="closeDetailBtn">&times;</span>
+        <div id="detailBody"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

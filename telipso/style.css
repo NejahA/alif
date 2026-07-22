@@ -1,0 +1,353 @@
+/* ── Reset & Base ── */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --bg: #0a0a0f;
+  --surface: #12121a;
+  --border: #1e1e2e;
+  --text: #c8c8d4;
+  --text-dim: #6a6a7a;
+  --accent: #6c5ce7;
+  --accent-glow: rgba(108, 92, 231, 0.3);
+  --green: #00e676;
+  --amber: #ffd54f;
+  --red: #ff5252;
+  --cyan: #00bcd4;
+  --radius: 8px;
+  --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --mono: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', monospace;
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  overflow: hidden;
+  user-select: none;
+}
+
+/* ── Boot Overlay ── */
+.boot-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.6s ease, visibility 0.6s ease;
+}
+
+.boot-overlay.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.boot-terminal {
+  width: 600px;
+  max-width: 90vw;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.boot-art {
+  color: var(--accent);
+  font-size: 11px;
+  line-height: 1.2;
+  text-align: center;
+  margin-bottom: 16px;
+  text-shadow: 0 0 8px var(--accent-glow);
+}
+
+.boot-log {
+  margin-bottom: 16px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.log-line {
+  opacity: 0;
+  animation: logFadeIn 0.3s ease forwards;
+}
+
+.log-ts { color: var(--text-dim); margin-right: 8px; }
+.log-ok { color: var(--green); margin-right: 4px; }
+.log-warn { color: var(--amber); margin-right: 4px; }
+.log-err { color: var(--red); margin-right: 4px; }
+.log-info { color: var(--cyan); margin-right: 4px; }
+
+@keyframes logFadeIn {
+  to { opacity: 1; }
+}
+
+.boot-progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.boot-progress-track {
+  flex: 1;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.boot-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent), var(--cyan));
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.boot-progress-pct {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  min-width: 36px;
+  text-align: right;
+}
+
+.boot-btn {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s, opacity 0.2s;
+}
+
+.boot-btn:hover:not(:disabled) {
+  background: #7c6cf0;
+  box-shadow: 0 0 20px var(--accent-glow);
+}
+
+.boot-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── Universe ── */
+.universe {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+
+.universe.visible {
+  opacity: 1;
+}
+
+/* Header */
+.univ-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.univ-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.univ-icon {
+  font-size: 20px;
+  color: var(--accent);
+  text-shadow: 0 0 10px var(--accent-glow);
+}
+
+.univ-brand h1 {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+.univ-ver {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  background: var(--border);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.univ-stats {
+  display: flex;
+  gap: 20px;
+}
+
+.univ-stat {
+  text-align: center;
+}
+
+.univ-stat .stat-label {
+  display: block;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+}
+
+.univ-stat .stat-val {
+  font-family: var(--mono);
+  font-size: 16px;
+  color: var(--accent);
+}
+
+/* Canvas */
+.canvas-wrap {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+#telCanvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--bg);
+}
+
+.canvas-hud {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  pointer-events: none;
+}
+
+.hud-info {
+  display: flex;
+  gap: 6px;
+  background: rgba(0,0,0,0.6);
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+
+.hud-dot { color: var(--text-dim); }
+
+/* Control Bar */
+.control-bar {
+  display: flex;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.ctrl-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-family: var(--font);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ctrl-btn:hover {
+  background: var(--border);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.ctrl-btn:active {
+  transform: scale(0.96);
+}
+
+.ctrl-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* Status Bar */
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 20px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.status-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-led {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+  transition: background 0.3s, box-shadow 0.3s;
+}
+
+.status-led.warning {
+  background: var(--amber);
+  box-shadow: 0 0 6px var(--amber);
+}
+
+.status-led.error {
+  background: var(--red);
+  box-shadow: 0 0 6px var(--red);
+}
+
+.status-right {
+  display: flex;
+  gap: 8px;
+}
+
+.status-sep { color: var(--border); }
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .boot-terminal { padding: 16px; font-size: 11px; }
+  .boot-art { font-size: 8px; }
+  .univ-header { flex-direction: column; gap: 8px; }
+  .univ-stats { gap: 12px; }
+  .ctrl-btn { padding: 6px 12px; font-size: 12px; }
+}

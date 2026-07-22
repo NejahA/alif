@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Truetooth — Premium Bluetooth Controls</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Navigation -->
+  <nav>
+    <div class="nav-inner">
+      <div class="logo">
+        <span class="logo-icon">🎧</span>
+        <span class="logo-text">Truetooth</span>
+      </div>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#demo">Live Demo</a>
+        <a href="#download">Download</a>
+      </div>
+      <button class="btn-primary nav-cta">Get Started</button>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-content">
+      <div class="hero-badge">🚀 v2.4.1 — BLE 5.3</div>
+      <h1>Full Control Over<br />Your <span class="gradient-text">Sound</span></h1>
+      <p class="hero-sub">
+        Connect, configure, and customize your Bluetooth earpods with 
+        precision. ANC, spatial audio, EQ presets, and more — all from one app.
+      </p>
+      <div class="hero-actions">
+        <button class="btn-primary btn-lg">Download for Android</button>
+        <button class="btn-secondary btn-lg">View on GitHub</button>
+      </div>
+      <div class="hero-stats">
+        <div class="stat">
+          <span class="stat-number">10k+</span>
+          <span class="stat-label">Downloads</span>
+        </div>
+        <div class="stat">
+          <span class="stat-number">4.8</span>
+          <span class="stat-label">Rating</span>
+        </div>
+        <div class="stat">
+          <span class="stat-number">99%</span>
+          <span class="stat-label">Uptime</span>
+        </div>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="phone-mockup">
+        <div class="phone-notch"></div>
+        <div class="phone-header">Truetooth</div>
+        <div class="phone-body">
+          <div class="device-card-mini">
+            <div class="dc-icon">🎧</div>
+            <div class="dc-info">
+              <div class="dc-name">Truetooth Pro X1</div>
+              <div class="dc-status">
+                <span class="dot green"></span> Connected — LDAC
+              </div>
+            </div>
+            <div class="dc-battery">
+              <span>87%</span>
+              <div class="bat-bar"><div class="bat-fill" style="width:87%"></div></div>
+            </div>
+          </div>
+          <div class="control-group">
+            <div class="ctrl-row">
+              <span>Noise Control</span>
+              <div class="segmented">
+                <button class="seg-btn active">Off</button>
+                <button class="seg-btn">ANC</button>
+                <button class="seg-btn">Transparency</button>
+              </div>
+            </div>
+            <div class="ctrl-row">
+              <span>Volume</span>
+              <div class="vol-control">
+                <input type="range" min="0" max="100" value="65" />
+                <span class="vol-pct">65%</span>
+              </div>
+            </div>
+            <div class="ctrl-row">
+              <span>EQ Preset</span>
+              <div class="eq-chips">
+                <button class="chip active">Flat</button>
+                <button class="chip">Bass</button>
+                <button class="chip">Vocal</button>
+                <button class="chip">Rock</button>
+              </div>
+            </div>
+          </div>
+          <div class="toggle-group">
+            <div class="toggle-item">
+              <span>Auto Ear Detection</span>
+              <label class="switch"><input type="checkbox" checked /><span class="slider"></span></label>
+            </div>
+            <div class="toggle-item">
+              <span>Spatial Audio</span>
+              <label class="switch"><input type="checkbox" /><span class="slider"></span></label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section id="features" class="features">
+    <h2>Why <span class="gradient-text">Truetooth</span>?</h2>
+    <p class="section-sub">Everything you need to take control of your audio experience.</p>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="fc-icon">🔇</div>
+        <h3>Active Noise Cancellation</h3>
+        <p>Three modes: Off, ANC, and Transparency. Switch seamlessly between total immersion and awareness.</p>
+      </div>
+      <div class="feature-card">
+        <div class="fc-icon">🎛️</div>
+        <h3>8-Band Equalizer</h3>
+        <p>Choose from 8 presets — Flat, Bass Boost, Treble Boost, Vocal, Classical, Rock, Jazz, or create your own.</p>
+      </div>
+      <div class="feature-card">
+        <div class="fc-icon">🌐</div>
+        <h3>Spatial Audio</h3>
+        <p>Head-tracked spatial audio that stays locked to your device, not your head. Immersive soundstage.</p>
+      </div>
+      <div class="feature-card">
+        <div class="fc-icon">🔋</div>
+        <h3>Per-Earbud Battery</h3>
+        <p>See individual battery levels for left, right, and charging case. Charging status in real time.</p>
+      </div>
+      <div class="feature-card">
+        <div class="fc-icon">👂</div>
+        <h3>Auto Ear Detection</h3>
+        <p>Pause/resume music automatically when you remove or insert an earbud. Saves battery too.</p>
+      </div>
+      <div class="feature-card">
+        <div class="fc-icon">📶</div>
+        <h3>BLE 5.3 + LDAC</h3>
+        <p>Ultra-low latency connection with high-fidelity LDAC codec support for lossless wireless audio.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interactive Demo -->
+  <section id="demo" class="demo">
+    <h2>Try the <span class="gradient-text">Control Panel</span></h2>
+    <p class="section-sub">Interact with a live simulation of the Truetooth device control panel.</p>
+    <div class="demo-container">
+      <div class="demo-controls">
+        <!-- Noise Control -->
+        <div class="demo-card">
+          <label>Noise Control</label>
+          <div class="segmented">
+            <button class="seg-btn demo-nc active" data-value="Off">Off</button>
+            <button class="seg-btn demo-nc" data-value="ANC">ANC</button>
+            <button class="seg-btn demo-nc" data-value="Transparency">Transparency</button>
+          </div>
+        </div>
+        <!-- Volume -->
+        <div class="demo-card">
+          <label>Volume</label>
+          <div class="vol-control">
+            <input type="range" id="demo-volume" min="0" max="100" value="50" />
+            <span id="demo-vol-label" class="vol-pct">50%</span>
+          </div>
+        </div>
+        <!-- EQ -->
+        <div class="demo-card">
+          <label>Equalizer Preset</label>
+          <div class="eq-chips">
+            <button class="chip demo-eq active" data-value="Flat">Flat</button>
+            <button class="chip demo-eq" data-value="Bass Boost">Bass Boost</button>
+            <button class="chip demo-eq" data-value="Treble Boost">Treble Boost</button>
+            <button class="chip demo-eq" data-value="Vocal">Vocal</button>
+            <button class="chip demo-eq" data-value="Classical">Classical</button>
+            <button class="chip demo-eq" data-value="Rock">Rock</button>
+            <button class="chip demo-eq" data-value="Jazz">Jazz</button>
+            <button class="chip demo-eq" data-value="Custom">Custom</button>
+          </div>
+        </div>
+        <!-- Toggles -->
+        <div class="demo-card toggles">
+          <div class="toggle-item">
+            <span>Auto Ear Detection</span>
+            <label class="switch"><input type="checkbox" id="demo-ear" checked /><span class="slider"></span></label>
+          </div>
+          <div class="toggle-item">
+            <span>Spatial Audio</span>
+            <label class="switch"><input type="checkbox" id="demo-spatial" /><span class="slider"></span></label>
+          </div>
+          <div class="toggle-item">
+            <span>Voice Assistant</span>
+            <label class="switch"><input type="checkbox" /><span class="slider"></span></label>
+          </div>
+        </div>
+        <!-- Status -->
+        <div class="demo-status" id="demo-status">
+          <div><span>Noise:</span> <strong id="s-noise">Off</strong></div>
+          <div><span>Volume:</span> <strong id="s-vol">50%</strong></div>
+          <div><span>EQ:</span> <strong id="s-eq">Flat</strong></div>
+          <div><span>Ear Detection:</span> <strong id="s-ear">On</strong></div>
+          <div><span>Spatial Audio:</span> <strong id="s-spatial">Off</strong></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Download -->
+  <section id="download" class="download">
+    <h2>Ready to <span class="gradient-text">Truetooth</span>?</h2>
+    <p class="section-sub">Get the app and start controlling your sound today.</p>
+    <div class="download-btns">
+      <button class="btn-primary btn-lg">📱 Download APK</button>
+      <button class="btn-secondary btn-lg">📦 Get it on Google Play</button>
+    </div>
+    <p class="footnote">Open source • Flutter • No ads • No tracking</p>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <span class="logo-icon">🎧</span>
+        <span class="logo-text">Truetooth</span>
+      </div>
+      <div class="footer-links">
+        <a href="#">GitHub</a>
+        <a href="#">Privacy Policy</a>
+        <a href="#">Terms</a>
+        <a href="#">Contact</a>
+      </div>
+      <div class="footer-copy">&copy; 2026 Truetooth. Built with Flutter.</div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chompa</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="stars" id="bgEffects"></div>
+
+  <!-- Attention Badge -->
+  <div class="attention-badge hidden" id="attentionBadge">❗</div>
+
+  <header>
+    <div class="header-top">
+      <h1 class="logo">🍪 CHOMPA</h1>
+      <button class="name-edit-btn" id="nameEditBtn" title="Edit name">✏️</button>
+    </div>
+    <p class="tagline" id="tagline">the hungry little monster</p>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="chompa-container">
+        <div class="chompa" id="chompa">
+          <div class="chompa-body" id="chompaBody">
+            <!-- Accessory slot -->
+            <div class="accessory" id="accessorySlot"></div>
+            <div class="eye left-eye">
+              <div class="pupil"></div>
+            </div>
+            <div class="eye right-eye">
+              <div class="pupil"></div>
+            </div>
+            <div class="mouth" id="mouth">
+              <div class="tooth top-left"></div>
+              <div class="tooth top-right"></div>
+              <div class="tooth bottom-left"></div>
+              <div class="tooth bottom-right"></div>
+              <div class="tongue"></div>
+            </div>
+            <div class="cheek left-cheek"></div>
+            <div class="cheek right-cheek"></div>
+            <div class="sleep-z" id="sleepZ">💤</div>
+          </div>
+          <div class="chompa-shadow"></div>
+        </div>
+        <div class="level-badge" id="levelBadge">Lv.1</div>
+        <div class="name-tag" id="nameTag">chompa</div>
+        <!-- Evolution indicator -->
+        <div class="evo-indicator hidden" id="evoIndicator">✨</div>
+      </div>
+
+      <div class="food-area" id="foodArea">
+        <div class="food-bucket" id="foodBucket">
+          <span class="food-emoji" id="currentFood">🍪</span>
+        </div>
+        <p class="food-label" id="foodLabel">click to feed me!</p>
+      </div>
+    </section>
+
+    <!-- XP Bar -->
+    <section class="xp-section">
+      <div class="xp-bar-track">
+        <div class="xp-bar-fill" id="xpFill" style="width: 0%"></div>
+      </div>
+      <div class="xp-info">
+        <span id="xpText">0 / 100 XP</span>
+        <span id="comboDisplay" class="combo-display hidden">🔥 x<span id="comboCount">0</span></span>
+      </div>
+    </section>
+
+    <!-- Treats display -->
+    <div class="treats-bar">
+      <span>🪙 <span id="treatsCount">0</span> treats</span>
+      <span class="streak-display" id="streakDisplay">🔥 Day <span id="streakCount">0</span></span>
+    </div>
+
+    <section class="stats">
+      <div class="stat-card">
+        <span class="stat-icon">❤️</span>
+        <span class="stat-value" id="happiness">50</span>
+        <span class="stat-label">happiness</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-icon">🍕</span>
+        <span class="stat-value" id="fullness">50</span>
+        <span class="stat-label">fullness</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-icon">🎮</span>
+        <span class="stat-value" id="bounces">0</span>
+        <span class="stat-label">bounces</span>
+      </div>
+      <div class="stat-card" id="moodDisplay">
+        <span class="stat-icon">😐</span>
+        <span class="stat-value" id="moodText">neutral</span>
+        <span class="stat-label">mood</span>
+      </div>
+    </section>
+
+    <section class="actions">
+      <button class="action-btn feed-btn" id="feedBtn">🍪 Feed</button>
+      <button class="action-btn play-btn" id="playBtn">🎾 Play</button>
+      <button class="action-btn pet-btn" id="petBtn">🤚 Pet</button>
+      <button class="action-btn dance-btn" id="danceBtn">💃 Dance</button>
+      <button class="action-btn sleep-btn" id="sleepBtn">😴 Sleep</button>
+      <button class="action-btn rain-btn" id="rainBtn">🌧️ Rain</button>
+      <button class="action-btn game-btn" id="gameBtn">🎮 Memory</button>
+      <button class="action-btn shop-btn" id="shopBtn">🛒 Shop</button>
+    </section>
+
+    <!-- Memory Game -->
+    <section class="game-section hidden" id="gameSection">
+      <div class="game-header">
+        <span>🧠 Memory Match</span>
+        <span id="gameScore">Pairs: 0</span>
+        <span id="gameTurns">Turns: 0</span>
+        <button class="close-btn" id="closeGame">✕</button>
+      </div>
+      <div class="game-grid" id="gameGrid"></div>
+    </section>
+
+    <!-- Shop -->
+    <section class="shop-section hidden" id="shopSection">
+      <div class="shop-header">
+        <span>🛒 Accessory Shop</span>
+        <span>🪙 <span id="shopTreats">0</span></span>
+        <button class="close-btn" id="closeShop">✕</button>
+      </div>
+      <div class="shop-grid" id="shopGrid"></div>
+    </section>
+
+    <!-- Achievements -->
+    <section class="achievements-section">
+      <button class="toggle-achievements-btn" id="toggleAchievements">🏆 Achievements (<span id="achCount">0</span>)</button>
+      <div class="achievements-grid hidden" id="achievementsGrid">
+        <div class="achievement" data-id="first_feed"><span class="ach-icon">🍪</span><span class="ach-name">First Bite</span></div>
+        <div class="achievement" data-id="five_feed"><span class="ach-icon">🍕</span><span class="ach-name">Gourmet</span></div>
+        <div class="achievement" data-id="ten_bounce"><span class="ach-icon">🦘</span><span class="ach-name">Bouncy</span></div>
+        <div class="achievement" data-id="pet_lover"><span class="ach-icon">❤️</span><span class="ach-name">Pet Lover</span></div>
+        <div class="achievement" data-id="dance_master"><span class="ach-icon">💃</span><span class="ach-name">Dance Master</span></div>
+        <div class="achievement" data-id="level_5"><span class="ach-icon">⭐</span><span class="ach-name">Rising Star</span></div>
+        <div class="achievement" data-id="level_10"><span class="ach-icon">👑</span><span class="ach-name">Chompa King</span></div>
+        <div class="achievement" data-id="combo_5"><span class="ach-icon">🔥</span><span class="ach-name">On Fire!</span></div>
+        <div class="achievement" data-id="happy_max"><span class="ach-icon">🌈</span><span class="ach-name">Pure Joy</span></div>
+        <div class="achievement" data-id="food_collector"><span class="ach-icon">🍽️</span><span class="ach-name">Foodie</span></div>
+        <div class="achievement" data-id="memory_win"><span class="ach-icon">🧠</span><span class="ach-name">Memory Whiz</span></div>
+        <div class="achievement" data-id="streak_7"><span class="ach-icon">🔥</span><span class="ach-name">Week Streak</span></div>
+        <div class="achievement" data-id="treat_hoarder"><span class="ach-icon">🪙</span><span class="ach-name">Treat Hoarder</span></div>
+        <div class="achievement" data-id="evo_2"><span class="ach-icon">✨</span><span class="ach-name">Evolved</span></div>
+      </div>
+    </section>
+
+    <!-- Inventory -->
+    <section class="inventory-section">
+      <button class="toggle-inventory-btn" id="toggleInventory">📦 Food Collection (<span id="foodCount">0</span>)</button>
+      <div class="inventory-grid hidden" id="inventoryGrid"></div>
+    </section>
+
+    <!-- Stats Overlay -->
+    <section class="stats-overlay-section">
+      <button class="toggle-stats-btn" id="toggleStats">📊 Stats</button>
+      <div class="stats-overlay hidden" id="statsOverlay">
+        <div class="stat-row"><span class="stat-label">Session time</span><span id="sessionTime">0m 0s</span></div>
+        <div class="stat-row"><span class="stat-label">Total XP earned</span><span id="totalXpEarned">0</span></div>
+        <div class="stat-row"><span class="stat-label">Total treats earned</span><span id="totalTreatsEarned">0</span></div>
+        <div class="stat-row"><span class="stat-label">Times fed</span><span id="totalFeedsStat">0</span></div>
+        <div class="stat-row"><span class="stat-label">Times petted</span><span id="totalPetsStat">0</span></div>
+        <div class="stat-row"><span class="stat-label">Times danced</span><span id="totalDancesStat">0</span></div>
+        <div class="stat-row"><span class="stat-label">Highest combo</span><span id="maxComboStat">0</span></div>
+        <div class="stat-row"><span class="stat-label">Games won</span><span id="gamesWonStat">0</span></div>
+        <div class="stat-row"><span class="stat-label">Current streak</span><span id="streakStat">0 days</span></div>
+      </div>
+    </section>
+
+    <!-- Name edit modal -->
+    <div class="modal hidden" id="nameModal">
+      <div class="modal-content">
+        <h3>Name your Chompa</h3>
+        <input type="text" id="nameInput" maxlength="20" placeholder="Enter a name..." />
+        <div class="modal-actions">
+          <button class="action-btn" id="nameSaveBtn">Save</button>
+          <button class="action-btn" id="nameCancelBtn">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <section class="message-area">
+      <div class="message-bubble" id="messageBubble">
+        <span id="messageText">chompa is hungry... feed me!</span>
+      </div>
+    </section>
+
+    <!-- Rain game canvas -->
+    <canvas id="rainCanvas" class="rain-canvas hidden"></canvas>
+  </main>
+
+  <footer>
+    <p>made with ❤️ for chompa</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

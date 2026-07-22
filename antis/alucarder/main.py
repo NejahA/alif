@@ -54,7 +54,7 @@ QTabBar::tab {
     font-weight: 600;
     font-size: 12px;
     letter-spacing: 0.04em;
-}
+}   
 QTabBar::tab:selected {
     background: qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #7b5ea7, stop:1 #5c3d8f);
     color: #ffffff;

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aeris — breathe</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+
+  <div id="app">
+    <header class="overlay">
+      <div class="container">
+        <h1 class="logo">aeris</h1>
+        <p class="tagline">breathe in the wind</p>
+      </div>
+    </header>
+
+    <main>
+      <section class="controls overlay">
+        <div class="container">
+          <div class="control-group">
+            <label for="windSpeed">wind</label>
+            <input type="range" id="windSpeed" min="0" max="200" value="80" />
+          </div>
+          <div class="control-group">
+            <label for="particleCount">particles</label>
+            <input type="range" id="particleCount" min="50" max="500" value="200" />
+          </div>
+          <div class="control-group">
+            <label for="colorScheme">mood</label>
+            <select id="colorScheme">
+              <option value="dawn">dawn</option>
+              <option value="dusk" selected>dusk</option>
+              <option value="aurora">aurora</option>
+              <option value="ocean">ocean</option>
+              <option value="ember">ember</option>
+            </select>
+          </div>
+          <button id="resetBtn" class="btn-icon" title="reset view">⟳</button>
+        </div>
+      </section>
+
+      <section class="info overlay">
+        <div class="container">
+          <div class="stat">
+            <span class="stat-value" id="particleStat">0</span>
+            <span class="stat-label">particles</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value" id="fpsStat">0</span>
+            <span class="stat-label">fps</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value" id="flowStat">0</span>
+            <span class="stat-label">flow</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="presets overlay">
+        <div class="container">
+          <button class="preset-btn" data-preset="gentle">🍃 gentle breeze</button>
+          <button class="preset-btn" data-preset="gusty">🌬️ gusty</button>
+          <button class="preset-btn" data-preset="storm">⛈️ storm</button>
+          <button class="preset-btn" data-preset="whirlwind">🌀 whirlwind</button>
+        </div>
+      </section>
+    </main>
+
+    <footer class="overlay">
+      <div class="container">
+        <p>move your mouse through the wind · click to summon a gust</p>
+      </div>
+    </footer>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

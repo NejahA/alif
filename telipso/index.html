@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>telipso — bootable expansion</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Boot screen overlay -->
+  <div class="boot-overlay" id="bootOverlay">
+    <div class="boot-terminal" id="bootTerminal">
+      <pre class="boot-art">  
+  _______ _______ _______ _______ 
+ |    ___|   _   |   _   |   _   |
+ |   |___|       |       |       |
+ |       |   _   |       |       |
+ |_______|__| |__|_______|_______|
+                                   
+   telipso · bootable expansion    
+      </pre>
+      <div class="boot-log" id="bootLog">
+        <div class="log-line"><span class="log-ts">[00:00.000]</span> <span class="log-ok">✓</span> bootstrap init</div>
+        <div class="log-line"><span class="log-ts">[00:00.042]</span> <span class="log-ok">✓</span> kernel loaded</div>
+      </div>
+      <div class="boot-progress-wrap">
+        <div class="boot-progress-track">
+          <div class="boot-progress-fill" id="bootProgressFill"></div>
+        </div>
+        <span class="boot-progress-pct" id="bootProgressPct">0%</span>
+      </div>
+      <button class="boot-btn" id="bootBtn" disabled>BOOT</button>
+    </div>
+  </div>
+
+  <!-- Main universe -->
+  <div class="universe" id="universe">
+    <header class="univ-header">
+      <div class="univ-brand">
+        <span class="univ-icon">◉</span>
+        <h1>telipso</h1>
+        <span class="univ-ver">v0.1.0</span>
+      </div>
+      <div class="univ-stats">
+        <div class="univ-stat">
+          <span class="stat-label">expansion</span>
+          <span class="stat-val" id="expansionLevel">0</span>
+        </div>
+        <div class="univ-stat">
+          <span class="stat-label">nodes</span>
+          <span class="stat-val" id="nodeCount">0</span>
+        </div>
+        <div class="univ-stat">
+          <span class="stat-label">uptime</span>
+          <span class="stat-val" id="uptimeDisplay">00:00</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="canvas-wrap">
+      <canvas id="telCanvas"></canvas>
+      <div class="canvas-hud">
+        <div class="hud-info">
+          <span id="hudAction">idle</span>
+          <span class="hud-dot">·</span>
+          <span id="hudMode">AUTO</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="control-bar">
+      <button class="ctrl-btn" id="expandBtn" title="Expand">
+        <span>⟐</span> Expand
+      </button>
+      <button class="ctrl-btn" id="autoBtn" title="Toggle Auto-Expand">
+        <span>⟳</span> Auto
+      </button>
+      <button class="ctrl-btn" id="pulseBtn" title="Pulse Wave">
+        <span>⋔</span> Pulse
+      </button>
+      <button class="ctrl-btn" id="resetBtn" title="Reset">
+        <span>↺</span> Reset
+      </button>
+      <button class="ctrl-btn" id="fullscreenBtn" title="Fullscreen">
+        <span>⛶</span> Full
+      </button>
+    </div>
+
+    <div class="status-bar">
+      <div class="status-left">
+        <span class="status-led" id="statusLed"></span>
+        <span id="statusText">ready</span>
+      </div>
+      <div class="status-right">
+        <span id="statusMemory">mem: 0 kB</span>
+        <span class="status-sep">|</span>
+        <span id="statusFps">0 fps</span>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Veritassium - Time</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="clock">
+      <div class="clock-inner">
+        <canvas id="analogClock" width="200" height="200"></canvas>
+        <div class="digital-section">
+          <div class="time" id="time">00:00:00</div>
+          <div class="date" id="date">Loading...</div>
+          <div class="timezone" id="timezone">Loading...</div>
+        </div>
+      </div>
+    </div>
+    <div class="world-clocks" id="worldClocks">
+      <h3>World Clocks</h3>
+      <div class="world-clock-list" id="worldClockList"></div>
+      <select id="addTimezone">
+        <option value="">+ Add timezone...</option>
+        <option value="America/New_York">New York</option>
+        <option value="Europe/London">London</option>
+        <option value="Europe/Paris">Paris</option>
+        <option value="Asia/Dubai">Dubai</option>
+        <option value="Asia/Tokyo">Tokyo</option>
+        <option value="Australia/Sydney">Sydney</option>
+        <option value="Pacific/Auckland">Auckland</option>
+      </select>
+    </div>
+    <div class="controls">
+      <button id="toggleFormat">24h / 12h</button>
+      <button id="toggleSeconds">Seconds</button>
+      <button id="toggleTheme">🌙 Dark</button>
+      <button id="toggleFullscreen">⛶ Fullscreen</button>
+    </div>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>

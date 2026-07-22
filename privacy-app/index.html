@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Juilous Privacy</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Private by design</p>
+          <h1>Juilous</h1>
+          <p class="hero-copy">
+            A calm, modern privacy companion that helps you lock down your digital life one habit at a time.
+          </p>
+          <div class="hero-actions">
+            <button id="modeButton" class="secondary-btn">Switch to focus mode</button>
+            <button id="themeButton" class="ghost-btn">Toggle glow theme</button>
+            <button id="resetButton" class="ghost-btn">Reset checklist</button>
+          </div>
+        </div>
+        <div class="score-card" aria-live="polite">
+          <p>Your privacy score</p>
+          <div class="score-value" id="scoreValue">0%</div>
+          <div class="score-bar">
+            <div class="score-fill" id="scoreFill"></div>
+          </div>
+          <p class="mini-note" id="insightSummary">A steady start builds stronger protection.</p>
+        </div>
+      </header>
+
+      <main class="content-grid">
+        <section class="panel">
+          <div class="panel-header">
+            <h2>Daily privacy checklist</h2>
+            <span class="pill" id="habitCount">0 of 4 completed</span>
+          </div>
+          <div class="checklist" id="checklist"></div>
+        </section>
+
+        <section class="panel">
+          <h2>Quick actions</h2>
+          <div class="action-grid">
+            <button class="action-btn" data-action="browser">Lock down browser</button>
+            <button class="action-btn" data-action="permissions">Review permissions</button>
+            <button class="action-btn" data-action="backup">Back up recovery codes</button>
+          </div>
+          <p class="action-status" id="actionStatus">Choose a quick action to strengthen your setup.</p>
+
+          <div class="ring-card">
+            <svg class="progress-ring" viewBox="0 0 120 120">
+              <circle cx="60" cy="60" r="48" class="ring-bg"></circle>
+              <circle cx="60" cy="60" r="48" class="ring-progress" id="ringProgress"></circle>
+            </svg>
+            <div class="ring-label">
+              <strong id="ringPercent">0%</strong>
+              <span>Protection progress</span>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <section class="bottom-grid">
+        <div class="panel insight-panel">
+          <h2>Achievements</h2>
+          <div class="badges-grid" id="badgesContainer"></div>
+        </div>
+
+        <div class="panel insight-panel">
+          <h2>Privacy insights</h2>
+          <div class="insight-cards">
+            <div class="insight-card">
+              <strong id="insightHabits">0 habits strengthened</strong>
+              <span>Momentum is building.</span>
+            </div>
+            <div class="insight-card">
+              <strong id="insightShield">Shield level: low</strong>
+              <span>Small wins create real resilience.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel tip-panel">
+          <h2>Tip of the moment</h2>
+          <div class="history-bar" aria-label="Privacy score history">
+            <div class="history-segment"></div>
+            <div class="history-segment"></div>
+            <div class="history-segment"></div>
+            <div class="history-segment"></div>
+          </div>
+          <div class="streak-box">
+            <div>
+              <strong id="streakValue">0 days</strong>
+              <span>Privacy streak</span>
+            </div>
+            <button id="streakButton" class="secondary-btn">+1 streak</button>
+          </div>
+          <div class="mission-box">
+            <strong id="missionText">Today's mission: review one app permission.</strong>
+            <button id="missionButton" class="ghost-btn">New mission</button>
+          </div>
+          <p id="tipText">Use a password manager so every account gets a unique, hard-to-guess passphrase.</p>
+          <button id="tipButton" class="secondary-btn">Next tip</button>
+          <div class="activity-log" id="activityLog">Your activity will appear here as you protect your privacy.</div>
+          <div class="notification-box" id="notificationBox">Stay alert: privacy habits are easier to maintain when you review them regularly.</div>
+        </div>
+      </section>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>

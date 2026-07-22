@@ -1,0 +1,416 @@
+/* ═══════════════════════════════════════════════════
+   VOID SCRIBBLER — CSS
+   ═══════════════════════════════════════════════════ */
+
+.void-scribbler {
+  position: relative;
+  min-height: 100vh;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 24px;
+  transition: all 0.5s ease;
+}
+
+/* ─── Star Field Canvas ─── */
+.star-field {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ─── Falling Star ─── */
+.falling-star {
+  position: fixed;
+  top: -60px;
+  width: 2px;
+  height: 60px;
+  z-index: 10;
+  animation: fall 2s ease-in forwards;
+  pointer-events: none;
+}
+
+@keyframes fall {
+  0% { top: -60px; opacity: 0; transform: rotate(15deg); }
+  10% { opacity: 1; }
+  100% { top: 100vh; opacity: 0; transform: rotate(15deg) translateX(80px); }
+}
+
+/* ─── Header ─── */
+.void-header {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 48px 0 32px;
+}
+
+.void-title {
+  font-size: 34px;
+  font-weight: 300;
+  letter-spacing: 4px;
+  color: var(--text-primary);
+  text-shadow: 0 0 40px rgba(124, 92, 252, 0.3);
+}
+
+.void-tagline {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 2px;
+  margin-top: 4px;
+}
+
+.void-stats {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.stat {
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.mood-badge {
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* ─── Scribbler Input ─── */
+.scribbler-area {
+  position: relative;
+  z-index: 5;
+  background: var(--void-card);
+  border: 1px solid var(--void-border);
+  border-radius: 16px;
+  padding: 20px 24px;
+  backdrop-filter: blur(12px);
+  transition: all 0.4s ease;
+  margin-bottom: 32px;
+}
+
+.scribbler-area.writing {
+  border-color: var(--accent-purple);
+  box-shadow: 0 0 40px rgba(124, 92, 252, 0.15);
+}
+
+.scribbler-glow {
+  position: absolute;
+  inset: -40px;
+  border-radius: 50%;
+  z-index: -1;
+  opacity: 0.6;
+  transition: opacity 0.5s;
+  pointer-events: none;
+}
+
+.scribbler-input {
+  width: 100%;
+  min-height: 80px;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 18px;
+  line-height: 1.6;
+  resize: none;
+  outline: none;
+}
+
+.scribbler-input::placeholder {
+  color: var(--text-muted);
+  font-style: italic;
+  opacity: 0.6;
+}
+
+.scribbler-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--void-border);
+}
+
+.char-count {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.launch-btn {
+  background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 24px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  letter-spacing: 1px;
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+.launch-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(124, 92, 252, 0.4);
+}
+
+.launch-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* ─── Constellation Map ─── */
+.constellation-section {
+  position: relative;
+  z-index: 5;
+  margin-bottom: 32px;
+}
+
+.constellation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.constellation-header h2 {
+  font-size: 16px;
+  font-weight: 400;
+  letter-spacing: 2px;
+  color: var(--text-secondary);
+}
+
+.clear-btn {
+  background: none;
+  border: 1px solid var(--void-border);
+  color: var(--text-muted);
+  padding: 6px 14px;
+  border-radius: 16px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.clear-btn:hover {
+  border-color: var(--accent-pink);
+  color: var(--accent-pink);
+}
+
+.constellation-map {
+  position: relative;
+  background: var(--void-deeper);
+  border: 1px solid var(--void-border);
+  border-radius: 16px;
+  height: 220px;
+  overflow: hidden;
+}
+
+.constellation-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* ─── Note Stars ─── */
+.note-star {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  transform: translate(-50%, -50%);
+  animation: twinkleStar 2s ease-in-out infinite;
+  cursor: pointer;
+  z-index: 2;
+}
+
+@keyframes twinkleStar {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
+  50% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; }
+}
+
+.star-core {
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  z-index: 2;
+  box-shadow: 0 0 10px var(--aura);
+}
+
+.star-aura {
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  z-index: 1;
+  animation: pulseAura 2s ease-in-out infinite;
+}
+
+@keyframes pulseAura {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.5); opacity: 0.2; }
+}
+
+/* ─── Notes List ─── */
+.notes-list {
+  position: relative;
+  z-index: 5;
+  margin-bottom: 40px;
+}
+
+.notes-title {
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 2px;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+.note-card {
+  background: var(--void-card);
+  border: 1px solid var(--void-border);
+  border-left: 3px solid var(--accent-purple);
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin-bottom: 8px;
+  backdrop-filter: blur(8px);
+  animation: driftIn 0.4s ease;
+  transition: all 0.2s;
+}
+
+.note-card:hover {
+  background: rgba(30, 28, 60, 0.8);
+  border-color: rgba(120, 100, 255, 0.3);
+}
+
+@keyframes driftIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.note-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.note-time {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.note-delete {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.note-delete:hover {
+  color: var(--accent-pink);
+  background: rgba(252, 92, 176, 0.1);
+}
+
+.note-text {
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  word-wrap: break-word;
+}
+
+/* ─── Empty State ─── */
+.void-empty {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 80px 20px;
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  animation: floatStar 3s ease-in-out infinite;
+}
+
+@keyframes floatStar {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0.5; }
+  50% { transform: translateY(-10px) scale(1.1); opacity: 1; }
+}
+
+.void-empty p {
+  font-size: 18px;
+  color: var(--text-secondary);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.empty-hint {
+  font-size: 13px !important;
+  color: var(--text-muted) !important;
+  margin-top: 8px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ─── Footer ─── */
+.void-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 24px 0;
+}
+
+.void-footer p {
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 3px;
+  font-weight: 300;
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 600px) {
+  .void-header {
+    flex-direction: column;
+    gap: 12px;
+    padding: 32px 0 24px;
+  }
+
+  .void-title {
+    font-size: 26px;
+  }
+
+  .scribbler-input {
+    font-size: 16px;
+    min-height: 60px;
+  }
+
+  .scribbler-actions {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .launch-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .constellation-map {
+    height: 160px;
+  }
+}

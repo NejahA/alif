@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AdBroker — connect supply & demand</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <canvas id="bgCanvas"></canvas>
+
+  <div id="app">
+    <!-- Sidebar -->
+    <aside id="sidebar">
+      <div class="sidebar-header">
+        <h1 class="brand">AdBroker</h1>
+        <span class="brand-tag">v2.4.1</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <button class="nav-btn active" data-view="dashboard">
+          <span class="nav-icon">◈</span>
+          <span class="nav-label">Dashboard</span>
+        </button>
+        <button class="nav-btn" data-view="campaigns">
+          <span class="nav-icon">⊞</span>
+          <span class="nav-label">Campaigns</span>
+        </button>
+        <button class="nav-btn" data-view="inventory">
+          <span class="nav-icon">⊡</span>
+          <span class="nav-label">Inventory</span>
+        </button>
+        <button class="nav-btn" data-view="analytics">
+          <span class="nav-icon">◉</span>
+          <span class="nav-label">Analytics</span>
+        </button>
+        <button class="nav-btn" data-view="publishers">
+          <span class="nav-icon">◔</span>
+          <span class="nav-label">Publishers</span>
+        </button>
+        <button class="nav-btn" data-view="settings">
+          <span class="nav-icon">⚙</span>
+          <span class="nav-label">Settings</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar">A</div>
+          <div class="user-details">
+            <span class="user-name">Admin</span>
+            <span class="user-role">Broker</span>
+          </div>
+        </div>
+        <div class="connection-status" id="connectionStatus">
+          <span class="status-dot"></span>
+          <span class="status-text">Live</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main id="mainContent">
+      <!-- Top Bar -->
+      <header id="topBar">
+        <div class="topbar-left">
+          <button id="menuToggle" class="btn-icon" title="Toggle sidebar">☰</button>
+          <h2 id="viewTitle">Dashboard</h2>
+        </div>
+        <div class="topbar-right">
+          <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Search campaigns, publishers..." />
+            <span class="search-icon">⌕</span>
+          </div>
+          <button class="btn-icon" title="Notifications" id="notifBtn">
+            <span class="notif-badge">3</span>
+            🔔
+          </button>
+          <button class="btn-primary" id="createCampaignBtn">+ New Campaign</button>
+        </div>
+      </header>
+
+      <!-- Views -->
+      <div id="viewContainer">
+        <!-- ─── Dashboard ─── -->
+        <section id="view-dashboard" class="view active">
+          <div class="stats-grid">
+            <div class="stat-card" data-stat="impressions">
+              <div class="stat-icon">👁</div>
+              <div class="stat-body">
+                <span class="stat-value" id="statImpressions">12.4M</span>
+                <span class="stat-label">Total Impressions</span>
+              </div>
+              <div class="stat-change positive">+8.2%</div>
+            </div>
+            <div class="stat-card" data-stat="clicks">
+              <div class="stat-icon">🖱</div>
+              <div class="stat-body">
+                <span class="stat-value" id="statClicks">284.7K</span>
+                <span class="stat-label">Total Clicks</span>
+              </div>
+              <div class="stat-change positive">+12.5%</div>
+            </div>
+            <div class="stat-card" data-stat="revenue">
+              <div class="stat-icon">💰</div>
+              <div class="stat-body">
+                <span class="stat-value" id="statRevenue">$48.2K</span>
+                <span class="stat-label">Revenue</span>
+              </div>
+              <div class="stat-change positive">+5.3%</div>
+            </div>
+            <div class="stat-card" data-stat="ctr">
+              <div class="stat-icon">📊</div>
+              <div class="stat-body">
+                <span class="stat-value" id="statCTR">2.29%</span>
+                <span class="stat-label">CTR</span>
+              </div>
+              <div class="stat-change negative">-0.4%</div>
+            </div>
+            <div class="stat-card" data-stat="ecpm">
+              <div class="stat-icon">📈</div>
+              <div class="stat-body">
+                <span class="stat-value" id="statECPM">$3.89</span>
+                <span class="stat-label">eCPM</span>
+              </div>
+              <div class="stat-change positive">+2.1%</div>
+            </div>
+            <div class="stat-card" data-stat="fillrate">
+              <div class="stat-icon">▣</div>
+              <div class="stat-body">
+                <span class="stat-value" id="statFillRate">94.7%</span>
+                <span class="stat-label">Fill Rate</span>
+              </div>
+              <div class="stat-change positive">+1.8%</div>
+            </div>
+          </div>
+
+          <div class="dashboard-grid">
+            <div class="card chart-card" id="revenueChartCard">
+              <div class="card-header">
+                <h3>Revenue (Last 30 Days)</h3>
+                <select class="chart-range" id="revenueRange">
+                  <option value="7">7 days</option>
+                  <option value="30" selected>30 days</option>
+                  <option value="90">90 days</option>
+                </select>
+              </div>
+              <div class="card-body">
+                <canvas id="revenueChart"></canvas>
+              </div>
+            </div>
+
+            <div class="card chart-card" id="impressionsChartCard">
+              <div class="card-header">
+                <h3>Impressions & Clicks</h3>
+                <select class="chart-range" id="impressionRange">
+                  <option value="7">7 days</option>
+                  <option value="30" selected>30 days</option>
+                  <option value="90">90 days</option>
+                </select>
+              </div>
+              <div class="card-body">
+                <canvas id="impressionChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="dashboard-grid">
+            <div class="card">
+              <div class="card-header">
+                <h3>Top Campaigns</h3>
+              </div>
+              <div class="card-body">
+                <table class="data-table" id="topCampaignsTable">
+                  <thead>
+                    <tr>
+                      <th>Campaign</th>
+                      <th>Impressions</th>
+                      <th>Clicks</th>
+                      <th>CTR</th>
+                      <th>Spend</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="topCampaignsBody">
+                    <!-- Rendered by JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <h3>Recent Activity</h3>
+              </div>
+              <div class="card-body">
+                <div class="activity-feed" id="activityFeed">
+                  <!-- Rendered by JS -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ─── Campaigns ─── -->
+        <section id="view-campaigns" class="view">
+          <div class="view-toolbar">
+            <div class="filter-group">
+              <select id="campaignFilter">
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="paused">Paused</option>
+                <option value="completed">Completed</option>
+                <option value="draft">Draft</option>
+              </select>
+              <select id="campaignSort">
+                <option value="date">Newest</option>
+                <option value="name">Name</option>
+                <option value="budget">Budget</option>
+                <option value="performance">Performance</option>
+              </select>
+            </div>
+            <div class="view-actions">
+              <button class="btn-secondary" id="exportCampaigns">Export</button>
+              <button class="btn-primary" id="addCampaignBtn">+ Create Campaign</button>
+            </div>
+          </div>
+
+          <div class="campaign-grid" id="campaignGrid">
+            <!-- Rendered by JS -->
+          </div>
+        </section>
+
+        <!-- ─── Inventory ─── -->
+        <section id="view-inventory" class="view">
+          <div class="view-toolbar">
+            <div class="filter-group">
+              <select id="inventoryFilter">
+                <option value="all">All Types</option>
+                <option value="banner">Banner</option>
+                <option value="native">Native</option>
+                <option value="video">Video</option>
+                <option value="interstitial">Interstitial</option>
+              </select>
+              <select id="inventoryStatus">
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+            <div class="search-box inline">
+              <input type="text" id="inventorySearch" placeholder="Search inventory..." />
+            </div>
+          </div>
+
+          <div class="inventory-grid" id="inventoryGrid">
+            <!-- Rendered by JS -->
+          </div>
+        </section>
+
+        <!-- ─── Analytics ─── -->
+        <section id="view-analytics" class="view">
+          <div class="analytics-controls">
+            <div class="date-range-picker">
+              <button class="date-btn active" data-range="today">Today</button>
+              <button class="date-btn" data-range="7d">7D</button>
+              <button class="date-btn" data-range="30d" id="defaultRange">30D</button>
+              <button class="date-btn" data-range="90d">90D</button>
+              <button class="date-btn" data-range="custom">Custom</button>
+            </div>
+            <select id="analyticsMetric">
+              <option value="impressions">Impressions</option>
+              <option value="clicks">Clicks</option>
+              <option value="revenue">Revenue</option>
+              <option value="ctr">CTR</option>
+              <option value="ecpm">eCPM</option>
+            </select>
+          </div>
+
+          <div class="analytics-grid">
+            <div class="card full-width">
+              <div class="card-header">
+                <h3>Performance Trends</h3>
+              </div>
+              <div class="card-body">
+                <canvas id="analyticsChart"></canvas>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header">
+                <h3>By Device</h3>
+              </div>
+              <div class="card-body">
+                <canvas id="deviceChart"></canvas>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header">
+                <h3>By Geography</h3>
+              </div>
+              <div class="card-body">
+                <div class="geo-list" id="geoList">
+                  <!-- Rendered by JS -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ─── Publishers ─── -->
+        <section id="view-publishers" class="view">
+          <div class="view-toolbar">
+            <div class="filter-group">
+              <select id="publisherFilter">
+                <option value="all">All Publishers</option>
+                <option value="top">Top Performing</option>
+                <option value="new">New</option>
+                <option value="flagged">Flagged</option>
+              </select>
+            </div>
+            <div class="view-actions">
+              <button class="btn-primary">+ Add Publisher</button>
+            </div>
+          </div>
+
+          <div class="publisher-grid" id="publisherGrid">
+            <!-- Rendered by JS -->
+          </div>
+        </section>
+
+        <!-- ─── Settings ─── -->
+        <section id="view-settings" class="view">
+          <div class="settings-sections">
+            <div class="card">
+              <div class="card-header">
+                <h3>General Settings</h3>
+              </div>
+              <div class="card-body">
+                <div class="setting-row">
+                  <label>Platform Name</label>
+                  <input type="text" value="AdBroker" />
+                </div>
+                <div class="setting-row">
+                  <label>Default Currency</label>
+                  <select>
+                    <option value="usd" selected>USD ($)</option>
+                    <option value="eur">EUR (€)</option>
+                    <option value="gbp">GBP (£)</option>
+                  </select>
+                </div>
+                <div class="setting-row">
+                  <label>Default Bid Floor ($)</label>
+                  <input type="number" step="0.01" value="0.05" min="0" />
+                </div>
+                <div class="setting-row">
+                  <label>Auto-optimize Campaigns</label>
+                  <label class="toggle">
+                    <input type="checkbox" checked />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <h3>Integration</h3>
+              </div>
+              <div class="card-body">
+                <div class="setting-row">
+                  <label>API Key</label>
+                  <div class="input-reveal">
+                    <input type="password" value="••••••••••••••••••••••••••" readonly />
+                    <button class="btn-text" id="revealKey">Show</button>
+                  </div>
+                </div>
+                <div class="setting-row">
+                  <label>Webhook URL</label>
+                  <input type="url" value="https://api.adbroker.io/webhooks" />
+                </div>
+                <div class="setting-row">
+                  <label>RTB Endpoint</label>
+                  <input type="url" value="https://rtb.adbroker.io/bid" />
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <h3>Notifications</h3>
+              </div>
+              <div class="card-body">
+                <div class="setting-row">
+                  <label>Budget Alerts</label>
+                  <label class="toggle">
+                    <input type="checkbox" checked />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+                <div class="setting-row">
+                  <label>Daily Report</label>
+                  <label class="toggle">
+                    <input type="checkbox" checked />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+                <div class="setting-row">
+                  <label>Fraud Alerts</label>
+                  <label class="toggle">
+                    <input type="checkbox" checked />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- Create Campaign Modal -->
+  <div id="campaignModal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Create New Campaign</h3>
+        <button class="btn-icon modal-close" id="modalClose">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="campaignName">Campaign Name</label>
+          <input type="text" id="campaignName" placeholder="e.g., Summer Sale 2026" />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="campaignBudget">Budget ($)</label>
+            <input type="number" id="campaignBudget" placeholder="5000" min="100" />
+          </div>
+          <div class="form-group">
+            <label for="campaignTarget">Daily Cap ($)</label>
+            <input type="number" id="campaignTarget" placeholder="500" min="10" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="campaignType">Ad Type</label>
+            <select id="campaignType">
+              <option value="banner">Banner</option>
+              <option value="native">Native</option>
+              <option value="video">Video</option>
+              <option value="interstitial">Interstitial</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="campaignTargeting">Targeting</label>
+            <select id="campaignTargeting">
+              <option value="auto">Auto (AI Optimized)</option>
+              <option value="manual">Manual</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <textarea id="campaignDesc" rows="3" placeholder="Campaign description..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="modalCancel">Cancel</button>
+        <button class="btn-primary" id="modalCreate">Create Campaign</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

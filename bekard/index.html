@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bekard</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Bekard</p>
+          <h1>Your trusted daily dashboard</h1>
+          <p class="hero-copy">
+            A simple productivity companion for tracking priorities, habits, and meaningful progress.
+          </p>
+          <div class="hero-actions">
+            <button id="addTaskButton" class="secondary-btn">Add task</button>
+            <button id="focusButton" class="ghost-btn">Enter focus mode</button>
+          </div>
+        </div>
+        <div class="summary-card">
+          <p>Today’s progress</p>
+          <div class="summary-value" id="summaryValue">0 / 0</div>
+          <p class="summary-note" id="summaryNote">Start by adding a task and tracking one win.</p>
+        </div>
+      </header>
+
+      <main class="content-grid">
+        <section class="panel">
+          <div class="panel-header">
+            <h2>Task board</h2>
+            <div class="board-actions">
+              <span class="pill" id="pendingCount">0 pending</span>
+              <input id="taskSearch" class="search-input" type="search" placeholder="Search tasks..." />
+              <span class="pill hidden" id="activeTagLabel"></span>
+              <button id="clearTagFilterButton" class="ghost-btn hidden">Clear tag</button>
+              <button id="completeAllButton" class="ghost-btn">Complete all</button>
+              <button id="archiveCompletedButton" class="ghost-btn">Archive completed</button>
+              <button id="clearCompletedButton" class="ghost-btn">Clear completed</button>
+              <div class="action-group">
+                <label class="sort-label" for="sortSelect">Sort:</label>
+                <select id="sortSelect" class="filter-select">
+                  <option value="priority">Priority</option>
+                  <option value="due">Due date</option>
+                  <option value="newest">Newest</option>
+                </select>
+              </div>
+              <select id="dueFilter" class="filter-select">
+                <option value="All">All due</option>
+                <option value="Today">Due today</option>
+                <option value="Overdue">Overdue</option>
+              </select>
+              <select id="priorityFilter" class="filter-select">
+                <option value="All">All priorities</option>
+                <option value="High">High priority</option>
+                <option value="Medium">Medium priority</option>
+                <option value="Low">Low priority</option>
+              </select>
+            </div>
+          </div>
+          <div class="task-list" id="taskList"></div>
+        </section>
+
+        <section class="panel">
+          <h2>Daily focus</h2>
+          <div class="focus-card" id="focusCard">
+            <strong id="focusGoal">No focus goal yet</strong>
+            <p id="focusDescription">Set a primary task to stay on track across the day.</p>
+          </div>
+          <button id="completeButton" class="secondary-btn">Complete focus task</button>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <strong id="completedCount">0</strong>
+              <span>Completed</span>
+            </div>
+            <div class="stat-card">
+              <strong id="streakCount">0</strong>
+              <span>Streak</span>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <section class="panel summary-report">
+        <div class="panel-header">
+          <h2>Daily summary</h2>
+        </div>
+        <div class="summary-grid">
+          <div>
+            <strong id="summaryCompleted">0</strong>
+            <span>Tasks completed</span>
+          </div>
+          <div>
+            <strong id="summaryPending">0</strong>
+            <span>Tasks pending</span>
+          </div>
+          <div>
+            <strong id="summaryHigh">0</strong>
+            <span>High priority remaining</span>
+          </div>
+          <div>
+            <strong id="summaryDue">0</strong>
+            <span>Due today</span>
+          </div>
+          <div>
+            <strong id="summaryArchive">0</strong>
+            <span>Archived tasks</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel archive-panel">
+        <div class="panel-header">
+          <h2>Archived tasks</h2>
+          <div class="archive-actions">
+            <span class="pill" id="archiveCountLabel">0 archived</span>
+            <button id="restoreAllArchiveButton" class="ghost-btn">Restore all</button>
+            <button id="clearArchiveButton" class="ghost-btn">Clear archived</button>
+          </div>
+        </div>
+        <div class="archive-list" id="archiveList">No archived tasks yet.</div>
+      </section>
+    </div>
+
+    <div class="undo-snackbar" id="undoSnackbar" aria-live="polite">
+      Task deleted. <button id="undoDeleteButton" class="ghost-btn">Undo</button>
+    </div>
+
+    <dialog id="taskDialog">
+      <form method="dialog" class="dialog-form">
+        <h3>Add a new task</h3>
+        <label>
+          Title
+          <input type="text" id="taskTitle" />
+        </label>
+        <label>
+          Description
+          <textarea id="taskDescription"></textarea>
+        </label>
+        <label>
+          Priority
+          <select id="taskPriority">
+            <option value="High">High</option>
+            <option value="Medium" selected>Medium</option>
+            <option value="Low">Low</option>
+          </select>
+        </label>
+        <label>
+          Tags
+          <input type="text" id="taskTags" placeholder="e.g. work, urgent" />
+        </label>
+        <label>
+          Due date
+          <input type="date" id="taskDueDate" />
+        </label>
+        <div class="dialog-actions">
+          <button type="submit" class="secondary-btn">Save task</button>
+          <button type="button" id="cancelTask" class="ghost-btn">Cancel</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="app.js"></script>
+  </body>
+</html>

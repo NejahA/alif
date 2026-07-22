@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>frífi — project liess</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Ambient Background -->
+  <div class="bg-layer" id="bgLayer"></div>
+  <div class="grid-overlay"></div>
+
+  <header>
+    <div class="logo-wrap">
+      <span class="logo-icon">◈</span>
+      <h1 class="logo">frífi</h1>
+      <span class="logo-sub">project liess</span>
+    </div>
+    <p class="tagline">unravel the fabric of deception</p>
+  </header>
+
+  <main>
+    <!-- Truth Meter -->
+    <section class="meter-section">
+      <div class="meter-header">
+        <span>📊 Truth Index</span>
+        <span id="truthScore" class="truth-score">0%</span>
+      </div>
+      <div class="meter-track">
+        <div class="meter-fill" id="meterFill" style="width: 0%"></div>
+      </div>
+      <div class="meter-labels">
+        <span>💀 Deception</span>
+        <span>🔍 Suspicion</span>
+        <span>✨ Truth</span>
+      </div>
+    </section>
+
+    <!-- Main Statement Display -->
+    <section class="statement-section">
+      <div class="statement-card" id="statementCard">
+        <div class="statement-category" id="statementCategory">⚖️ justice</div>
+        <p class="statement-text" id="statementText">loading...</p>
+        <div class="statement-source" id="statementSource">— source unknown</div>
+      </div>
+
+      <div class="confidence-bar">
+        <span class="conf-label">How confident is this?</span>
+        <div class="confidence-slider">
+          <input type="range" id="confidenceSlider" min="1" max="100" value="50" />
+          <span id="confidenceValue">50%</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Verdict Buttons -->
+    <section class="verdict-section">
+      <button class="verdict-btn truth-btn" id="truthBtn">
+        <span class="btn-icon">✓</span>
+        <span class="btn-label">Truth</span>
+        <span class="btn-sub">evidence supports this</span>
+      </button>
+      <button class="verdict-btn lie-btn" id="lieBtn">
+        <span class="btn-icon">✗</span>
+        <span class="btn-label">Lie</span>
+        <span class="btn-sub">deception detected</span>
+      </button>
+      <button class="verdict-btn unsure-btn" id="unsureBtn">
+        <span class="btn-icon">?</span>
+        <span class="btn-label">Unsure</span>
+        <span class="btn-sub">need more info</span>
+      </button>
+    </section>
+
+    <!-- Stats & History -->
+    <section class="stats-section">
+      <div class="stat-cards">
+        <div class="stat-item">
+          <span class="stat-icon">✓</span>
+          <span class="stat-num" id="truthCount">0</span>
+          <span class="stat-label">Truths</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-icon">✗</span>
+          <span class="stat-num" id="lieCount">0</span>
+          <span class="stat-label">Lies</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-icon">?</span>
+          <span class="stat-num" id="unsureCount">0</span>
+          <span class="stat-label">Unsure</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-icon">🔥</span>
+          <span class="stat-num" id="streakCount">0</span>
+          <span class="stat-label">Streak</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Feedback -->
+    <section class="feedback-section">
+      <div class="feedback-bubble" id="feedbackBubble">
+        <span id="feedbackText">make your first judgment</span>
+      </div>
+    </section>
+
+    <!-- History Log -->
+    <section class="history-section">
+      <div class="history-header">
+        <span>📜 Judgment History</span>
+        <button class="clear-btn" id="clearHistoryBtn">Clear</button>
+      </div>
+      <div class="history-list" id="historyList">
+        <div class="history-empty">no judgments yet</div>
+      </div>
+    </section>
+
+    <!-- Controls -->
+    <section class="controls-section">
+      <button class="control-btn skip-btn" id="skipBtn">⏭ Skip</button>
+      <button class="control-btn reset-btn" id="resetBtn">🔄 Reset All</button>
+    </section>
+
+    <!-- Shadows Canvas -->
+    <canvas id="shadowCanvas" class="shadow-canvas"></canvas>
+  </main>
+
+  <footer>
+    <p>frífi · project liess · every truth has a shadow</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

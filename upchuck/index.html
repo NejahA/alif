@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UPCHUCK — an uprooting experience</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Background -->
+  <div class="bg-puke" id="bgPuke"></div>
+  <div class="stars" id="stars"></div>
+
+  <header>
+    <h1 class="logo">🤮 UPCHUCK</h1>
+    <p class="tagline">an uprooting experience</p>
+  </header>
+
+  <main>
+    <!-- The Creature -->
+    <section class="creature-section">
+      <div class="creature-container">
+        <div class="creature" id="creature">
+          <div class="creature-body" id="creatureBody">
+            <div class="accessory" id="accessorySlot"></div>
+            <div class="eye left-eye">
+              <div class="pupil"></div>
+              <div class="vein"></div>
+            </div>
+            <div class="eye right-eye">
+              <div class="pupil"></div>
+              <div class="vein"></div>
+            </div>
+            <div class="mouth" id="mouth">
+              <div class="puke-drip" id="pukeDrip">🤢</div>
+            </div>
+            <div class="cheek left-cheek"></div>
+            <div class="cheek right-cheek"></div>
+            <div class="sweat" id="sweat">💧</div>
+          </div>
+          <div class="creature-shadow"></div>
+        </div>
+        <div class="level-badge" id="levelBadge">Lv.1</div>
+        <div class="name-tag" id="nameTag">upchuck</div>
+      </div>
+
+      <!-- Puke Bucket -->
+      <div class="bucket-area">
+        <div class="puke-bucket" id="pukeBucket">
+          <span class="puke-emoji" id="currentPuke">🤮</span>
+          <div class="bucket-fill" id="bucketFill" style="height: 0%"></div>
+        </div>
+        <p class="bucket-label" id="bucketLabel">click to feed the bucket!</p>
+      </div>
+    </section>
+
+    <!-- Puke Meter (XP) -->
+    <section class="meter-section">
+      <div class="meter-track">
+        <div class="meter-fill" id="meterFill" style="width: 0%"></div>
+      </div>
+      <div class="meter-info">
+        <span id="meterText">0 / 100 🤢</span>
+        <span id="streakDisplay" class="streak-display hidden">💫 x<span id="streakCount">0</span></span>
+      </div>
+    </section>
+
+    <!-- Goo / Treats -->
+    <div class="goo-bar">
+      <span>🧪 <span id="gooCount">0</span> goo</span>
+      <span class="streak-day" id="streakDay">💀 Day <span id="dayCount">0</span></span>
+    </div>
+
+    <!-- Stats -->
+    <section class="stats">
+      <div class="stat-card">
+        <span class="stat-icon">💚</span>
+        <span class="stat-value" id="stomach">50</span>
+        <span class="stat-label">stomach</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-icon">🤢</span>
+        <span class="stat-value" id="pukeCount">0</span>
+        <span class="stat-label">upchucks</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-icon">😵</span>
+        <span class="stat-value" id="dizzy">50</span>
+        <span class="stat-label">dizzy</span>
+      </div>
+      <div class="stat-card" id="moodDisplay">
+        <span class="stat-icon">🤮</span>
+        <span class="stat-value" id="moodText">queasy</span>
+        <span class="stat-label">mood</span>
+      </div>
+    </section>
+
+    <!-- Actions -->
+    <section class="actions">
+      <button class="action-btn feed-btn" id="feedBtn">🍔 Feed</button>
+      <button class="action-btn puke-btn" id="pukeBtn">🤮 Upchuck</button>
+      <button class="action-btn spin-btn" id="spinBtn">🌀 Spin</button>
+      <button class="action-btn burp-btn" id="burpBtn">💨 Burp</button>
+      <button class="action-btn sleep-btn" id="sleepBtn">😴 Sleep</button>
+      <button class="action-btn rain-btn" id="rainBtn">🌧️ Acid Rain</button>
+      <button class="action-btn shop-btn" id="shopBtn">🛒 Goo Shop</button>
+      <button class="action-btn chaos-btn" id="chaosBtn">💥 Chaos</button>
+    </section>
+
+    <!-- Shop -->
+    <section class="shop-section hidden" id="shopSection">
+      <div class="shop-header">
+        <span>🛒 Goo Shop</span>
+        <span>🧪 <span id="shopGoo">0</span></span>
+        <button class="close-btn" id="closeShop">✕</button>
+      </div>
+      <div class="shop-grid" id="shopGrid"></div>
+    </section>
+
+    <!-- Achievements -->
+    <section class="ach-section">
+      <button class="toggle-ach-btn" id="toggleAch">🏆 Achievements (<span id="achCount">0</span>)</button>
+      <div class="ach-grid hidden" id="achGrid">
+        <div class="achievement" data-id="first_feed"><span class="ach-icon">🍔</span><span class="ach-name">First Meal</span></div>
+        <div class="achievement" data-id="first_puke"><span class="ach-icon">🤮</span><span class="ach-name">First Upchuck</span></div>
+        <div class="achievement" data-id="five_puke"><span class="ach-icon">💦</span><span class="ach-name">Puke Machine</span></div>
+        <div class="achievement" data-id="spin_10"><span class="ach-icon">🌀</span><span class="ach-name">Spinning Out</span></div>
+        <div class="achievement" data-id="burp_5"><span class="ach-icon">💨</span><span class="ach-name">Burp King</span></div>
+        <div class="achievement" data-id="level_5"><span class="ach-icon">⭐</span><span class="ach-name">Queasy Star</span></div>
+        <div class="achievement" data-id="level_10"><span class="ach-icon">👑</span><span class="ach-name">Uproot Lord</span></div>
+        <div class="achievement" data-id="goo_50"><span class="ach-icon">🧪</span><span class="ach-name">Goo Collector</span></div>
+        <div class="achievement" data-id="stomach_100"><span class="ach-icon">💚</span><span class="ach-name">Iron Gut</span></div>
+        <div class="achievement" data-id="dizzy_max"><span class="ach-icon">😵</span><span class="ach-name">Max Dizzy</span></div>
+        <div class="achievement" data-id="chaos_3"><span class="ach-icon">💥</span><span class="ach-name">Agent of Chaos</span></div>
+        <div class="achievement" data-id="rain_master"><span class="ach-icon">🌧️</span><span class="ach-name">Acid Rain Master</span></div>
+      </div>
+    </section>
+
+    <!-- Message -->
+    <section class="message-area">
+      <div class="message-bubble" id="messageBubble">
+        <span id="messageText">upchuck is hungry... feed it something gross!</span>
+      </div>
+    </section>
+
+    <!-- Acid Rain Canvas -->
+    <canvas id="rainCanvas" class="rain-canvas hidden"></canvas>
+
+    <!-- Puke Splatter Canvas -->
+    <canvas id="splatterCanvas" class="splatter-canvas"></canvas>
+  </main>
+
+  <footer>
+    <p>made with 🤢 for upchuck</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
