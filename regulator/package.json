@@ -1,0 +1,25 @@
+{
+  "name": "regulator",
+  "version": "1.0.0",
+  "description": "440 Hz to 432 Hz audio converter",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win"
+  },
+  "keywords": ["audio", "432hz", "frequency", "converter"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.regulator.audio",
+    "productName": "Regulator",
+    "win": {
+      "target": "nsis",
+      "icon": null
+    }
+  }
+}
