@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CaudVas — Live Code Playground</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎨</text></svg>">
+</head>
+<body>
+  <header>
+    <div class="logo">
+      <span class="logo-icon">◈</span>
+      <h1>CaudVas</h1>
+    </div>
+    <div class="header-controls">
+      <button id="runBtn" class="btn-primary" title="Run (Ctrl+Enter)">
+        <span>▶</span> Run
+      </button>
+      <button id="clearBtn" class="btn-secondary" title="Clear Output">
+        <span>✕</span> Clear
+      </button>
+      <button id="fullscreenBtn" class="btn-secondary" title="Toggle Fullscreen Preview">
+        <span>⛶</span> Preview
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <div class="editor-panels">
+      <div class="panel html-panel">
+        <div class="panel-header">
+          <span class="panel-label html-label">HTML</span>
+          <span class="panel-actions">
+            <button class="panel-clear" data-target="html" title="Clear HTML">✕</button>
+          </span>
+        </div>
+        <div class="panel-body">
+          <textarea id="htmlCode" class="code-editor" spellcheck="false" placeholder="Write HTML here..."></textarea>
+        </div>
+      </div>
+
+      <div class="panel css-panel">
+        <div class="panel-header">
+          <span class="panel-label css-label">CSS</span>
+          <span class="panel-actions">
+            <button class="panel-clear" data-target="css" title="Clear CSS">✕</button>
+          </span>
+        </div>
+        <div class="panel-body">
+          <textarea id="cssCode" class="code-editor" spellcheck="false" placeholder="Write CSS here..."></textarea>
+        </div>
+      </div>
+
+      <div class="panel js-panel">
+        <div class="panel-header">
+          <span class="panel-label js-label">JavaScript</span>
+          <span class="panel-actions">
+            <button class="panel-clear" data-target="js" title="Clear JS">✕</button>
+          </span>
+        </div>
+        <div class="panel-body">
+          <textarea id="jsCode" class="code-editor" spellcheck="false" placeholder="Write JavaScript here..."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="preview-panel">
+      <div class="preview-header">
+        <span class="preview-label">🔍 Preview</span>
+        <div class="preview-meta">
+          <span id="charCount">0 chars</span>
+          <span id="errorCount" class="hidden">0 errors</span>
+        </div>
+      </div>
+      <div class="preview-body">
+        <iframe id="previewFrame" sandbox="allow-scripts allow-modals allow-same-origin" title="Live Preview"></iframe>
+        <div id="errorOverlay" class="error-overlay hidden">
+          <div class="error-content">
+            <span class="error-icon">⚠</span>
+            <span id="errorMessage">Error</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <span>⌨️ <kbd>Ctrl</kbd>+<kbd>Enter</kbd> to run</span>
+    <span>⚡ Real-time preview — type to see changes</span>
+    <span>📁 v1.0 — CaudVas</span>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
