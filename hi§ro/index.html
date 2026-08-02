@@ -24,6 +24,8 @@
         <button id="btn-search" class="icon-btn" title="Search synapses">🔍</button>
         <button id="btn-tags" class="icon-btn" title="Filter by tag">🏷</button>
         <button id="btn-gardens" class="icon-btn" title="Gardens (workspaces)">🗂</button>
+        <button id="btn-theme" class="icon-btn" title="Cycle background theme">🎨</button>
+        <button id="btn-generate" class="icon-btn" title="Generate random garden">🎲</button>
         <button id="btn-sound" class="icon-btn" title="Toggle sound">🔊</button>
         <button id="btn-export" class="icon-btn" title="Export">↓</button>
         <button id="btn-import" class="icon-btn" title="Import">↑</button>
@@ -57,12 +59,18 @@
     <!-- Focus mode indicator -->
     <div id="focus-indicator" class="hidden">Focus mode — click a synapse</div>
 
+    <!-- Merge mode indicator -->
+    <div id="merge-indicator" class="hidden">Merge mode — click two synapses to combine</div>
+
+    <!-- Auto-save indicator -->
+    <div id="save-indicator" class="hidden">saved</div>
+
     <!-- Synapse control panel (click a synapse) -->
     <div id="synapse-panel" class="panel hidden">
       <div class="panel-section">
         <div class="synapse-header">
           <span class="synapse-label">SYNAPSE</span>
-          <span class="synapse-id"></span>
+          <span class="synapse-id" id="synapse-id"></span>
         </div>
         <textarea id="synapse-message" placeholder="write something..." rows="2"></textarea>
         <!-- Hue picker row -->
@@ -79,11 +87,11 @@
           <span class="growth-value" id="growth-value">0%</span>
         </div>
         <div class="synapse-meta">
-          <span class="synapse-age"></span>
-          <span class="synapse-fired"></span>
+          <span class="synapse-age" id="synapse-age"></span>
+          <span class="synapse-fired" id="synapse-fired"></span>
         </div>
         <div class="synapse-meta">
-          <span class="synapse-lastfire"></span>
+          <span class="synapse-lastfire" id="synapse-lastfire"></span>
         </div>
       </div>
       <div class="panel-section">
@@ -193,8 +201,10 @@
           <div class="help-row"><span class="help-action">click void</span><span class="help-keys"><kbd>sprout synapse</kbd></span></div>
           <div class="help-row"><span class="help-action">double-click synapse</span><span class="help-keys"><kbd>edit message</kbd></span></div>
           <div class="help-row"><span class="help-action">click synapse</span><span class="help-keys"><kbd>open panel</kbd></span></div>
+          <div class="help-row"><span class="help-action">right-click synapse</span><span class="help-keys"><kbd>quick menu</kbd></span></div>
           <div class="help-row"><span class="help-action">drag synapse</span><span class="help-keys"><kbd>move</kbd></span></div>
           <div class="help-row"><span class="help-action">right / middle drag</span><span class="help-keys"><kbd>pan</kbd></span></div>
+          <div class="help-row"><span class="help-action">arrow keys</span><span class="help-keys"><kbd>pan</kbd></span></div>
           <div class="help-row"><span class="help-action">scroll</span><span class="help-keys"><kbd>zoom</kbd></span></div>
           <div class="help-row"><span class="help-action">shift + drag void</span><span class="help-keys"><kbd>box select</kbd></span></div>
           <div class="help-row"><span class="help-action">ctrl + click</span><span class="help-keys"><kbd>bulk select</kbd></span></div>
@@ -208,11 +218,27 @@
           <div class="help-row"><span class="help-action">g</span><span class="help-keys"><kbd>gardens</kbd></span></div>
           <div class="help-row"><span class="help-action">t</span><span class="help-keys"><kbd>tag filter</kbd></span></div>
           <div class="help-row"><span class="help-action">m</span><span class="help-keys"><kbd>mute / unmute</kbd></span></div>
+          <div class="help-row"><span class="help-action">c</span><span class="help-keys"><kbd>cycle theme</kbd></span></div>
+          <div class="help-row"><span class="help-action">r</span><span class="help-keys"><kbd>random garden</kbd></span></div>
+          <div class="help-row"><span class="help-action">z</span><span class="help-keys"><kbd>zoom to selection</kbd></span></div>
         </div>
       </div>
       <div class="panel-actions">
         <button id="btn-close-help" class="action-btn secondary">close</button>
       </div>
+    </div>
+
+    <!-- Context menu (right-click on synapse) -->
+    <div id="context-menu" class="context-menu hidden">
+      <div class="context-item" data-action="edit">✏️ edit message</div>
+      <div class="context-item" data-action="fire">⚡ fire</div>
+      <div class="context-item" data-action="clone">📋 clone</div>
+      <div class="context-item" data-action="pin">📌 pin / unpin</div>
+      <div class="context-item" data-action="focus">◉ focus</div>
+      <div class="context-divider"></div>
+      <div class="context-item" data-action="merge">🔀 merge with...</div>
+      <div class="context-divider"></div>
+      <div class="context-item danger" data-action="prune">✕ prune</div>
     </div>
 
     <!-- Minimap -->
@@ -226,6 +252,7 @@
       <button id="btn-bulk-fire" class="action-btn small">⚡ fire all</button>
       <button id="btn-bulk-prune" class="action-btn small danger">prune all</button>
       <button id="btn-bulk-pin" class="action-btn small">📌 toggle pin</button>
+      <button id="btn-bulk-merge" class="action-btn small">🔀 merge</button>
       <button id="btn-bulk-clear" class="action-btn secondary small">deselect</button>
     </div>
   </div>

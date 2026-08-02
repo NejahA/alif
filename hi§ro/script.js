@@ -74,6 +74,21 @@ let autoConnect = true; // auto-connect synapses within range
 let focusMode = false;
 let focusSynapse = null;
 
+// --- Merge mode ---
+let mergeMode = false;
+let mergeFirst = null;
+
+// --- Themes ---
+const THEMES = [
+  { name: 'void', bg0: '#0d0d16', bg1: '#06060a' },
+  { name: 'abyss', bg0: '#0a1420', bg1: '#040a12' },
+  { name: 'forest', bg0: '#0a1a12', bg1: '#040d08' },
+  { name: 'ember', bg0: '#1a0f0a', bg1: '#0d0604' },
+  { name: 'royal', bg0: '#120a1a', bg1: '#08040d' },
+  { name: 'mint', bg0: '#0a1a1a', bg1: '#040d0d' },
+];
+let themeIndex = 0;
+
 // --- Snap to grid ---
 let gridSnap = false;
 
@@ -132,7 +147,11 @@ const synapseTagsEl = $('synapse-tags');
 const tagInput = $('tag-input');
 const gardenListEl = $('garden-list');
 const helpPanel = $('help-panel');
+const mergeIndicator = $('merge-indicator');
+const saveIndicator = $('save-indicator');
+const contextMenu = $('context-menu');
 let editingSynapse = null;
+let contextSynapse = null;
 
 // --- Resize ---
 
@@ -893,6 +912,225 @@ function focusOn(syn) {
   focusIndicator.textContent = 'Focus: #' + syn.id.slice(0, 6) + ' — click another or esc to exit';
 }
 
+// --- Merge mode ---
+
+function toggleMergeMode() {
+  mergeMode = !mergeMode;
+  mergeFirst = null;
+  mergeIndicator.classList.toggle('hidden', !mergeMode);
+  if (mergeMode) {
+    mergeIndicator.textContent = 'Merge mode — click two synapses to combine';
+    canvas.style.cursor = 'crosshair';
+  } else {
+    canvas.style.cursor = 'default';
+  }
+}
+
+function exitMergeMode() {
+  if (!mergeMode) return;
+  mergeMode = false;
+  mergeFirst = null;
+  mergeIndicator.classList.add('hidden');
+  canvas.style.cursor = 'default';
+}
+
+function mergeSynapses(a, b) {
+  if (a === b) return;
+  // Combine into a: keep a's position, merge messages, tags, stats
+  const combinedMessage = [a.message, b.message].filter(Boolean).join('\n');
+  a.message = combinedMessage;
+  a.targetVolume = Math.min(1, (a.targetVolume + b.targetVolume) / 2 + 0.1);
+  a.volume = a.targetVolume;
+  a.firedCount += b.firedCount;
+  a.hue = (a.hue + b.hue) / 2;
+  a.autoFire = a.autoFire || b.autoFire;
+  a.autoFireInterval = Math.min(a.autoFireInterval, b.autoFireInterval);
+  a.pinned = a.pinned || b.pinned;
+  a.tags = [...new Set([...a.tags, ...b.tags])];
+  a.lastFiredAt = Math.max(a.lastFiredAt, b.lastFiredAt);
+
+  // Remove b
+  synapses = synapses.filter(s => s.id !== b.id);
+  selectedSynapses = selectedSynapses.filter(s => s.id !== b.id);
+  if (selectedSynapse && selectedSynapse.id === b.id) deselect();
+
+  // Rebuild connections (b's connections now point to a)
+  for (const c of connections) {
+    if (c.a === b) c.a = a;
+    if (c.b === b) c.b = a;
+  }
+  // Remove self-connections and duplicates
+  connections = connections.filter(c => c.a !== c.b);
+  const seen = new Set();
+  connections = connections.filter(c => {
+    const key = [c.a.id, c.b.id].sort().join('-');
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  for (const c of connections) c.dist = Math.hypot(c.a.x - c.b.x, c.a.y - c.b.y);
+
+  rebuildConnections();
+  save();
+  pushHistory();
+  updateTagFilterOptions();
+  selectSynapse(a);
+  showToast('Synapses merged');
+}
+
+// --- Context menu ---
+
+function showContextMenu(syn, sx, sy) {
+  contextSynapse = syn;
+  contextMenu.classList.remove('hidden');
+  // Position within viewport
+  const menuW = 180;
+  const menuH = 250;
+  const x = Math.min(sx, window.innerWidth - menuW - 8);
+  const y = Math.min(sy, window.innerHeight - menuH - 8);
+  contextMenu.style.left = x + 'px';
+  contextMenu.style.top = y + 'px';
+}
+
+function hideContextMenu() {
+  contextMenu.classList.add('hidden');
+  contextSynapse = null;
+}
+
+function handleContextAction(action) {
+  const syn = contextSynapse;
+  if (!syn) return;
+  hideContextMenu();
+  switch (action) {
+    case 'edit':
+      showInlineEditor(syn, syn.x * viewZoom + viewX, syn.y * viewZoom + viewY);
+      break;
+    case 'fire':
+      fireSynapse(syn);
+      save();
+      pushHistory();
+      break;
+    case 'clone': {
+      const clone = new Synapse(syn.x + 30, syn.y + 30);
+      clone.message = syn.message;
+      clone.hue = syn.hue;
+      clone.targetVolume = syn.targetVolume;
+      clone.volume = syn.volume;
+      clone.autoFire = syn.autoFire;
+      clone.autoFireInterval = syn.autoFireInterval;
+      clone.sproutProgress = syn.sproutProgress;
+      clone.tags = [...syn.tags];
+      synapses.push(clone);
+      rebuildConnections();
+      save();
+      pushHistory();
+      updateTagFilterOptions();
+      showToast('Synapse cloned');
+      break;
+    }
+    case 'pin':
+      syn.pinned = !syn.pinned;
+      save();
+      pushHistory();
+      showToast(syn.pinned ? 'Synapse pinned' : 'Synapse unpinned');
+      break;
+    case 'focus':
+      focusMode = true;
+      focusSynapse = syn;
+      $('btn-focus').classList.add('active');
+      focusIndicator.classList.remove('hidden');
+      focusIndicator.textContent = 'Focus: #' + syn.id.slice(0, 6) + ' — click another or esc to exit';
+      break;
+    case 'merge':
+      toggleMergeMode();
+      mergeFirst = syn;
+      mergeIndicator.textContent = 'Now click the synapse to merge into #' + syn.id.slice(0, 6);
+      break;
+    case 'prune':
+      synapses = synapses.filter(s => s.id !== syn.id);
+      selectedSynapses = selectedSynapses.filter(s => s.id !== syn.id);
+      if (selectedSynapse && selectedSynapse.id === syn.id) deselect();
+      rebuildConnections();
+      save();
+      pushHistory();
+      updateTagFilterOptions();
+      showToast('Synapse pruned');
+      break;
+  }
+}
+
+// --- Save indicator ---
+
+let saveIndicatorTimer = null;
+function flashSaveIndicator() {
+  if (!saveIndicator) return;
+  saveIndicator.classList.remove('hidden');
+  clearTimeout(saveIndicatorTimer);
+  saveIndicatorTimer = setTimeout(() => {
+    saveIndicator.classList.add('hidden');
+  }, 1200);
+}
+
+// --- Zoom to selection ---
+
+function zoomToSelection() {
+  const targets = selectedSynapses.length > 0 ? selectedSynapses : (selectedSynapse ? [selectedSynapse] : []);
+  if (targets.length === 0) {
+    showToast('Nothing selected to zoom to');
+    return;
+  }
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const s of targets) {
+    if (s.x < minX) minX = s.x;
+    if (s.y < minY) minY = s.y;
+    if (s.x > maxX) maxX = s.x;
+    if (s.y > maxY) maxY = s.y;
+  }
+  const pad = 80;
+  minX -= pad; minY -= pad; maxX += pad; maxY += pad;
+  const worldW = maxX - minX;
+  const worldH = maxY - minY;
+  if (worldW <= 0 || worldH <= 0) return;
+  const newZoom = Math.min(W / worldW, H / worldH, 3);
+  const centerX = (minX + maxX) / 2;
+  const centerY = (minY + maxY) / 2;
+  viewX = W / 2 - centerX * newZoom;
+  viewY = H / 2 - centerY * newZoom;
+  viewZoom = newZoom;
+  updateZoomIndicator();
+}
+
+// --- Random garden generator ---
+
+function generateRandomGarden() {
+  const count = 8 + Math.floor(Math.random() * 12);
+  const cx = (W / 2 - viewX) / viewZoom;
+  const cy = (H / 2 - viewY) / viewZoom;
+  const radius = 60 + Math.random() * 120;
+  const words = ['idea', 'spark', 'note', 'thought', 'seed', 'echo', 'pulse', 'drift', 'glow', 'muse', 'flux', 'orbit'];
+  const tags = ['core', 'idea', 'note', 'spark', 'echo'];
+  const newSynapses = [];
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const dist = Math.random() * radius;
+    const s = new Synapse(cx + Math.cos(angle) * dist, cy + Math.sin(angle) * dist);
+    s.message = words[Math.floor(Math.random() * words.length)];
+    s.hue = Math.random() * 360;
+    s.targetVolume = 0.2 + Math.random() * 0.6;
+    s.volume = s.targetVolume;
+    if (Math.random() < 0.3) s.tags = [tags[Math.floor(Math.random() * tags.length)]];
+    if (Math.random() < 0.15) s.autoFire = true;
+    if (Math.random() < 0.1) s.pinned = true;
+    newSynapses.push(s);
+  }
+  synapses.push(...newSynapses);
+  rebuildConnections();
+  save();
+  pushHistory();
+  updateTagFilterOptions();
+  showToast('Generated ' + count + ' synapses');
+}
+
 // --- Fire propagation ---
 
 function fireSynapse(syn) {
@@ -959,6 +1197,7 @@ function save() {
       gridSnap: g.gridSnap,
     }));
   }
+  flashSaveIndicator();
 }
 
 function restoreGarden(g) {
@@ -1069,11 +1308,18 @@ function init() {
 // --- Drawing ---
 
 function drawBackground() {
+  const theme = THEMES[themeIndex];
   const grad = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.max(W, H) * 0.6);
-  grad.addColorStop(0, '#0d0d16');
-  grad.addColorStop(1, '#06060a');
+  grad.addColorStop(0, theme.bg0);
+  grad.addColorStop(1, theme.bg1);
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
+}
+
+function cycleTheme() {
+  themeIndex = (themeIndex + 1) % THEMES.length;
+  showToast('Theme: ' + THEMES[themeIndex].name);
+  save();
 }
 
 function drawGrid() {
@@ -2619,6 +2865,21 @@ canvas.addEventListener('mousedown', (e) => {
       return;
     }
 
+    if (mergeMode) {
+      if (syn) {
+        if (!mergeFirst) {
+          mergeFirst = syn;
+          mergeIndicator.textContent = 'Now click the synapse to merge into #' + syn.id.slice(0, 6);
+        } else if (syn.id !== mergeFirst.id) {
+          mergeSynapses(mergeFirst, syn);
+          exitMergeMode();
+        } else {
+          showToast('Click a different synapse to merge');
+        }
+      }
+      return;
+    }
+
     if (syn) {
       // Ctrl/Cmd+click for bulk selection
       if (e.ctrlKey || e.metaKey) {
@@ -2789,6 +3050,16 @@ canvas.addEventListener('click', (e) => {
 
 canvas.addEventListener('contextmenu', (e) => {
   e.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+  const sx = e.clientX - rect.left;
+  const sy = e.clientY - rect.top;
+  const world = screenToWorld(sx, sy);
+  const syn = findSynapseAt(world.x, world.y);
+  if (syn && syn.isReady) {
+    showContextMenu(syn, e.clientX, e.clientY);
+  } else {
+    hideContextMenu();
+  }
 });
 
 canvas.addEventListener('wheel', (e) => {
@@ -2960,6 +3231,40 @@ $('btn-gardens').addEventListener('click', (e) => { e.stopPropagation(); toggleG
 $('btn-sound').addEventListener('click', (e) => { e.stopPropagation(); toggleSound(); });
 $('btn-help').addEventListener('click', (e) => { e.stopPropagation(); toggleHelp(); });
 $('btn-close-help').addEventListener('click', (e) => { e.stopPropagation(); closeHelp(); });
+$('btn-theme').addEventListener('click', (e) => { e.stopPropagation(); cycleTheme(); });
+$('btn-generate').addEventListener('click', (e) => { e.stopPropagation(); generateRandomGarden(); });
+$('btn-bulk-merge').addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (selectedSynapses.length >= 2) {
+    const target = selectedSynapses[0];
+    for (let i = 1; i < selectedSynapses.length; i++) {
+      mergeSynapses(target, selectedSynapses[i]);
+    }
+    clearBulkSelection();
+  } else {
+    showToast('Select at least 2 synapses to merge');
+  }
+});
+
+// Context menu items
+contextMenu.querySelectorAll('.context-item').forEach(item => {
+  item.addEventListener('click', (e) => {
+    e.stopPropagation();
+    handleContextAction(item.dataset.action);
+  });
+});
+
+// Close context menu on outside click
+document.addEventListener('click', (e) => {
+  if (!contextMenu.classList.contains('hidden') && !contextMenu.contains(e.target)) {
+    hideContextMenu();
+  }
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !contextMenu.classList.contains('hidden')) {
+    hideContextMenu();
+  }
+});
 
 // Tag filter
 tagFilterSelect.addEventListener('change', () => {
@@ -3028,6 +3333,8 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     if (editingSynapse) {
       cancelInlineEdit();
+    } else if (mergeMode) {
+      exitMergeMode();
     } else if (focusMode) {
       exitFocusMode();
     } else if (!panel.classList.contains('hidden')) {
@@ -3084,6 +3391,30 @@ document.addEventListener('keydown', (e) => {
   // Sound: m
   if (e.key === 'm' && !e.ctrlKey && !e.metaKey && !editingSynapse) {
     toggleSound();
+  }
+
+  // Theme: c
+  if (e.key === 'c' && !e.ctrlKey && !e.metaKey && !editingSynapse) {
+    cycleTheme();
+  }
+
+  // Random garden: r
+  if (e.key === 'r' && !e.ctrlKey && !e.metaKey && !editingSynapse) {
+    generateRandomGarden();
+  }
+
+  // Zoom to selection: z
+  if (e.key === 'z' && !e.ctrlKey && !e.metaKey && !e.shiftKey && !editingSynapse) {
+    zoomToSelection();
+  }
+
+  // Arrow-key panning (only when not typing in an input)
+  if (!editingSynapse && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement && document.activeElement.tagName)) {
+    const panStep = 40 / viewZoom;
+    if (e.key === 'ArrowLeft') { viewX += panStep; updateZoomIndicator(); }
+    else if (e.key === 'ArrowRight') { viewX -= panStep; updateZoomIndicator(); }
+    else if (e.key === 'ArrowUp') { viewY += panStep; updateZoomIndicator(); }
+    else if (e.key === 'ArrowDown') { viewY -= panStep; updateZoomIndicator(); }
   }
 
   // Undo/Redo
