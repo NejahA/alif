@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>hi§ro — synapse garden</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="ui">
+    <!-- Top bar -->
+    <div id="top-bar">
+      <h1 class="logo">hi§ro</h1>
+      <div class="top-actions">
+        <button id="btn-undo" class="icon-btn" title="Undo (Ctrl+Z)">↩</button>
+        <button id="btn-redo" class="icon-btn" title="Redo (Ctrl+Shift+Z)">↪</button>
+        <button id="btn-connect-mode" class="icon-btn" title="Manual link mode: click two synapses to connect them">⚡</button>
+        <button id="btn-auto-connect" class="icon-btn" title="Toggle auto-connect mode">🔗</button>
+        <button id="btn-grid" class="icon-btn" title="Toggle snap to grid">⊞</button>
+        <button id="btn-scope" class="icon-btn" title="Fit all synapses in view">⌂</button>
+        <button id="btn-auto-layout" class="icon-btn" title="Auto-layout synapses">⟳</button>
+        <button id="btn-comprehend" class="icon-btn" title="Comprehend all nodes">◎</button>
+        <button id="btn-focus" class="icon-btn" title="Focus mode: click a synapse to light up its network">◉</button>
+        <button id="btn-search" class="icon-btn" title="Search synapses">🔍</button>
+        <button id="btn-tags" class="icon-btn" title="Filter by tag">🏷</button>
+        <button id="btn-gardens" class="icon-btn" title="Gardens (workspaces)">🗂</button>
+        <button id="btn-sound" class="icon-btn" title="Toggle sound">🔊</button>
+        <button id="btn-export" class="icon-btn" title="Export">↓</button>
+        <button id="btn-import" class="icon-btn" title="Import">↑</button>
+        <button id="btn-clear" class="icon-btn" title="Clear all">✕</button>
+        <button id="btn-help" class="icon-btn" title="Keyboard shortcuts (?)">?</button>
+      </div>
+    </div>
+
+    <!-- Search bar -->
+    <div id="search-bar" class="hidden">
+      <input id="search-input" type="text" placeholder="search synapses..." autocomplete="off" spellcheck="false">
+      <span id="search-count" class="search-count"></span>
+      <button id="btn-search-close" class="icon-btn small" title="Close search">✕</button>
+    </div>
+
+    <!-- Tag filter bar -->
+    <div id="tag-filter-bar" class="hidden">
+      <span class="tag-filter-label">tag</span>
+      <select id="tag-filter-select">
+        <option value="">all tags</option>
+      </select>
+      <button id="btn-tag-filter-clear" class="icon-btn small" title="Clear filter">✕</button>
+    </div>
+
+    <!-- Zoom indicator -->
+    <div id="zoom-indicator" class="hidden">100%</div>
+
+    <!-- Connection mode indicator -->
+    <div id="connect-indicator" class="hidden">Select first synapse...</div>
+
+    <!-- Focus mode indicator -->
+    <div id="focus-indicator" class="hidden">Focus mode — click a synapse</div>
+
+    <!-- Synapse control panel (click a synapse) -->
+    <div id="synapse-panel" class="panel hidden">
+      <div class="panel-section">
+        <div class="synapse-header">
+          <span class="synapse-label">SYNAPSE</span>
+          <span class="synapse-id"></span>
+        </div>
+        <textarea id="synapse-message" placeholder="write something..." rows="2"></textarea>
+        <!-- Hue picker row -->
+        <div class="hue-row">
+          <span class="hue-label">hue</span>
+          <input type="range" id="hue-slider" min="0" max="360" value="220" class="hue-slider">
+          <span class="hue-value" id="hue-value">220°</span>
+        </div>
+      </div>
+      <div class="panel-section">
+        <div class="growth-slider-row">
+          <span class="growth-label">charge</span>
+          <input type="range" id="growth-slider" min="0" max="100" value="0" class="growth-slider">
+          <span class="growth-value" id="growth-value">0%</span>
+        </div>
+        <div class="synapse-meta">
+          <span class="synapse-age"></span>
+          <span class="synapse-fired"></span>
+        </div>
+        <div class="synapse-meta">
+          <span class="synapse-lastfire"></span>
+        </div>
+      </div>
+      <div class="panel-section">
+        <div class="tags-header">
+          <span class="synapse-label">TAGS</span>
+        </div>
+        <div id="synapse-tags" class="tag-list"></div>
+        <div class="tag-input-row">
+          <input id="tag-input" type="text" placeholder="add tag..." maxlength="20" autocomplete="off" spellcheck="false">
+          <button id="btn-add-tag" class="action-btn small">+</button>
+        </div>
+      </div>
+      <div class="panel-section">
+        <div class="auto-fire-row">
+          <label class="toggle-label">
+            <input type="checkbox" id="auto-fire-toggle">
+            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            <span class="toggle-text">Auto-fire</span>
+          </label>
+          <div class="auto-fire-rate hidden" id="auto-fire-rate-group">
+            <span class="rate-label">every</span>
+            <input type="number" id="auto-fire-interval" min="1" max="60" value="5" class="rate-input">
+            <span class="rate-label">s</span>
+          </div>
+        </div>
+      </div>
+      <div class="panel-section">
+        <div class="connections-header">
+          <span class="synapse-label">CONNECTIONS</span>
+          <span class="connection-count" id="connection-count">0</span>
+        </div>
+        <div id="connection-list" class="connection-list"></div>
+      </div>
+      <div class="panel-actions">
+        <button id="btn-clone-synapse" class="action-btn">📋 clone</button>
+        <button id="btn-pin-synapse" class="action-btn">📌 pin</button>
+        <button id="btn-fire" class="action-btn">⚡ fire</button>
+        <button id="btn-delete-synapse" class="action-btn danger">prune</button>
+        <button id="btn-close-synapse" class="action-btn secondary">close</button>
+      </div>
+    </div>
+
+    <!-- Export panel -->
+    <div id="export-panel" class="panel hidden">
+      <pre id="export-text"></pre>
+      <div class="panel-actions">
+        <button id="btn-copy-export" class="action-btn">copy</button>
+        <button id="btn-close-export" class="action-btn secondary">close</button>
+      </div>
+    </div>
+
+    <!-- Import panel -->
+    <div id="import-panel" class="panel hidden">
+      <div class="panel-section">
+        <div class="synapse-header">
+          <span class="synapse-label">IMPORT</span>
+        </div>
+        <textarea id="import-text" placeholder="paste exported synapse data here..." rows="6" spellcheck="false"></textarea>
+        <div id="import-preview" class="import-preview"></div>
+      </div>
+      <div class="panel-actions">
+        <button id="btn-do-import" class="action-btn">import</button>
+        <button id="btn-close-import" class="action-btn secondary">close</button>
+      </div>
+    </div>
+
+    <!-- Comprehension panel -->
+    <div id="comprehend-panel" class="panel hidden">
+      <div class="panel-section">
+        <div class="synapse-header">
+          <span class="synapse-label">COMPREHEND</span>
+          <span class="synapse-id">garden overview</span>
+        </div>
+        <div id="comprehend-content" class="comprehend-content"></div>
+      </div>
+      <div class="panel-actions">
+        <button id="btn-close-comprehend" class="action-btn secondary">close</button>
+      </div>
+    </div>
+
+    <!-- Garden manager panel -->
+    <div id="garden-panel" class="panel hidden">
+      <div class="panel-section">
+        <div class="synapse-header">
+          <span class="synapse-label">GARDENS</span>
+          <span class="synapse-id">separate workspaces</span>
+        </div>
+        <div id="garden-list" class="garden-list"></div>
+        <div class="garden-hint">click a garden to switch. each garden keeps its own synapses, layout and undo history.</div>
+      </div>
+      <div class="panel-actions">
+        <button id="btn-new-garden" class="action-btn">+ new</button>
+        <button id="btn-rename-garden" class="action-btn">rename</button>
+        <button id="btn-delete-garden" class="action-btn danger">delete</button>
+        <button id="btn-close-gardens" class="action-btn secondary">close</button>
+      </div>
+    </div>
+
+    <!-- Help / shortcuts overlay -->
+    <div id="help-panel" class="panel hidden">
+      <div class="panel-section">
+        <div class="synapse-header">
+          <span class="synapse-label">SHORTCUTS</span>
+          <span class="synapse-id">hi§ro</span>
+        </div>
+        <div class="help-grid">
+          <div class="help-row"><span class="help-action">click void</span><span class="help-keys"><kbd>sprout synapse</kbd></span></div>
+          <div class="help-row"><span class="help-action">double-click synapse</span><span class="help-keys"><kbd>edit message</kbd></span></div>
+          <div class="help-row"><span class="help-action">click synapse</span><span class="help-keys"><kbd>open panel</kbd></span></div>
+          <div class="help-row"><span class="help-action">drag synapse</span><span class="help-keys"><kbd>move</kbd></span></div>
+          <div class="help-row"><span class="help-action">right / middle drag</span><span class="help-keys"><kbd>pan</kbd></span></div>
+          <div class="help-row"><span class="help-action">scroll</span><span class="help-keys"><kbd>zoom</kbd></span></div>
+          <div class="help-row"><span class="help-action">shift + drag void</span><span class="help-keys"><kbd>box select</kbd></span></div>
+          <div class="help-row"><span class="help-action">ctrl + click</span><span class="help-keys"><kbd>bulk select</kbd></span></div>
+          <div class="help-row"><span class="help-action">⚡ mode</span><span class="help-keys"><kbd>click 2 synapses to link</kbd></span></div>
+          <div class="help-row"><span class="help-action">◉ mode</span><span class="help-keys"><kbd>click a synapse to focus its network</kbd></span></div>
+          <div class="help-row"><span class="help-action">ctrl+z / ctrl+shift+z</span><span class="help-keys"><kbd>undo / redo</kbd></span></div>
+          <div class="help-row"><span class="help-action">ctrl+f or /</span><span class="help-keys"><kbd>search</kbd></span></div>
+          <div class="help-row"><span class="help-action">?</span><span class="help-keys"><kbd>this help</kbd></span></div>
+          <div class="help-row"><span class="help-action">escape</span><span class="help-keys"><kbd>close / exit mode</kbd></span></div>
+          <div class="help-row"><span class="help-action">delete / backspace</span><span class="help-keys"><kbd>prune selected</kbd></span></div>
+          <div class="help-row"><span class="help-action">g</span><span class="help-keys"><kbd>gardens</kbd></span></div>
+          <div class="help-row"><span class="help-action">t</span><span class="help-keys"><kbd>tag filter</kbd></span></div>
+          <div class="help-row"><span class="help-action">m</span><span class="help-keys"><kbd>mute / unmute</kbd></span></div>
+        </div>
+      </div>
+      <div class="panel-actions">
+        <button id="btn-close-help" class="action-btn secondary">close</button>
+      </div>
+    </div>
+
+    <!-- Minimap -->
+    <div id="minimap" class="hidden">
+      <canvas id="minimap-canvas"></canvas>
+    </div>
+
+    <!-- Bulk actions bar -->
+    <div id="bulk-bar" class="hidden">
+      <span id="bulk-count" class="bulk-count">0 selected</span>
+      <button id="btn-bulk-fire" class="action-btn small">⚡ fire all</button>
+      <button id="btn-bulk-prune" class="action-btn small danger">prune all</button>
+      <button id="btn-bulk-pin" class="action-btn small">📌 toggle pin</button>
+      <button id="btn-bulk-clear" class="action-btn secondary small">deselect</button>
+    </div>
+  </div>
+
+  <canvas id="canvas"></canvas>
+  <input id="inline-editor" type="text" maxlength="100" placeholder="type a message..." autocomplete="off" spellcheck="false">
+  <script src="script.js"></script>
+</body>
+</html>
