@@ -31,6 +31,102 @@ const MAX_ACTIVITY = 1000;   // fire event log cap
 const ACTIVITY_BUCKETS = 16; // sparkline bars
 const ACTIVITY_BUCKET_MS = 15000;
 
+// --- MongoDB Cloud sync ---
+
+const SERVER_URL = 'http://localhost:3456';
+const SERVER_ENDPOINT = SERVER_URL + '/api/hisro/data';
+const HEALTH_ENDPOINT = SERVER_URL + '/api/hisro/health';
+let serverConnected = false;
+let serverSyncPending = null;
+let serverSyncTimer = null;
+let serverLoadDone = false;
+
+async function checkServerHealth() {
+  try {
+    const res = await fetch(HEALTH_ENDPOINT, { cache: 'no-store' });
+    const json = await res.json();
+    serverConnected = !!(json && json.ok && json.connected);
+  } catch {
+    serverConnected = false;
+  }
+  return serverConnected;
+}
+
+function pushToServer(payload) {
+  // Debounce server writes — the server push is async, so batch rapid changes.
+  serverSyncPending = payload;
+  clearTimeout(serverSyncTimer);
+  serverSyncTimer = setTimeout(async () => {
+    const data = serverSyncPending;
+    serverSyncPending = null;
+    if (!data) return;
+    try {
+      const res = await fetch(SERVER_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data }),
+      });
+      if (res.ok) {
+        serverConnected = true;
+      } else {
+        serverConnected = false;
+      }
+    } catch {
+      serverConnected = false; // Fall back to localStorage only
+    }
+  }, 800);
+}
+
+async function loadFromServer() {
+  try {
+    const res = await fetch(SERVER_ENDPOINT, { cache: 'no-store' });
+    if (!res.ok) {
+      serverConnected = false;
+      return false;
+    }
+    const json = await res.json();
+    if (!json.ok || !json.data) {
+      serverConnected = json.ok !== false;
+      return false;
+    }
+    serverConnected = true;
+    // Apply server gardens if they exist
+    if (json.data.gardens) {
+      gardens = {};
+      for (const key of Object.keys(json.data.gardens)) {
+        const g = json.data.gardens[key];
+        gardens[key] = Object.assign(emptyGarden(key), g, { name: key });
+      }
+      if (Object.keys(gardens).length === 0) gardens = { main: emptyGarden('main') };
+      activeGarden = json.data.active && gardens[json.data.active] ? json.data.active : 'main';
+      if (!gardens[activeGarden]) activeGarden = 'main';
+      restoreGarden(gardens[activeGarden]);
+      if (autoConnect && synapses.length > 0) rebuildConnections();
+    } else {
+      // Legacy server data (single garden payload without `gardens` wrapper)
+      const g = {
+        name: 'main',
+        synapses: json.data.synapses || [],
+        sprouts: json.data.sprouts || [],
+        connections: json.data.connections || [],
+        autoConnect: json.data.autoConnect !== undefined ? json.data.autoConnect : true,
+        gridSnap: json.data.gridSnap || false,
+        viewX: 0, viewY: 0, viewZoom: 1,
+        history: [], historyIndex: -1,
+        activityLog: [], tagFilter: '', soundMuted: false,
+      };
+      gardens = { main: g };
+      activeGarden = 'main';
+      restoreGarden(g);
+      if (autoConnect && synapses.length > 0) rebuildConnections();
+    }
+    return true;
+  } catch {
+    serverConnected = false;
+    return false;
+  }
+}
+
 // --- State ---
 
 let synapses = [];
@@ -1197,6 +1293,8 @@ function save() {
       gridSnap: g.gridSnap,
     }));
   }
+  // Sync to MongoDB (debounced)
+  pushToServer(payload);
   flashSaveIndicator();
 }
 
@@ -1300,9 +1398,30 @@ function load() {
   }
 }
 
-function init() {
+async function init() {
   load();
   renderGardenList();
+  // Try to load from server (MongoDB) — server data wins if available
+  try {
+    const loaded = await loadFromServer();
+    if (loaded) {
+      renderGardenList();
+      if (autoConnect && synapses.length > 0) rebuildConnections();
+      showToast('🌐 Loaded from MongoDB');
+    } else {
+      // Still alive but no server data — fall back to local; push local up so server has a copy
+      checkServerHealth().then(ok => {
+        if (!ok) return;
+        if (serverConnected || true) {
+          // Push local data so that the cloud has a seed copy when available
+          const payload = { gardens: gardens, active: activeGarden };
+          pushToServer(payload);
+        }
+      });
+    }
+  } catch {
+    // Server unreachable — keep working offline
+  }
 }
 
 // --- Drawing ---
