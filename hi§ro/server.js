@@ -1,12 +1,13 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import { MongoClient } from 'mongodb';
 
-// MongoDB Atlas connection strings
-const MONGO_URI = 'mongodb+srv://nejahachref:96176065@cluster0.ajw0g.mongodb.net/hi§ro?retryWrites=true&w=majority&appName=hi§ro';
-const MONGO_URI_2 = 'mongodb+srv://achrefhamdi:21960975@cluster0.qd9v5k1.mongodb.net/hi§ro?retryWrites=true&w=majority&appName=hi§ro';
-const DB_NAME = 'hi§ro';
-const COLLECTION = 'gardens';
+// MongoDB Atlas connection strings (loaded from .env - never hardcode credentials)
+const MONGO_URI = process.env.MONGO_URI;
+const MONGO_URI_2 = process.env.MONGO_URI_2;
+const DB_NAME = process.env.DB_NAME || 'hi§ro';
+const COLLECTION = process.env.COLLECTION || 'gardens';
 
 const app = express();
 app.use(cors());
@@ -48,7 +49,7 @@ async function connectDB2() {
 }
 
 // Health check
-app.get('/api/hisro/health', async (_req, res) => {
+app.get('/api/hi§ro/health', async (_req, res) => {
   try {
     const primaryConnected = !!(client && db);
     const secondaryConnected = !!(client2 && db2);
@@ -65,7 +66,7 @@ app.get('/api/hisro/health', async (_req, res) => {
 });
 
 // Load all garden data
-app.get('/api/hisro/data', async (_req, res) => {
+app.get('/api/hi§ro/data', async (_req, res) => {
   try {
     if (!client || !db) {
       return res.json({ ok: true, data: null, connected: false });
@@ -81,7 +82,7 @@ app.get('/api/hisro/data', async (_req, res) => {
 });
 
 // Save garden data
-app.post('/api/hisro/data', async (req, res) => {
+app.post('/api/hi§ro/data', async (req, res) => {
   try {
     if (!client || !db) {
       return res.status(503).json({ ok: false, error: 'Database not connected' });

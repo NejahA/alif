@@ -34,8 +34,8 @@ const ACTIVITY_BUCKET_MS = 15000;
 // --- MongoDB Cloud sync ---
 
 const SERVER_URL = 'http://localhost:3456';
-const SERVER_ENDPOINT = SERVER_URL + '/api/hisro/data';
-const HEALTH_ENDPOINT = SERVER_URL + '/api/hisro/health';
+const SERVER_ENDPOINT = SERVER_URL + '/api/hi§ro/data';
+const HEALTH_ENDPOINT = SERVER_URL + '/api/hi§ro/health';
 let serverConnected = false;
 let serverSyncPending = null;
 let serverSyncTimer = null;
@@ -140,6 +140,8 @@ let selectedSynapses = []; // bulk selection (Ctrl+click)
 let searchTerm = '';
 let activityLog = [];      // timestamps of every fire (global stats)
 let tagFilter = '';        // active tag filter (empty = all)
+let starFilter = false;    // filter to starred synapses only
+let decayEnabled = false;  // synapses slowly lose charge over time
 
 // --- Zoom / Pan ---
 let viewX = 0, viewY = 0;
@@ -357,6 +359,8 @@ function serializeSynapse(s) {
     autoFire: s.autoFire || false, autoFireInterval: s.autoFireInterval || 5,
     autoFireTimer: s.autoFireTimer || 0, pinned: s.pinned || false,
     tags: s.tags || [],
+    starred: s.starred || false,
+    notes: s.notes || '',
     lastFiredAt: s.lastFiredAt || 0,
   };
 }
@@ -376,6 +380,8 @@ function restoreSynapseFromData(d) {
   s.autoFireTimer = d.autoFireTimer || 0;
   s.pinned = d.pinned || false;
   s.tags = Array.isArray(d.tags) ? d.tags.filter(Boolean) : [];
+  s.starred = d.starred || false;
+  s.notes = d.notes || '';
   s.lastFiredAt = d.lastFiredAt || 0;
   return s;
 }
@@ -437,6 +443,7 @@ class Synapse {
     this.x = x;
     this.y = y;
     this.message = '';
+    this.notes = '';
     this.created = Date.now();
     this.volume = 0.3;          // 0-1, controls size + glow
     this.targetVolume = 0.3;
@@ -456,6 +463,8 @@ class Synapse {
     this.pinTimer = 0;
     // Tags
     this.tags = [];
+    // Starred (favorite)
+    this.starred = false;
     // Stats
     this.lastFiredAt = 0;
   }
@@ -586,6 +595,16 @@ class Synapse {
       ctx.arc(this.x, this.y, r + 6, 0, Math.PI * 2);
       ctx.stroke();
       ctx.setLineDash([]);
+    }
+
+    // Star indicator
+    if (this.starred && this.isReady) {
+      const starPulse = Math.sin(performance.now() * 0.005) * 0.2 + 0.6;
+      ctx.fillStyle = `rgba(255, 215, 0, ${starPulse})`;
+      ctx.font = '10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('★', this.x, this.y - r - 8);
     }
 
     // Pin indicator
@@ -978,6 +997,7 @@ function isDimmed(s) {
   if (!s.isReady) return false;
   if (focusMode && focusSynapse) return !isInFocus(s);
   if (tagFilter) return !s.hasTag(tagFilter);
+  if (starFilter) return !s.starred;
   return false;
 }
 
@@ -1042,6 +1062,7 @@ function mergeSynapses(a, b) {
   a.autoFire = a.autoFire || b.autoFire;
   a.autoFireInterval = Math.min(a.autoFireInterval, b.autoFireInterval);
   a.pinned = a.pinned || b.pinned;
+  a.starred = a.starred || b.starred;
   a.tags = [...new Set([...a.tags, ...b.tags])];
   a.lastFiredAt = Math.max(a.lastFiredAt, b.lastFiredAt);
 
@@ -1129,6 +1150,12 @@ function handleContextAction(action) {
       save();
       pushHistory();
       showToast(syn.pinned ? 'Synapse pinned' : 'Synapse unpinned');
+      break;
+    case 'star':
+      syn.starred = !syn.starred;
+      save();
+      pushHistory();
+      showToast(syn.starred ? 'Synapse starred' : 'Synapse unstarred');
       break;
     case 'focus':
       focusMode = true;
@@ -1615,6 +1642,15 @@ function update(dt) {
 
   // spawn ambient particles
   spawnAmbientParticles();
+
+  // Decay: synapses slowly lose charge over time
+  if (decayEnabled) {
+    for (const s of synapses) {
+      if (s.isReady && !s.pinned && !s.autoFire) {
+        s.targetVolume = Math.max(0.05, s.targetVolume - dt * 0.002);
+      }
+    }
+  }
 }
 
 function render() {
@@ -1786,6 +1822,230 @@ function bulkTogglePin() {
   save();
   pushHistory();
   showToast('Toggled pin for ' + selectedSynapses.length + ' synapses');
+}
+
+function bulkToggleStar() {
+  for (const s of selectedSynapses) {
+    s.starred = !s.starred;
+  }
+  save();
+  pushHistory();
+  showToast('Toggled star for ' + selectedSynapses.length + ' synapses');
+}
+
+function bulkApplyTag() {
+  const input = $('bulk-tag-input');
+  const raw = input.value.trim();
+  if (!raw) {
+    showToast('Type a tag first');
+    return;
+  }
+  const t = cleanTag(raw);
+  if (!t) return;
+  let count = 0;
+  for (const s of selectedSynapses) {
+    if (!s.tags.includes(t)) {
+      s.tags.push(t);
+      count++;
+    }
+  }
+  if (count > 0) {
+    save();
+    pushHistory();
+    updateTagFilterOptions();
+    showToast('Tagged ' + count + ' synapse(s) with "' + t + '"');
+  } else {
+    showToast('All selected already have that tag');
+  }
+  input.value = '';
+}
+
+// --- Star / Favorite ---
+
+function toggleStar() {
+  if (!selectedSynapse) return;
+  selectedSynapse.starred = !selectedSynapse.starred;
+  $('btn-star-synapse').textContent = selectedSynapse.starred ? '⭐ unstar' : '⭐ star';
+  save();
+  pushHistory();
+  showToast(selectedSynapse.starred ? 'Synapse starred' : 'Synapse unstarred');
+}
+
+function toggleStarFilter() {
+  starFilter = !starFilter;
+  $('btn-star-filter').classList.toggle('active', starFilter);
+  showToast(starFilter ? 'Showing starred only' : 'Showing all');
+  save();
+}
+
+// --- Decay ---
+
+function toggleDecay() {
+  decayEnabled = !decayEnabled;
+  $('btn-decay').classList.toggle('active', decayEnabled);
+  showToast(decayEnabled ? 'Decay ON — synapses slowly lose charge' : 'Decay OFF');
+  save();
+}
+
+// --- Fullscreen ---
+
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(() => {});
+  } else {
+    document.exitFullscreen().catch(() => {});
+  }
+}
+
+// --- Export PNG ---
+
+function exportPNG() {
+  // Render the current view to a PNG
+  const exportCanvas = document.createElement('canvas');
+  exportCanvas.width = W;
+  exportCanvas.height = H;
+  const ectx = exportCanvas.getContext('2d');
+
+  // Draw background
+  const theme = THEMES[themeIndex];
+  const grad = ectx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.max(W, H) * 0.6);
+  grad.addColorStop(0, theme.bg0);
+  grad.addColorStop(1, theme.bg1);
+  ectx.fillStyle = grad;
+  ectx.fillRect(0, 0, W, H);
+
+  // Draw grid
+  if (gridSnap) {
+    ectx.strokeStyle = 'rgba(255,255,255,0.03)';
+    ectx.lineWidth = 0.5;
+    const startX = Math.floor(-viewX / viewZoom / GRID_SIZE) * GRID_SIZE;
+    const startY = Math.floor(-viewY / viewZoom / GRID_SIZE) * GRID_SIZE;
+    const endX = startX + W / viewZoom + GRID_SIZE * 2;
+    const endY = startY + H / viewZoom + GRID_SIZE * 2;
+    for (let x = startX; x < endX; x += GRID_SIZE) {
+      ectx.beginPath();
+      ectx.moveTo(x, startY);
+      ectx.lineTo(x, endY);
+      ectx.stroke();
+    }
+    for (let y = startY; y < endY; y += GRID_SIZE) {
+      ectx.beginPath();
+      ectx.moveTo(startX, y);
+      ectx.lineTo(endX, y);
+      ectx.stroke();
+    }
+  }
+
+  // Apply view transform
+  ectx.save();
+  ectx.translate(viewX, viewY);
+  ectx.scale(viewZoom, viewZoom);
+
+  // Draw connections
+  for (const c of connections) {
+    if (!c || !c.a || !c.b) continue;
+    const range = c.manual ? CONNECTION_RANGE * 2 : CONNECTION_RANGE;
+    const distFactor = Math.max(0, 1 - c.dist / range);
+    const vol = (c.a.volume + c.b.volume) / 2;
+    const hue = (c.a.hue + c.b.hue) / 2;
+    const alpha = Math.max(0.3, 0.8 * distFactor * (0.5 + 0.5 * vol));
+    ectx.strokeStyle = `hsla(${hue}, 60%, 60%, ${alpha * 0.4})`;
+    ectx.lineWidth = (2.5 + distFactor * 2.0) * (c.weight || 1);
+    ectx.beginPath();
+    ectx.moveTo(c.a.x, c.a.y);
+    ectx.lineTo(c.b.x, c.b.y);
+    ectx.stroke();
+    ectx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+    ectx.lineWidth = (1.2 + distFactor * 1.5) * (c.weight || 1);
+    ectx.beginPath();
+    ectx.moveTo(c.a.x, c.a.y);
+    ectx.lineTo(c.b.x, c.b.y);
+    ectx.stroke();
+  }
+
+  // Draw synapses
+  for (const s of synapses) {
+    if (!s.isReady) continue;
+    const h = s.hue;
+    const r = s.radius;
+    const grad2 = ectx.createRadialGradient(s.x - r * 0.3, s.y - r * 0.3, 0, s.x, s.y, r);
+    grad2.addColorStop(0, `hsla(${h}, 80%, 80%, 0.9)`);
+    grad2.addColorStop(0.5, `hsla(${h}, 70%, 55%, 0.8)`);
+    grad2.addColorStop(1, `hsla(${h}, 60%, 35%, 0.6)`);
+    ectx.fillStyle = grad2;
+    ectx.beginPath();
+    ectx.arc(s.x, s.y, r, 0, Math.PI * 2);
+    ectx.fill();
+
+    // Star indicator
+    if (s.starred) {
+      ectx.fillStyle = 'rgba(255, 215, 0, 0.9)';
+      ectx.font = '10px sans-serif';
+      ectx.textAlign = 'center';
+      ectx.textBaseline = 'middle';
+      ectx.fillText('★', s.x, s.y - r - 8);
+    }
+
+    // Message label
+    if (s.message) {
+      const displayText = s.message.length > 30 ? s.message.slice(0, 27) + '...' : s.message;
+      ectx.font = '10px "Courier New", monospace';
+      ectx.textAlign = 'center';
+      ectx.textBaseline = 'middle';
+      const textWidth = ectx.measureText(displayText).width;
+      const noteW = textWidth + 16;
+      const noteH = 18;
+      const noteX = s.x - noteW / 2;
+      const noteY = s.y + r + 8;
+      ectx.fillStyle = `hsla(${h}, 50%, 30%, 0.25)`;
+      ectx.beginPath();
+      ectx.roundRect(noteX, noteY, noteW, noteH, 4);
+      ectx.fill();
+      ectx.fillStyle = `hsla(${h}, 60%, 80%, 0.85)`;
+      ectx.fillText(displayText, s.x, noteY + noteH / 2);
+    }
+  }
+
+  ectx.restore();
+
+  // Download
+  const link = document.createElement('a');
+  link.download = 'hi§ro-garden-' + activeGarden + '-' + Date.now() + '.png';
+  link.href = exportCanvas.toDataURL('image/png');
+  link.click();
+  showToast('PNG exported');
+}
+
+// --- Paste text as synapses ---
+
+function pasteTextAsSynapses() {
+  const raw = importText.value.trim();
+  if (!raw) {
+    showToast('Paste some text first');
+    return;
+  }
+  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+  if (lines.length === 0) {
+    showToast('No text to convert');
+    return;
+  }
+  const cx = (W / 2 - viewX) / viewZoom;
+  const cy = (H / 2 - viewY) / viewZoom;
+  const count = Math.min(lines.length, 50);
+  const angleStep = (Math.PI * 2) / count;
+  const radius = Math.min(200, count * 12);
+  for (let i = 0; i < count; i++) {
+    const s = new Synapse(cx + Math.cos(angleStep * i) * radius, cy + Math.sin(angleStep * i) * radius);
+    s.message = lines[i].slice(0, 100);
+    s.hue = (i / count) * 360;
+    synapses.push(s);
+  }
+  rebuildConnections();
+  save();
+  pushHistory();
+  updateTagFilterOptions();
+  closeImport();
+  showToast('Created ' + count + ' synapses from text');
 }
 
 // --- Tags ---
@@ -1987,6 +2247,9 @@ function openPanel(syn) {
   // Pin button text
   $('btn-pin-synapse').textContent = syn.pinned ? '📌 unpin' : '📌 pin';
 
+  // Star button text
+  $('btn-star-synapse').textContent = syn.starred ? '⭐ unstar' : '⭐ star';
+
   // Connections
   renderConnections(syn);
 
@@ -2082,6 +2345,7 @@ function cloneSynapse() {
   clone.autoFireInterval = s.autoFireInterval;
   clone.sproutProgress = s.sproutProgress;
   clone.tags = [...s.tags];
+  clone.starred = s.starred;
   synapses.push(clone);
   rebuildConnections();
   save();
@@ -3352,6 +3616,15 @@ $('btn-help').addEventListener('click', (e) => { e.stopPropagation(); toggleHelp
 $('btn-close-help').addEventListener('click', (e) => { e.stopPropagation(); closeHelp(); });
 $('btn-theme').addEventListener('click', (e) => { e.stopPropagation(); cycleTheme(); });
 $('btn-generate').addEventListener('click', (e) => { e.stopPropagation(); generateRandomGarden(); });
+$('btn-star-filter').addEventListener('click', (e) => { e.stopPropagation(); toggleStarFilter(); });
+$('btn-export-png').addEventListener('click', (e) => { e.stopPropagation(); exportPNG(); });
+$('btn-minimap').addEventListener('click', (e) => { e.stopPropagation(); toggleMinimap(); });
+$('btn-fullscreen').addEventListener('click', (e) => { e.stopPropagation(); toggleFullscreen(); });
+$('btn-decay').addEventListener('click', (e) => { e.stopPropagation(); toggleDecay(); });
+$('btn-star-synapse').addEventListener('click', (e) => { e.stopPropagation(); toggleStar(); });
+$('btn-bulk-star').addEventListener('click', (e) => { e.stopPropagation(); bulkToggleStar(); });
+$('btn-bulk-tag').addEventListener('click', (e) => { e.stopPropagation(); bulkApplyTag(); });
+$('btn-paste-text').addEventListener('click', (e) => { e.stopPropagation(); pasteTextAsSynapses(); });
 $('btn-bulk-merge').addEventListener('click', (e) => {
   e.stopPropagation();
   if (selectedSynapses.length >= 2) {
@@ -3525,6 +3798,31 @@ document.addEventListener('keydown', (e) => {
   // Zoom to selection: z
   if (e.key === 'z' && !e.ctrlKey && !e.metaKey && !e.shiftKey && !editingSynapse) {
     zoomToSelection();
+  }
+
+  // Star filter: s
+  if (e.key === 's' && !e.ctrlKey && !e.metaKey && !editingSynapse) {
+    toggleStarFilter();
+  }
+
+  // Fullscreen: f
+  if (e.key === 'f' && !e.ctrlKey && !e.metaKey && !editingSynapse) {
+    toggleFullscreen();
+  }
+
+  // Export PNG: p
+  if (e.key === 'p' && !e.ctrlKey && !e.metaKey && !editingSynapse) {
+    exportPNG();
+  }
+
+  // Minimap: v
+  if (e.key === 'v' && !e.ctrlKey && !e.metaKey && !editingSynapse) {
+    toggleMinimap();
+  }
+
+  // Decay: d
+  if (e.key === 'd' && !e.ctrlKey && !e.metaKey && !editingSynapse) {
+    toggleDecay();
   }
 
   // Arrow-key panning (only when not typing in an input)

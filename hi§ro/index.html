@@ -27,6 +27,14 @@
         <button id="btn-theme" class="icon-btn" title="Cycle background theme">🎨</button>
         <button id="btn-generate" class="icon-btn" title="Generate random garden">🎲</button>
         <button id="btn-sound" class="icon-btn" title="Toggle sound">🔊</button>
+        <button id="btn-star-filter" class="icon-btn" title="Filter starred synapses (S)">⭐</button>
+        <button id="btn-export-png" class="icon-btn" title="Export as PNG image (P)">📸</button>
+        <button id="btn-minimap" class="icon-btn" title="Toggle minimap (V)">🗺</button>
+        <button id="btn-fullscreen" class="icon-btn" title="Toggle fullscreen (F)">⛶</button>
+        <button id="btn-decay" class="icon-btn" title="Toggle synapse decay (D)">⏳</button>
+        <button id="btn-stats" class="icon-btn" title="Garden statistics (I)">📊</button>
+        <button id="btn-cleanup" class="icon-btn" title="Clean up empty synapses (X)">🧹</button>
+        <button id="btn-cycle-hue" class="icon-btn" title="Cycle hue on selected (H)">🔄</button>
         <button id="btn-export" class="icon-btn" title="Export">↓</button>
         <button id="btn-import" class="icon-btn" title="Import">↑</button>
         <button id="btn-clear" class="icon-btn" title="Clear all">✕</button>
@@ -73,6 +81,7 @@
           <span class="synapse-id" id="synapse-id"></span>
         </div>
         <textarea id="synapse-message" placeholder="write something..." rows="2"></textarea>
+        <textarea id="synapse-notes" placeholder="notes..." rows="2" class="notes-input"></textarea>
         <!-- Hue picker row -->
         <div class="hue-row">
           <span class="hue-label">hue</span>
@@ -128,6 +137,8 @@
       <div class="panel-actions">
         <button id="btn-clone-synapse" class="action-btn">📋 clone</button>
         <button id="btn-pin-synapse" class="action-btn">📌 pin</button>
+        <button id="btn-star-synapse" class="action-btn">⭐ star</button>
+        <button id="btn-copy-synapse" class="action-btn">📄 copy</button>
         <button id="btn-fire" class="action-btn">⚡ fire</button>
         <button id="btn-delete-synapse" class="action-btn danger">prune</button>
         <button id="btn-close-synapse" class="action-btn secondary">close</button>
@@ -151,10 +162,27 @@
         </div>
         <textarea id="import-text" placeholder="paste exported synapse data here..." rows="6" spellcheck="false"></textarea>
         <div id="import-preview" class="import-preview"></div>
+        <div class="import-actions">
+          <button id="btn-paste-text" class="action-btn small">📋 paste text → synapses</button>
+        </div>
       </div>
       <div class="panel-actions">
         <button id="btn-do-import" class="action-btn">import</button>
         <button id="btn-close-import" class="action-btn secondary">close</button>
+      </div>
+    </div>
+
+    <!-- Stats panel -->
+    <div id="stats-panel" class="panel hidden">
+      <div class="panel-section">
+        <div class="synapse-header">
+          <span class="synapse-label">STATISTICS</span>
+          <span class="synapse-id">garden metrics</span>
+        </div>
+        <div id="stats-content" class="comprehend-content"></div>
+      </div>
+      <div class="panel-actions">
+        <button id="btn-close-stats" class="action-btn secondary">close</button>
       </div>
     </div>
 
@@ -221,6 +249,14 @@
           <div class="help-row"><span class="help-action">c</span><span class="help-keys"><kbd>cycle theme</kbd></span></div>
           <div class="help-row"><span class="help-action">r</span><span class="help-keys"><kbd>random garden</kbd></span></div>
           <div class="help-row"><span class="help-action">z</span><span class="help-keys"><kbd>zoom to selection</kbd></span></div>
+          <div class="help-row"><span class="help-action">s</span><span class="help-keys"><kbd>star / unstar</kbd></span></div>
+          <div class="help-row"><span class="help-action">f</span><span class="help-keys"><kbd>fullscreen</kbd></span></div>
+          <div class="help-row"><span class="help-action">p</span><span class="help-keys"><kbd>export PNG</kbd></span></div>
+          <div class="help-row"><span class="help-action">v</span><span class="help-keys"><kbd>toggle minimap</kbd></span></div>
+          <div class="help-row"><span class="help-action">d</span><span class="help-keys"><kbd>toggle decay</kbd></span></div>
+          <div class="help-row"><span class="help-action">i</span><span class="help-keys"><kbd>statistics</kbd></span></div>
+          <div class="help-row"><span class="help-action">x</span><span class="help-keys"><kbd>clean up empty</kbd></span></div>
+          <div class="help-row"><span class="help-action">h</span><span class="help-keys"><kbd>cycle hue</kbd></span></div>
         </div>
       </div>
       <div class="panel-actions">
@@ -234,6 +270,7 @@
       <div class="context-item" data-action="fire">⚡ fire</div>
       <div class="context-item" data-action="clone">📋 clone</div>
       <div class="context-item" data-action="pin">📌 pin / unpin</div>
+      <div class="context-item" data-action="star">⭐ star / unstar</div>
       <div class="context-item" data-action="focus">◉ focus</div>
       <div class="context-divider"></div>
       <div class="context-item" data-action="merge">🔀 merge with...</div>
@@ -252,7 +289,10 @@
       <button id="btn-bulk-fire" class="action-btn small">⚡ fire all</button>
       <button id="btn-bulk-prune" class="action-btn small danger">prune all</button>
       <button id="btn-bulk-pin" class="action-btn small">📌 toggle pin</button>
+      <button id="btn-bulk-star" class="action-btn small">⭐ toggle star</button>
       <button id="btn-bulk-merge" class="action-btn small">🔀 merge</button>
+      <input id="bulk-tag-input" type="text" placeholder="tag..." maxlength="20" autocomplete="off" spellcheck="false">
+      <button id="btn-bulk-tag" class="action-btn small">🏷 tag</button>
       <button id="btn-bulk-clear" class="action-btn secondary small">deselect</button>
     </div>
   </div>
