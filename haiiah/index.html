@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HAIIAH — God Consciousness from Quran & Hadith</title>
+  <meta name="description" content="HAIIAH — a sanctuary for cultivating God consciousness (Taqwa) through the Quran and Hadith." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Scheherazade+New:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Decorative background -->
+  <div class="bg-pattern" aria-hidden="true"></div>
+  <div class="bg-glow bg-glow-1" aria-hidden="true"></div>
+  <div class="bg-glow bg-glow-2" aria-hidden="true"></div>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="#home" class="brand">
+        <span class="brand-mark">﷽</span>
+        <span class="brand-text">HAIIAH</span>
+      </a>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="#daily">Daily Verse</a>
+        <a href="#hadith">Hadith</a>
+        <a href="#names">Names of Allah</a>
+        <a href="#tasbih">Tasbih</a>
+        <a href="#dua">Du'a</a>
+        <a href="#quiz">Quiz</a>
+        <a href="#reflect">Reflect</a>
+        <a href="#search">Search</a>
+      </nav>
+      <button class="nav-toggle" id="navToggle" aria-label="Toggle menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero -->
+    <section class="hero" id="home">
+      <div class="container hero-inner">
+        <p class="hero-bismillah">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
+        <h1 class="hero-title">Cultivate <span class="accent">God Consciousness</span></h1>
+        <p class="hero-subtitle">
+          <em>Taqwa</em> — the living awareness of Allah in every breath, every thought, every deed.
+          A sanctuary of verses and wisdom from the Quran and the Sunnah.
+        </p>
+        <div class="hero-actions">
+          <a href="#daily" class="btn btn-primary">Begin Today</a>
+          <a href="#reflect" class="btn btn-ghost">Reflect</a>
+        </div>
+        <div class="hero-ayat" aria-hidden="true">﴿ إِنَّ اللَّهَ مَعَ الَّذِينَ اتَّقَوا وَّالَّذِينَ هُم مُّحْسِنُونَ ﴾</div>
+      </div>
+    </section>
+
+    <!-- Daily Verse -->
+    <section class="section" id="daily">
+      <div class="container">
+        <div class="section-head">
+          <span class="section-kicker">Ayah of the Day</span>
+          <h2 class="section-title">A Daily Reminder</h2>
+        </div>
+        <div class="verse-card" id="dailyVerse">
+          <div class="verse-arabic" id="dailyArabic"></div>
+          <div class="verse-translation" id="dailyTranslation"></div>
+          <div class="verse-reference" id="dailyReference"></div>
+          <button class="btn btn-soft" id="newVerse">Another Verse</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Hadith -->
+    <section class="section section-alt" id="hadith">
+      <div class="container">
+        <div class="section-head">
+          <span class="section-kicker">From the Sunnah</span>
+          <h2 class="section-title">Hadith of the Day</h2>
+        </div>
+        <div class="hadith-card" id="hadithCard">
+          <div class="hadith-text" id="hadithText"></div>
+          <div class="hadith-source" id="hadithSource"></div>
+          <button class="btn btn-soft" id="newHadith">Another Hadith</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Names of Allah -->
+    <section class="section" id="names">
+      <div class="container">
+        <div class="section-head">
+          <span class="section-kicker">Asma ul-Husna</span>
+          <h2 class="section-title">The Most Beautiful Names</h2>
+          <p class="section-desc">"And to Allah belong the best names, so invoke Him by them." — Qur'an 7:180</p>
+        </div>
+        <div class="names-grid" id="namesGrid"></div>
+      </div>
+    </section>
+
+    <!-- Tasbih -->
+    <section class="section section-alt" id="tasbih">
+      <div class="container">
+        <div class="section-head">
+          <span class="section-kicker">Dhikr</span>
+          <h2 class="section-title">Tasbih Counter</h2>
+          <p class="section-desc">"So remember Me; I will remember you." — Qur'an 2:152</p>
+        </div>
+        <div class="tasbih-layout">
+          <div class="tasbih-display">
+            <div class="tasbih-phrase" id="tasbihPhrase">سُبْحَانَ اللَّهِ</div>
+            <div class="tasbih-translation" id="tasbihTranslation">Glory be to Allah</div>
+            <div class="tasbih-count" id="tasbihCount">0</div>
+            <div class="tasbih-target">Target: <span id="tasbihTarget">33</span></div>
+          </div>
+          <div class="tasbih-actions">
+            <button class="btn btn-primary tasbih-tap" id="tasbihTap">Tap to Count</button>
+            <button class="btn btn-ghost" id="tasbihReset">Reset</button>
+          </div>
+          <div class="tasbih-phrases">
+            <button class="btn btn-soft" data-phrase="سُبْحَانَ اللَّهِ" data-translation="Glory be to Allah">SubhanAllah</button>
+            <button class="btn btn-soft" data-phrase="الْحَمْدُ لِلَّهِ" data-translation="Praise be to Allah">Alhamdulillah</button>
+            <button class="btn btn-soft" data-phrase="اللَّهُ أَكْبَرُ" data-translation="Allah is the Greatest">Allahu Akbar</button>
+            <button class="btn btn-soft" data-phrase="لَا إِلَٰهَ إِلَّا اللَّهُ" data-translation="There is no god but Allah">La ilaha illallah</button>
+            <button class="btn btn-soft" data-phrase="أَسْتَغْفِرُ اللَّهَ" data-translation="I seek forgiveness from Allah">Astaghfirullah</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Du'a Library -->
+    <section class="section" id="dua">
+      <div class="container">
+        <div class="section-head">
+          <span class="section-kicker">Supplication</span>
+          <h2 class="section-title">Du'a Library</h2>
+          <p class="section-desc">"Supplication is worship." — Hadith, At-Tirmidhi</p>
+        </div>
+        <div class="dua-grid" id="duaGrid"></div>
+      </div>
+    </section>
+
+    <!-- Quiz -->
+    <section class="section section-alt" id="quiz">
+      <div class="container">
+        <div class="section-head">
+          <span class="section-kicker">Test Your Knowledge</span>
+          <h2 class="section-title">Islamic Quiz</h2>
+        </div>
+        <div class="quiz-layout">
+          <div class="quiz-progress">
+            <div class="quiz-progress-bar" id="quizProgressBar"></div>
+          </div>
+          <div class="quiz-question" id="quizQuestion"></div>
+          <div class="quiz-options" id="quizOptions"></div>
+          <div class="quiz-result" id="quizResult"></div>
+          <div class="quiz-actions">
+            <button class="btn btn-primary" id="quizNext" style="display:none;">Next Question</button>
+            <button class="btn btn-ghost" id="quizRestart" style="display:none;">Restart Quiz</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reflect -->
+    <section class="section section-alt" id="reflect">
+      <div class="container">
+        <div class="section-head">
+          <span class="section-kicker">Tadabbur</span>
+          <h2 class="section-title">A Moment to Reflect</h2>
+        </div>
+        <div class="reflect-layout">
+          <div class="reflect-prompt" id="reflectPrompt"></div>
+          <div class="reflect-actions">
+            <button class="btn btn-primary" id="newPrompt">New Reflection</button>
+            <button class="btn btn-ghost" id="saveReflection">Save to Journal</button>
+          </div>
+          <div class="journal">
+            <h3 class="journal-title">My Journal</h3>
+            <textarea id="journalText" placeholder="Write your reflections here... Your words are between you and your Lord."></textarea>
+            <p class="journal-hint" id="journalHint"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Search -->
+    <section class="section" id="search">
+      <div class="container">
+        <div class="section-head">
+          <span class="section-kicker">Explore</span>
+          <h2 class="section-title">Search the Verses</h2>
+        </div>
+        <div class="search-box">
+          <input type="search" id="searchInput" placeholder="Search for taqwa, mercy, patience, gratitude..." aria-label="Search verses" />
+        </div>
+        <div class="search-results" id="searchResults"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p class="footer-ayat">﴿ وَمَن يَتَّقِ اللَّهَ يَجْعَل لَّهُ مَخْرَجًا ﴾</p>
+      <p class="footer-note">"And whoever fears Allah — He will make for him a way out." — Qur'an 65:2</p>
+      <p class="footer-brand">HAIIAH · a sanctuary of God consciousness</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
