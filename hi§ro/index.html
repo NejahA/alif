@@ -39,6 +39,12 @@
         <button id="btn-import" class="icon-btn" title="Import">↑</button>
         <button id="btn-clear" class="icon-btn" title="Clear all">✕</button>
         <button id="btn-help" class="icon-btn" title="Keyboard shortcuts (?)">?</button>
+        <div class="top-sep"></div>
+        <button id="btn-template" class="icon-btn" title="Synapse templates (Q)">🧩</button>
+        <button id="btn-export-md" class="icon-btn" title="Export as Markdown">📝</button>
+        <button id="btn-lock" class="icon-btn" title="Lock garden (read-only) (L)">🔓</button>
+        <button id="btn-pomodoro" class="icon-btn" title="Pomodoro focus timer">⏱</button>
+        <button id="btn-present" class="icon-btn" title="Presentation mode (starred synapses)">▶</button>
       </div>
     </div>
 
@@ -73,6 +79,9 @@
     <!-- Auto-save indicator -->
     <div id="save-indicator" class="hidden">saved</div>
 
+    <!-- Lock indicator -->
+    <div id="lock-indicator" class="hidden">🔒 locked — read only</div>
+
     <!-- Synapse control panel (click a synapse) -->
     <div id="synapse-panel" class="panel hidden">
       <div class="panel-section">
@@ -82,11 +91,17 @@
         </div>
         <textarea id="synapse-message" placeholder="write something..." rows="2"></textarea>
         <textarea id="synapse-notes" placeholder="notes..." rows="2" class="notes-input"></textarea>
+        <!-- URL attachment -->
+        <div class="url-row">
+          <input type="url" id="synapse-url" placeholder="url / image link..." class="url-input" autocomplete="off" spellcheck="false">
+          <button id="btn-open-url" class="action-btn small" title="Open URL">↗</button>
+        </div>
         <!-- Hue picker row -->
         <div class="hue-row">
           <span class="hue-label">hue</span>
           <input type="range" id="hue-slider" min="0" max="360" value="220" class="hue-slider">
           <span class="hue-value" id="hue-value">220°</span>
+          <button id="btn-palette" class="icon-btn small" title="Color palette">🎨</button>
         </div>
       </div>
       <div class="panel-section">
@@ -213,6 +228,7 @@
       <div class="panel-actions">
         <button id="btn-new-garden" class="action-btn">+ new</button>
         <button id="btn-rename-garden" class="action-btn">rename</button>
+        <button id="btn-duplicate-garden" class="action-btn">📋 duplicate</button>
         <button id="btn-delete-garden" class="action-btn danger">delete</button>
         <button id="btn-close-gardens" class="action-btn secondary">close</button>
       </div>
@@ -257,10 +273,73 @@
           <div class="help-row"><span class="help-action">i</span><span class="help-keys"><kbd>statistics</kbd></span></div>
           <div class="help-row"><span class="help-action">x</span><span class="help-keys"><kbd>clean up empty</kbd></span></div>
           <div class="help-row"><span class="help-action">h</span><span class="help-keys"><kbd>cycle hue</kbd></span></div>
+          <div class="help-row"><span class="help-action">q</span><span class="help-keys"><kbd>template picker</kbd></span></div>
+          <div class="help-row"><span class="help-action">l</span><span class="help-keys"><kbd>lock garden</kbd></span></div>
+          <div class="help-row"><span class="help-action">[ / ]</span><span class="help-keys"><kbd>prev / next slide</kbd></span></div>
         </div>
       </div>
       <div class="panel-actions">
         <button id="btn-close-help" class="action-btn secondary">close</button>
+      </div>
+    </div>
+
+    <!-- Template picker panel -->
+    <div id="template-panel" class="panel hidden">
+      <div class="panel-section">
+        <div class="synapse-header">
+          <span class="synapse-label">TEMPLATES</span>
+          <span class="synapse-id">click void after picking</span>
+        </div>
+        <div id="template-grid" class="template-grid"></div>
+      </div>
+      <div class="panel-actions">
+        <button id="btn-close-template" class="action-btn secondary">close</button>
+      </div>
+    </div>
+
+    <!-- Color palette panel -->
+    <div id="palette-panel" class="palette-panel hidden">
+      <div id="palette-swatches" class="palette-swatches"></div>
+    </div>
+
+    <!-- History replay panel -->
+    <div id="replay-panel" class="panel hidden">
+      <div class="panel-section">
+        <div class="synapse-header">
+          <span class="synapse-label">HISTORY PLAYBACK</span>
+          <span class="synapse-id" id="replay-label">0 / 0</span>
+        </div>
+        <div class="replay-controls">
+          <input type="range" id="replay-slider" min="0" max="0" value="0" class="hue-slider">
+        </div>
+        <div class="replay-btns">
+          <button id="btn-replay-prev" class="action-btn">&#9664; prev</button>
+          <button id="btn-replay-play" class="action-btn">&#9654; play</button>
+          <button id="btn-replay-next" class="action-btn">next &#9654;</button>
+        </div>
+      </div>
+      <div class="panel-actions">
+        <button id="btn-close-replay" class="action-btn secondary">exit replay</button>
+      </div>
+    </div>
+
+    <!-- Pomodoro panel -->
+    <div id="pomodoro-panel" class="panel hidden">
+      <div class="panel-section">
+        <div class="synapse-header">
+          <span class="synapse-label">POMODORO</span>
+          <span class="synapse-id" id="pomodoro-synapse-label">no synapse bound</span>
+        </div>
+        <div class="pomodoro-timer-display" id="pomodoro-display">25:00</div>
+        <div class="pom-mode-row">
+          <button id="btn-pom-work" class="action-btn pom-active">work 25m</button>
+          <button id="btn-pom-break" class="action-btn">break 5m</button>
+        </div>
+      </div>
+      <div class="panel-actions">
+        <button id="btn-pom-start" class="action-btn">&#9654; start</button>
+        <button id="btn-pom-reset" class="action-btn">&#8634; reset</button>
+        <button id="btn-close-pomodoro" class="action-btn secondary">close</button>
       </div>
     </div>
 
@@ -273,6 +352,8 @@
       <div class="context-item" data-action="star">⭐ star / unstar</div>
       <div class="context-item" data-action="focus">◉ focus</div>
       <div class="context-divider"></div>
+      <div class="context-item" data-action="pomodoro">⏱ set pomodoro</div>
+      <div class="context-item" data-action="group">📦 group with selection</div>
       <div class="context-item" data-action="merge">🔀 merge with...</div>
       <div class="context-divider"></div>
       <div class="context-item danger" data-action="prune">✕ prune</div>
@@ -290,6 +371,9 @@
       <button id="btn-bulk-prune" class="action-btn small danger">prune all</button>
       <button id="btn-bulk-pin" class="action-btn small">📌 toggle pin</button>
       <button id="btn-bulk-star" class="action-btn small">⭐ toggle star</button>
+      <button id="btn-bulk-hue" class="action-btn small">🎨 hue</button>
+      <input type="color" id="bulk-hue-color" class="bulk-hue-input" value="#7c8cff">
+      <button id="btn-bulk-group" class="action-btn small">📦 group</button>
       <button id="btn-bulk-merge" class="action-btn small">🔀 merge</button>
       <input id="bulk-tag-input" type="text" placeholder="tag..." maxlength="20" autocomplete="off" spellcheck="false">
       <button id="btn-bulk-tag" class="action-btn small">🏷 tag</button>
@@ -299,6 +383,23 @@
 
   <canvas id="canvas"></canvas>
   <input id="inline-editor" type="text" maxlength="100" placeholder="type a message..." autocomplete="off" spellcheck="false">
+
+  <!-- Presentation overlay -->
+  <div id="presentation-overlay" class="hidden">
+    <div id="presentation-info">
+      <span id="presentation-counter">1 / 1</span>
+      <span id="presentation-title"></span>
+    </div>
+    <div id="presentation-nav">
+      <button id="btn-present-prev" class="action-btn">◀ prev</button>
+      <button id="btn-present-next" class="action-btn">next ▶</button>
+      <button id="btn-present-exit" class="action-btn danger">✕ exit</button>
+    </div>
+  </div>
+
+  <!-- Connection label inline editor -->
+  <input id="conn-label-editor" type="text" maxlength="40" placeholder="connection label..." autocomplete="off" spellcheck="false">
+
   <script src="script.js"></script>
 </body>
 </html>

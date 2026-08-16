@@ -1528,3 +1528,141 @@ body {
   min-width: 28px;
   text-align: right;
 }
+
+/* --- New Feature Styles --- */
+
+/* Template Grid */
+.template-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 0;
+}
+
+#template-list button {
+  flex: 1 1 45%;
+  justify-content: flex-start;
+  padding: 8px 12px;
+}
+
+/* URL row */
+.url-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  align-items: center;
+}
+
+.url-input {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 11px;
+  padding: 6px 8px;
+  outline: none;
+}
+
+.url-input:focus {
+  border-color: var(--accent);
+}
+
+/* Pomodoro */
+.pomodoro-timer-display {
+  font-size: 42px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  margin: 20px 0;
+  color: var(--accent);
+  text-shadow: 0 0 20px rgba(124, 140, 255, 0.4);
+}
+
+.pom-mode-row {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.pom-active {
+  background: rgba(124, 140, 255, 0.2) !important;
+  border-color: var(--accent) !important;
+  color: #fff !important;
+}
+
+/* Presentation Overlay */
+#presentation-overlay {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(10, 10, 18, 0.85);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 24px;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+}
+
+#presentation-info {
+  display: flex;
+  gap: 16px;
+  font-family: var(--font);
+  font-size: 14px;
+}
+
+#presentation-counter {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+#presentation-nav {
+  display: flex;
+  gap: 12px;
+}
+
+/* History Playback */
+.replay-controls {
+  padding: 20px 0;
+}
+
+.replay-btns {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+/* Bulk Hue */
+.bulk-hue-input {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+}
+
+.bulk-hue-input::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+.bulk-hue-input::-webkit-color-swatch {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+/* Locked Mode */
+body.garden-locked #canvas {
+  cursor: not-allowed !important;
+}
+body.garden-locked .ui-button:not(#btn-lock) {
+  opacity: 0.5;
+  pointer-events: none;
+}

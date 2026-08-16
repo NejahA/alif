@@ -142,7 +142,27 @@ let activityLog = [];      // timestamps of every fire (global stats)
 let tagFilter = '';        // active tag filter (empty = all)
 let starFilter = false;    // filter to starred synapses only
 let decayEnabled = false;  // synapses slowly lose charge over time
+let gardenLocked = false;
+let templateMode = false;
+let templateType = null;
+let pomodoroRunning = false;
+let pomodoroTimeLeft = 0;
+let pomodoroSynapse = null;
+let clusters = [];
+let isSlideshowMode = false;
+let slideshowIndex = 0;
+let historyPlaybackActive = false;
+let historyPlaybackTimer = null;
+let playbackIndex = 0;
 
+const imageCache = new Map();
+const TEMPLATES = [
+  { type: 'idea', label: 'Idea', emoji: '💡', hue: 50, charge: 0.8 },
+  { type: 'task', label: 'Task', emoji: '✅', hue: 200, charge: 0.5 },
+  { type: 'question', label: 'Question', emoji: '❓', hue: 280, charge: 0.7 },
+  { type: 'resource', label: 'Resource', emoji: '🔗', hue: 120, charge: 0.4 },
+  { type: 'warning', label: 'Warning', emoji: '⚠️', hue: 0, charge: 0.9 },
+];
 // --- Zoom / Pan ---
 let viewX = 0, viewY = 0;
 let viewZoom = 1;
@@ -162,6 +182,12 @@ let boxSelecting = false;
 let boxStart = { x: 0, y: 0 };
 let boxEnd = { x: 0, y: 0 };
 let boxJustDone = false;
+
+// --- Resize ---
+let isResizing = false;
+let resizeSynapse = null;
+let resizeStartDist = 0;
+let resizeStartRadius = 0;
 
 // --- Connection mode ---
 let connectMode = false;
@@ -340,9 +366,10 @@ function pushHistory() {
   const snapshot = {
     synapses: synapses.map(s => serializeSynapse(s)),
     sprouts: sprouts.map(sp => ({ x: sp.x, y: sp.y, age: sp.age, hue: sp.hue })),
-    connections: connections.map(c => ({ aId: c.a.id, bId: c.b.id, manual: c.manual || false, weight: c.weight || 1 })),
+    connections: connections.map(c => ({ aId: c.a.id, bId: c.b.id, manual: c.manual || false, weight: c.weight || 1, label: c.label || '' })),
     activityLog: [...activityLog],
     tagFilter: tagFilter,
+    clusters: clusters.map(serializeCluster),
   };
   // Remove any future history if we're in the middle
   history = history.slice(0, historyIndex + 1);
@@ -362,6 +389,10 @@ function serializeSynapse(s) {
     starred: s.starred || false,
     notes: s.notes || '',
     lastFiredAt: s.lastFiredAt || 0,
+    url: s.url || '',
+    templateType: s.templateType || '',
+    clusterId: s.clusterId || '',
+    manualRadius: s.manualRadius || 0,
   };
 }
 
@@ -383,6 +414,10 @@ function restoreSynapseFromData(d) {
   s.starred = d.starred || false;
   s.notes = d.notes || '';
   s.lastFiredAt = d.lastFiredAt || 0;
+  s.url = d.url || '';
+  s.templateType = d.templateType || '';
+  s.clusterId = d.clusterId || '';
+  s.manualRadius = d.manualRadius || 0;
   return s;
 }
 
@@ -410,18 +445,19 @@ function restoreHistory(snapshot) {
     return sp;
   });
 
-  // Rebuild connections (preserve manual flag + weight)
+  // Rebuild connections (preserve manual flag + weight + label)
   connections = (snapshot.connections || []).map(c => {
     const a = synapses.find(s => s.id === c.aId);
     const b = synapses.find(s => s.id === c.bId);
     if (a && b) {
-      return { a, b, dist: Math.hypot(a.x - b.x, a.y - b.y), pulse: 0, manual: c.manual || false, weight: c.weight || 1 };
+      return { a, b, dist: Math.hypot(a.x - b.x, a.y - b.y), pulse: 0, manual: c.manual || false, weight: c.weight || 1, label: c.label || '' };
     }
     return null;
   }).filter(Boolean);
 
   if (Array.isArray(snapshot.activityLog)) activityLog = [...snapshot.activityLog];
   if (snapshot.tagFilter !== undefined) tagFilter = snapshot.tagFilter;
+  if (Array.isArray(snapshot.clusters)) clusters = snapshot.clusters.map(restoreClusterFromData);
 
   // Update UI
   if (selectedSynapse) {
@@ -467,6 +503,11 @@ class Synapse {
     this.starred = false;
     // Stats
     this.lastFiredAt = 0;
+    // New feature fields
+    this.url = '';
+    this.templateType = '';
+    this.clusterId = '';
+    this.manualRadius = 0;
   }
 
   tick(dt) {
@@ -481,7 +522,7 @@ class Synapse {
         this.fireTimer = 0;
       }
     }
-    this.radius = 5 + this.volume * 18;
+    this.radius = 5 + this.volume * 18 + (this.manualRadius || 0);
 
     // Auto-fire
     if (this.autoFire && this.isReady) {
@@ -533,6 +574,240 @@ class Synapse {
   draw() {
     const h = this.hue;
     const r = this.radius * this.sproutProgress;
+
+    if (this.glow > 0.05 && this.sproutProgress > 0.1) {
+      const grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, r * 5);
+      grad.addColorStop(0, `hsla(${h}, 70%, 60%, ${0.08 * this.glow * this.sproutProgress})`);
+      grad.addColorStop(1, `hsla(${h}, 70%, 60%, 0)`);
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, r * 5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    if (this.firing) {
+      const expand = this.fireTimer * 1.5;
+      const alpha = Math.max(0, 0.3 - this.fireTimer * 0.01) * this.sproutProgress;
+      ctx.strokeStyle = `hsla(${h}, 80%, 70%, ${alpha})`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, r + expand, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // Search highlight ring
+    if (searchTerm && this.message.toLowerCase().includes(searchTerm.toLowerCase())) {
+      const pulse = Math.sin(performance.now() * 0.005) * 0.3 + 0.7;
+      ctx.strokeStyle = `hsla(50, 100%, 70%, ${0.3 * pulse})`;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, r + 12, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    ctx.shadowColor = `hsla(${h}, 80%, 70%, ${0.3 * this.glow * this.sproutProgress})`;
+    ctx.shadowBlur = 20 * this.glow * this.sproutProgress;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, r, 0, Math.PI * 2);
+
+    const grad = ctx.createRadialGradient(this.x - r * 0.3, this.y - r * 0.3, 0, this.x, this.y, r);
+    grad.addColorStop(0, `hsla(${h}, 80%, 80%, ${(0.6 + 0.4 * this.glow) * this.sproutProgress})`);
+    grad.addColorStop(0.5, `hsla(${h}, 70%, 55%, ${(0.5 + 0.3 * this.glow) * this.sproutProgress})`);
+    grad.addColorStop(1, `hsla(${h}, 60%, 35%, ${(0.3 + 0.2 * this.glow) * this.sproutProgress})`);
+    ctx.fillStyle = grad;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    if (this.sproutProgress > 0.3) {
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, r * 0.3, 0, Math.PI * 2);
+      ctx.fillStyle = `hsla(${h}, 90%, 85%, ${0.5 * this.glow * this.sproutProgress})`;
+      ctx.fill();
+    }
+
+    // Auto-fire indicator
+    if (this.autoFire && this.isReady) {
+      ctx.strokeStyle = `hsla(${h}, 80%, 70%, 0.25)`;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([2, 4]);
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, r + 6, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Star indicator
+    if (this.starred && this.isReady) {
+      const starPulse = Math.sin(performance.now() * 0.005) * 0.2 + 0.6;
+      ctx.fillStyle = `rgba(255, 215, 0, ${starPulse})`;
+      ctx.font = '10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('★', this.x, this.y - r - 8);
+    }
+
+    // URL/link indicator
+    if (this.url && this.isReady) {
+      ctx.fillStyle = `hsla(${h}, 80%, 80%, 0.6)`;
+      ctx.font = '9px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('🔗', this.x + (this.starred ? 10 : 0), this.y - r - 8);
+    }
+
+    // Template type badge
+    if (this.templateType && this.isReady) {
+      const tmpl = TEMPLATES.find(t => t.type === this.templateType);
+      if (tmpl) {
+        ctx.fillStyle = `hsla(${h}, 70%, 80%, 0.7)`;
+        ctx.font = '8px sans-serif';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(tmpl.emoji, this.x + r + 2, this.y - r);
+      }
+    }
+
+    // URL image thumbnail
+    if (this.url && this.isReady) {
+      const img = imageCache.get(this.url);
+      if (img && img.complete && img.naturalWidth > 0) {
+        const tw = 28, th = 20;
+        const tx = this.x - tw / 2;
+        const ty = this.y + r + (this.message ? 28 : 8);
+        ctx.save();
+        ctx.beginPath();
+        ctx.roundRect(tx, ty, tw, th, 3);
+        ctx.clip();
+        ctx.drawImage(img, tx, ty, tw, th);
+        ctx.restore();
+        ctx.strokeStyle = `hsla(${h}, 60%, 60%, 0.3)`;
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.roundRect(tx, ty, tw, th, 3);
+        ctx.stroke();
+      }
+    }
+
+    // Resize handle (shown when selected)
+    if (selectedSynapse && selectedSynapse.id === this.id && this.isReady) {
+      const hx = this.x + r + 5;
+      const hy = this.y;
+      ctx.fillStyle = `hsla(${h}, 70%, 80%, 0.6)`;
+      ctx.shadowBlur = 0;
+      ctx.beginPath();
+      ctx.arc(hx, hy, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = `hsla(${h}, 60%, 90%, 0.4)`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    // Pin indicator
+    if (this.pinned && this.isReady) {
+      const pinPulse = Math.sin(this.pinTimer * 0.04) * 0.15 + 0.35;
+      ctx.strokeStyle = `rgba(255, 255, 255, ${pinPulse})`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      const pinSize = 4;
+      const pinX = this.x + r + 4;
+      const pinY = this.y - r - 2;
+      ctx.moveTo(pinX, pinY);
+      ctx.lineTo(pinX + pinSize, pinY + pinSize);
+      ctx.lineTo(pinX - pinSize, pinY + pinSize);
+      ctx.closePath();
+      ctx.stroke();
+    }
+
+    // Sticky note label
+    if (this.message && this.isReady) {
+      const lines = this.message.split('\n').filter(l => l.trim());
+      const displayText = lines[0].length > 30 ? lines[0].slice(0, 27) + '...' : lines[0];
+      const fontSize = 10;
+      ctx.font = `${fontSize}px "Courier New", monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      const textMetrics = ctx.measureText(displayText);
+      const textWidth = textMetrics.width;
+      const padX = 8;
+      const padY = 4;
+      const noteW = textWidth + padX * 2;
+      const noteH = fontSize + padY * 2;
+      const noteX = this.x - noteW / 2;
+      const noteY = this.y + r + 8;
+
+      ctx.shadowColor = `hsla(${h}, 40%, 20%, 0.4)`;
+      ctx.shadowBlur = 8;
+      ctx.shadowOffsetY = 2;
+      ctx.fillStyle = `hsla(${h}, 50%, 30%, 0.25)`;
+      ctx.beginPath();
+      ctx.roundRect(noteX, noteY, noteW, noteH, 4);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetY = 0;
+
+      ctx.strokeStyle = `hsla(${h}, 60%, 60%, 0.2)`;
+      ctx.lineWidth = 0.5;
+      ctx.beginPath();
+      ctx.roundRect(noteX, noteY, noteW, noteH, 4);
+      ctx.stroke();
+
+      ctx.fillStyle = `hsla(${h}, 60%, 80%, 0.85)`;
+      ctx.fillText(displayText, this.x, noteY + noteH / 2);
+
+      // Tag chips below the note (max 2, then +N)
+      if (this.tags.length > 0) {
+        const chips = this.tags.slice(0, 2);
+        const extra = this.tags.length - chips.length;
+        const chipFont = 8;
+        ctx.font = `${chipFont}px "Courier New", monospace`;
+        let chipX = this.x;
+        const chipY = noteY + noteH + 4;
+        const chipPadX = 5;
+        const chipPadY = 2;
+        const totalExtra = extra > 0 ? ctx.measureText('+' + extra).width + chipPadX * 2 + 4 : 0;
+        const totalWidth = chips.reduce((sum, t) => {
+          return sum + ctx.measureText(t).width + chipPadX * 2 + 4;
+        }, 0) + (totalExtra || 0) - 4;
+        chipX = this.x - totalWidth / 2;
+
+        for (const t of chips) {
+          const tw = ctx.measureText(t).width;
+          const cw = tw + chipPadX * 2;
+          ctx.fillStyle = 'hsla(220, 60%, 50%, 0.25)';
+          ctx.beginPath();
+          ctx.roundRect(chipX, chipY, cw, chipFont + chipPadY * 2, 3);
+          ctx.fill();
+          ctx.strokeStyle = 'hsla(220, 60%, 70%, 0.25)';
+          ctx.lineWidth = 0.5;
+          ctx.beginPath();
+          ctx.roundRect(chipX, chipY, cw, chipFont + chipPadY * 2, 3);
+          ctx.stroke();
+          ctx.fillStyle = 'hsla(220, 70%, 75%, 0.8)';
+          ctx.fillText(t, chipX + cw / 2, chipY + (chipFont + chipPadY * 2) / 2);
+          chipX += cw + 4;
+        }
+
+        if (extra > 0) {
+          const tw = ctx.measureText('+' + extra).width;
+          const cw = tw + chipPadX * 2;
+          ctx.fillStyle = 'hsla(220, 60%, 50%, 0.25)';
+          ctx.beginPath();
+          ctx.roundRect(chipX, chipY, cw, chipFont + chipPadY * 2, 3);
+          ctx.fill();
+          ctx.strokeStyle = 'hsla(220, 60%, 70%, 0.25)';
+          ctx.lineWidth = 0.5;
+          ctx.beginPath();
+          ctx.roundRect(chipX, chipY, cw, chipFont + chipPadY * 2, 3);
+          ctx.stroke();
+          ctx.fillStyle = 'hsla(220, 70%, 75%, 0.8)';
+          ctx.fillText('+' + extra, chipX + cw / 2, chipY + (chipFont + chipPadY * 2) / 2);
+        }
+      }
+    }
+  }
 
     if (this.glow > 0.05 && this.sproutProgress > 0.1) {
       const grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, r * 5);
@@ -998,6 +1273,11 @@ function isDimmed(s) {
   if (focusMode && focusSynapse) return !isInFocus(s);
   if (tagFilter) return !s.hasTag(tagFilter);
   if (starFilter) return !s.starred;
+  // Dimmed if in a collapsed cluster
+  if (s.clusterId) {
+    const cl = clusters.find(c => c.id === s.clusterId);
+    if (cl && cl.collapsed) return true;
+  }
   return false;
 }
 
@@ -1179,6 +1459,17 @@ function handleContextAction(action) {
       updateTagFilterOptions();
       showToast('Synapse pruned');
       break;
+    case 'pomodoro':
+      bindPomodoroSynapse(syn);
+      break;
+    case 'group':
+      if (selectedSynapses.length >= 1) {
+        const ids = [...new Set([syn.id, ...selectedSynapses.map(s => s.id)])];
+        createClusterFromIds(ids);
+      } else {
+        showToast('Select other synapses first (Ctrl+click), then right-click to group');
+      }
+      break;
   }
 }
 
@@ -1276,7 +1567,7 @@ function captureGardenState() {
     name: activeGarden,
     synapses: synapses.map(s => serializeSynapse(s)),
     sprouts: sprouts.map(sp => ({ x: sp.x, y: sp.y, age: sp.age, hue: sp.hue })),
-    connections: connections.map(c => ({ aId: c.a.id, bId: c.b.id, manual: c.manual || false, weight: c.weight || 1 })),
+    connections: connections.map(c => ({ aId: c.a.id, bId: c.b.id, manual: c.manual || false, weight: c.weight || 1, label: c.label || '' })),
     autoConnect: autoConnect,
     gridSnap: gridSnap,
     viewX: viewX, viewY: viewY, viewZoom: viewZoom,
@@ -1285,6 +1576,7 @@ function captureGardenState() {
     activityLog: [...activityLog],
     tagFilter: tagFilter,
     soundMuted: soundMuted,
+    clusters: clusters.map(serializeCluster),
   };
 }
 
@@ -1302,6 +1594,7 @@ function emptyGarden(name) {
     activityLog: [],
     tagFilter: '',
     soundMuted: false,
+    clusters: [],
   };
 }
 
@@ -1339,7 +1632,7 @@ function restoreGarden(g) {
     const a = synapses.find(s => s.id === c.aId);
     const b = synapses.find(s => s.id === c.bId);
     if (a && b) {
-      return { a, b, dist: Math.hypot(a.x - b.x, a.y - b.y), pulse: 0, manual: c.manual || false, weight: c.weight || 1 };
+      return { a, b, dist: Math.hypot(a.x - b.x, a.y - b.y), pulse: 0, manual: c.manual || false, weight: c.weight || 1, label: c.label || '' };
     }
     return null;
   }).filter(Boolean);
@@ -1363,6 +1656,7 @@ function restoreGarden(g) {
   updateSoundButton();
   updateTagFilterOptions();
   updateZoomIndicator();
+  clusters = Array.isArray(g.clusters) ? g.clusters.map(restoreClusterFromData) : [];
 
   deselect();
   clearBulkSelection();
@@ -1605,12 +1899,75 @@ function update(dt) {
       const sp = sprouts[i];
       const syn = new Synapse(sp.x, sp.y);
       syn.sproutProgress = 0;
+      // Apply template if pending
+      if (sp.pendingTemplate) {
+        const tmpl = TEMPLATES.find(t => t.type === sp.pendingTemplate);
+        if (tmpl) {
+          syn.message = tmpl.label;
+          syn.hue = tmpl.hue;
+          syn.targetVolume = tmpl.charge;
+          syn.volume = tmpl.charge;
+          syn.templateType = sp.pendingTemplate;
+        }
+      }
       synapses.push(syn);
       sprouts.splice(i, 1);
       pushHistory();
       updateTagFilterOptions();
     }
   }
+
+  // tick synapses (sprouting progress)
+  for (const s of synapses) {
+    if (s.sproutProgress < 1) {
+      s.sproutProgress = Math.min(1, s.sproutProgress + 0.02);
+      if (s.sproutProgress >= 1) {
+        rebuildConnections();
+        pushHistory();
+      }
+    }
+    s.tick(dt);
+  }
+
+  // pulse connections
+  for (const c of connections) {
+    if (c.pulse > 0) {
+      c.pulse += FIRE_PULSE_SPEED;
+      if (c.pulse >= 1) c.pulse = 0;
+    }
+  }
+
+  // tick particles
+  for (let i = particles.length - 1; i >= 0; i--) {
+    particles[i].tick();
+    if (particles[i].life <= 0) {
+      particles.splice(i, 1);
+    }
+  }
+
+  // spawn ambient particles
+  spawnAmbientParticles();
+
+  // Decay: synapses slowly lose charge over time
+  if (decayEnabled) {
+    for (const s of synapses) {
+      if (s.isReady && !s.pinned && !s.autoFire) {
+        s.targetVolume = Math.max(0.05, s.targetVolume - dt * 0.002);
+      }
+    }
+  }
+
+  // Pomodoro tick
+  if (pomodoroRunning && pomodoroTimeLeft > 0) {
+    pomodoroTimeLeft -= dt;
+    if (pomodoroTimeLeft <= 0) {
+      pomodoroTimeLeft = 0;
+      pomodoroRunning = false;
+      onPomodoroComplete();
+    }
+    updatePomodoroDisplay();
+  }
+}
 
   // tick synapses (sprouting progress)
   for (const s of synapses) {
@@ -1662,6 +2019,11 @@ function render() {
   drawGrid();
   drawAtmosphere();
 
+  // draw expanded cluster outlines (behind connections)
+  for (const cl of clusters) {
+    if (!cl.collapsed) cl.draw();
+  }
+
   // draw connections (behind)
   drawConnections();
 
@@ -1677,6 +2039,11 @@ function render() {
     s.draw();
   }
   ctx.globalAlpha = 1;
+
+  // draw collapsed clusters (on top)
+  for (const cl of clusters) {
+    if (cl.collapsed) cl.draw();
+  }
 
   // focus glow
   drawFocusGlow();
@@ -1746,7 +2113,13 @@ function toggleGridSnap() {
 
 function findSynapseAt(px, py) {
   for (let i = synapses.length - 1; i >= 0; i--) {
-    if (synapses[i].isReady && synapses[i].hitTest(px, py)) return synapses[i];
+    const s = synapses[i];
+    // Skip synapses in collapsed clusters
+    if (s.clusterId) {
+      const cl = clusters.find(c => c.id === s.clusterId);
+      if (cl && cl.collapsed) continue;
+    }
+    if (s.isReady && s.hitTest(px, py)) return s;
   }
   return null;
 }
@@ -1813,6 +2186,40 @@ function bulkPrune() {
   updateBulkBar();
   updateTagFilterOptions();
   showToast('Pruned ' + ids.size + ' synapses');
+}
+
+function bulkHue() {
+  const colorInput = $('bulk-hue-color');
+  if (!colorInput) return;
+  // Convert hex to HSL hue
+  const hex = colorInput.value;
+  let r = parseInt(hex.slice(1, 3), 16) / 255;
+  let g = parseInt(hex.slice(3, 5), 16) / 255;
+  let b = parseInt(hex.slice(5, 7), 16) / 255;
+  
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h = 0;
+  
+  if (max === min) {
+    h = 0; // achromatic
+  } else {
+    const d = max - min;
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h /= 6;
+  }
+  
+  const targetHue = Math.round(h * 360);
+  
+  for (const s of selectedSynapses) {
+    s.hue = targetHue;
+  }
+  save();
+  pushHistory();
+  showToast('Applied hue to ' + selectedSynapses.length + ' synapses');
 }
 
 function bulkTogglePin() {
@@ -2014,6 +2421,52 @@ function exportPNG() {
   link.href = exportCanvas.toDataURL('image/png');
   link.click();
   showToast('PNG exported');
+}
+
+// --- Export Markdown ---
+
+function exportMarkdown() {
+  let md = `# Garden: ${activeGarden}\n\n`;
+  const ready = synapses.filter(s => s.isReady);
+  
+  // Group by tags
+  const tagsMap = new Map();
+  const untagged = [];
+  
+  for (const s of ready) {
+    if (s.tags && s.tags.length > 0) {
+      for (const t of s.tags) {
+        if (!tagsMap.has(t)) tagsMap.set(t, []);
+        tagsMap.get(t).push(s);
+      }
+    } else {
+      untagged.push(s);
+    }
+  }
+  
+  // Render tagged
+  for (const [tag, items] of tagsMap.entries()) {
+    md += `## ${tag}\n`;
+    for (const item of items) {
+      let content = item.message.replace(/\n/g, '  \n');
+      if (item.url) content += ` [Link](${item.url})`;
+      md += `- ${content}\n`;
+    }
+    md += '\n';
+  }
+  
+  // Render untagged
+  if (untagged.length > 0) {
+    md += `## Untagged\n`;
+    for (const item of untagged) {
+      let content = item.message.replace(/\n/g, '  \n');
+      if (item.url) content += ` [Link](${item.url})`;
+      md += `- ${content}\n`;
+    }
+  }
+  
+  exportText.textContent = md;
+  exportPanel.classList.remove('hidden');
 }
 
 // --- Paste text as synapses ---
@@ -2236,6 +2689,10 @@ function openPanel(syn) {
   synapseFired.textContent = 'fired ' + syn.firedCount + ' time' + (syn.firedCount !== 1 ? 's' : '');
   synapseLastFire.textContent = timeAgo(syn.lastFiredAt);
 
+  // URL
+  const urlInput = $('synapse-url');
+  if (urlInput) urlInput.value = syn.url || '';
+
   // Tags
   renderTags();
 
@@ -2261,6 +2718,16 @@ function closePanel() {
     selectedSynapse.message = messageInput.value;
     selectedSynapse.autoFire = autoFireToggle.checked;
     selectedSynapse.autoFireInterval = parseInt(autoFireInterval.value) || 5;
+    const urlInput = $('synapse-url');
+    if (urlInput) {
+      const newUrl = urlInput.value.trim();
+      if (newUrl !== selectedSynapse.url) {
+        selectedSynapse.url = newUrl;
+        if (newUrl && /\.(png|jpg|jpeg|gif|webp|svg)(\?.*)?$/i.test(newUrl)) {
+          preloadImage(newUrl);
+        }
+      }
+    }
     save();
   }
   panel.classList.add('hidden');
@@ -2278,9 +2745,13 @@ function timeAgo(ts) {
 // --- Actions ---
 
 function addSprout(x, y) {
+  if (gardenLocked) return;
   const sx = gridSnap ? snapToGrid(x) : x;
   const sy = gridSnap ? snapToGrid(y) : y;
   const sp = new Sprout(sx, sy);
+  if (templateMode && templateType) {
+    sp.pendingTemplate = templateType;
+  }
   sprouts.push(sp);
   pushHistory();
   save();
@@ -2736,6 +3207,7 @@ function renderMinimap() {
   }
 
   // Draw synapses
+  mctx.fillStyle = 'rgba(255,255,255,0.4)';
   for (const s of all) {
     const x = pad + (s.x - minX) * scale;
     const y = pad + (s.y - minY) * scale;
@@ -2938,6 +3410,31 @@ function newGarden() {
   renderGardenList();
   closeGardenPanel();
   showToast('Created garden: ' + key);
+}
+
+function duplicateGarden() {
+  const base = activeGarden + '-copy';
+  const name = prompt('Duplicate garden name:', base);
+  if (!name || !name.trim()) return;
+  const key = cleanGardenName(name);
+  if (!key) return;
+  if (gardens[key]) {
+    showToast('A garden named "' + key + '" already exists');
+    return;
+  }
+  gardens[activeGarden] = captureGardenState();
+  
+  // Deep clone
+  const cloneStr = JSON.stringify(gardens[activeGarden]);
+  gardens[key] = JSON.parse(cloneStr);
+  gardens[key].name = key;
+  
+  activeGarden = key;
+  restoreGarden(gardens[key]);
+  save();
+  renderGardenList();
+  closeGardenPanel();
+  showToast('Duplicated to: ' + key);
 }
 
 function renameGarden() {
@@ -3199,6 +3696,20 @@ canvas.addEventListener('mousedown', (e) => {
   if (e.button === 0) {
     const syn = findSynapseAt(world.x, world.y);
 
+    // Check for resize handle on selected synapse
+    if (selectedSynapse && syn && syn.id === selectedSynapse.id) {
+      const hx = syn.x + syn.radius * syn.sproutProgress + 5;
+      const hy = syn.y;
+      const distToHandle = Math.hypot(world.x - hx, world.y - hy);
+      if (distToHandle < 10) {
+        isResizing = true;
+        resizeSynapse = syn;
+        resizeStartDist = Math.hypot(world.x - syn.x, world.y - syn.y);
+        resizeStartRadius = syn.manualRadius || 1;
+        return;
+      }
+    }
+
     // Shift+drag on void starts box select
     if (!syn && e.shiftKey && !connectMode && !focusMode) {
       boxSelecting = true;
@@ -3300,6 +3811,13 @@ canvas.addEventListener('mousemove', (e) => {
     return;
   }
 
+  if (isResizing && resizeSynapse) {
+    const currentDist = Math.hypot(world.x - resizeSynapse.x, world.y - resizeSynapse.y);
+    let scale = currentDist / resizeStartDist;
+    resizeSynapse.manualRadius = Math.max(0.5, Math.min(3.0, resizeStartRadius * scale));
+    return;
+  }
+
   if (isDragging && dragSynapse) {
     // Only activate drag if mouse has moved past threshold
     const dx = sx - dragStartX;
@@ -3359,6 +3877,13 @@ canvas.addEventListener('mouseup', (e) => {
     return;
   }
 
+  if (isResizing && resizeSynapse) {
+    isResizing = false;
+    resizeSynapse = null;
+    save();
+    return;
+  }
+
   if (isDragging && dragSynapse) {
     isDragging = false;
     canvas.style.cursor = 'default';
@@ -3403,6 +3928,16 @@ canvas.addEventListener('click', (e) => {
   const sx = e.clientX - rect.left;
   const sy = e.clientY - rect.top;
   const world = screenToWorld(sx, sy);
+
+  // Check cluster clicks (toggle collapse)
+  for (const cl of clusters) {
+    if (cl.hitTest(world.x, world.y)) {
+      cl.collapsed = !cl.collapsed;
+      save();
+      return;
+    }
+  }
+
   const syn = findSynapseAt(world.x, world.y);
 
   if (connectMode) {
@@ -3625,6 +4160,24 @@ $('btn-star-synapse').addEventListener('click', (e) => { e.stopPropagation(); to
 $('btn-bulk-star').addEventListener('click', (e) => { e.stopPropagation(); bulkToggleStar(); });
 $('btn-bulk-tag').addEventListener('click', (e) => { e.stopPropagation(); bulkApplyTag(); });
 $('btn-paste-text').addEventListener('click', (e) => { e.stopPropagation(); pasteTextAsSynapses(); });
+$('btn-duplicate-garden').addEventListener('click', (e) => { e.stopPropagation(); duplicateGarden(); });
+$('btn-export-md').addEventListener('click', (e) => { e.stopPropagation(); exportMarkdown(); });
+$('btn-bulk-hue').addEventListener('click', (e) => { e.stopPropagation(); bulkHue(); });
+$('btn-template').addEventListener('click', (e) => { e.stopPropagation(); $('template-panel').classList.remove('hidden'); });
+$('btn-pomodoro').addEventListener('click', (e) => { e.stopPropagation(); $('pomodoro-panel').classList.remove('hidden'); });
+$('btn-present').addEventListener('click', (e) => {
+  e.stopPropagation();
+  isSlideshowMode = !isSlideshowMode;
+  if (isSlideshowMode) {
+    slideshowIndex = 0;
+    const stars = synapses.filter(s => s.starred && s.isReady);
+    if (stars.length > 0) focusOn(stars[0]);
+    showToast('Slideshow Mode started. Use ←/→ to navigate.');
+  } else {
+    showToast('Slideshow Mode ended.');
+  }
+});
+
 $('btn-bulk-merge').addEventListener('click', (e) => {
   e.stopPropagation();
   if (selectedSynapses.length >= 2) {
@@ -3747,6 +4300,14 @@ document.addEventListener('keydown', (e) => {
       toggleConnectMode();
     } else if (!searchBar.classList.contains('hidden')) {
       closeSearch();
+    } else if (!$('template-panel').classList.contains('hidden')) {
+      $('template-panel').classList.add('hidden');
+      templateMode = false;
+    } else if (!$('pomodoro-panel').classList.contains('hidden')) {
+      $('pomodoro-panel').classList.add('hidden');
+    } else if (isSlideshowMode) {
+      isSlideshowMode = false;
+      showToast('Slideshow mode exited');
     }
   }
   if ((e.key === 'Delete' || e.key === 'Backspace') && selectedSynapse && !e.ctrlKey && !e.metaKey) {
@@ -3846,6 +4407,22 @@ document.addEventListener('keydown', (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
     e.preventDefault();
     redo();
+  }
+
+  if (isSlideshowMode) {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') {
+      const stars = synapses.filter(s => s.starred && s.isReady);
+      if (stars.length > 0) {
+        slideshowIndex = (slideshowIndex + 1) % stars.length;
+        focusOn(stars[slideshowIndex]);
+      }
+    } else if (e.key === 'ArrowLeft') {
+      const stars = synapses.filter(s => s.starred && s.isReady);
+      if (stars.length > 0) {
+        slideshowIndex = (slideshowIndex - 1 + stars.length) % stars.length;
+        focusOn(stars[slideshowIndex]);
+      }
+    }
   }
 });
 
