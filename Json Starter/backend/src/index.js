@@ -9,7 +9,7 @@ const startServer = async () => {
     await connectDB();
     
     app.listen(config.port, () => {
-      logger.info(`Time Traveling Toaster backend listening on port ${config.port} [${config.env}]`);
+      logger.info(`JSON Baker backend listening on port ${config.port} [${config.env}]`);
       logger.info(`API Documentation: http://localhost:${config.port}/api-docs`);
     });
   } catch (error) {

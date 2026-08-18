@@ -1,0 +1,24 @@
+ It appears that you have converted your Vite configuration files from Java[4D[K
+JavaScript to TypeScript. Here's a brief overview of the changes you've mad[3D[K
+made:
+
+1. `vite.config.js` to `vite.config.ts`: You have changed the extension of [K
+the Vite configuration file from JavaScript (`.js`) to TypeScript (`.ts`).
+
+2. TypeScript declaration file (`.d.ts`): You have created a new TypeScript[10D[K
+TypeScript declaration file (`.d.ts`) for your Vite configuration.
+
+In your TypeScript configuration file (`vite.config.ts`), you have imported[8D[K
+imported the necessary modules and set up your Vite configuration similar t[1D[K
+to how it was in the JavaScript version. The only difference is that you ar[2D[K
+are using TypeScript syntax, which includes type annotations and strict typ[3D[K
+typing.
+
+The TypeScript declaration file (`vite.config.d.ts`) exports the default ex[2D[K
+export as a type, which allows TypeScript to understand that `_default` is [K
+the default export of the `vite` module.
+
+Overall, these changes allow you to use TypeScript features in your Vite co[2D[K
+configuration, which can lead to better type checking and autocompletion in[2D[K
+in your IDE.
+

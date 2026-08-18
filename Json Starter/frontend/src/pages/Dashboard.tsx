@@ -33,15 +33,15 @@ export default function Dashboard() {
   const [quests, setQuests] = useState<any[]>([]);
 
   const getTravelerTitle = () => {
-    if (!user) return '🥉 Novice Jumper';
+    if (!user) return '🥉 Lost Soul';
     const toasts = user.toastsCollected ?? user.toasts ?? 0;
     const eras = (user.timePeriodsVisited || []).length;
     const items = (user.inventory || []).length;
 
-    if (toasts >= 500) return '👑 Chrono Master';
-    if (eras >= 3) return '🥇 Quantum Traveler';
-    if (items >= 5) return '🥈 Toaster Collector';
-    return '🥉 Novice Jumper';
+    if (toasts >= 500) return '👑 Grand Reaper';
+    if (eras >= 3) return '🥇 Ethereal Walker';
+    if (items >= 5) return '🥈 Spirit Collector';
+    return '🥉 Lost Soul';
   };
 
   const fetchLeaderboard = async () => {
@@ -127,7 +127,7 @@ export default function Dashboard() {
       toast.success(response.data.message);
       updateUser(response.data.user);
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Time travel failed');
+      toast.error(error.response?.data?.message || 'Reincarnation gateway failed');
     } finally {
       setIsTraveling(false);
     }
@@ -142,7 +142,7 @@ export default function Dashboard() {
       updateUser(response.data.user);
       sound.playDing();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Discovery failed');
+      toast.error(error.response?.data?.message || 'Séance failed');
     } finally {
       setIsDiscovering(false);
     }
@@ -197,7 +197,7 @@ export default function Dashboard() {
       updateUser(response.data.user);
       sound.playDing();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Quantum spin failed');
+      toast.error(error.response?.data?.message || 'Wheel of fate failed');
     } finally {
       setIsSpinning(false);
     }
@@ -265,7 +265,7 @@ export default function Dashboard() {
       updateUser(response.data.user);
       sound.playDing();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Claim interest failed');
+      toast.error(error.response?.data?.message || 'Claim karma interest failed');
     } finally {
       setIsBankAction(false);
     }
@@ -308,7 +308,7 @@ export default function Dashboard() {
       updateUser(response.data.user);
       sound.playDing();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Faction selection failed');
+      toast.error(error.response?.data?.message || 'Affiliation selection failed');
     } finally {
       setIsChoosingFaction(false);
     }
@@ -344,10 +344,10 @@ export default function Dashboard() {
   const maxEnergy = hasCapacitor ? 1500 : 1000;
   const scanCost = hasScanner ? 10 : 15;
 
-  const themeClass = 
-    currentTheme === 'golden' ? 'from-amber-950 via-black to-yellow-950 text-amber-50' : 
-    currentTheme === 'steampunk' ? 'from-stone-900 via-stone-950 to-amber-950 text-amber-100' : 
-    'from-gray-900 via-black to-gray-900 text-white';
+  const themeClass =
+    currentTheme === 'golden' ? 'from-amber-950 via-black to-yellow-950 text-amber-50' :
+      currentTheme === 'steampunk' ? 'from-stone-900 via-stone-950 to-amber-950 text-amber-100' :
+        'from-gray-900 via-black to-gray-900 text-white';
 
   return (
     <div className={`min-h-screen bg-gradient-to-br ${themeClass} p-8 relative transition-colors duration-700`}>
@@ -361,7 +361,7 @@ export default function Dashboard() {
       {isOverclocking && <Loader fullScreen message="Activating Quantum Overclock..." />}
       {isBuyingHarvester && <Loader fullScreen message="Unlocking Automated Toast Harvester..." />}
       {isChoosingFaction && <Loader fullScreen message="Pledging Faction Alliance..." />}
-      
+
       <div className="max-w-7xl mx-auto">
         <header className="flex justify-between items-center mb-12 border-b border-gray-800 pb-6">
           <div>
@@ -369,7 +369,7 @@ export default function Dashboard() {
               Traveler Dashboard
             </h1>
             <p className="text-gray-400 mt-2 flex items-center gap-2">
-              Welcome, {user.username} ({user.role}) 
+              Welcome, {user.username} ({user.role})
               <span className="px-3 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-bold rounded-full">
                 {getTravelerTitle()}
               </span>
@@ -403,7 +403,7 @@ export default function Dashboard() {
             >
               Museum Codex 📖
             </button>
-            <button 
+            <button
               onClick={logout}
               className="px-5 py-2 glass-effect text-red-400 hover:text-red-300 hover:bg-white/10 rounded-xl transition-all text-xs"
             >
@@ -415,15 +415,15 @@ export default function Dashboard() {
         {/* Active Gear Loadout */}
         <div className="mb-8 glass-effect rounded-2xl p-5 border border-indigo-500/30">
           <h2 className="text-lg font-semibold mb-3 text-indigo-300 flex items-center gap-2">
-            <span>Active Chrono Gear Loadout 🛡️</span>
-            <span className="text-xs text-gray-400 font-normal">(Equipped toasters grant active perks)</span>
+            <span>Active Soul Resonance 🛡️</span>
+            <span className="text-xs text-gray-400 font-normal">(Equipped spirits grant active perks)</span>
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-gray-800/80 p-4 rounded-xl border border-gray-700 flex justify-between items-center">
               <div>
-                <div className="text-xs uppercase font-bold text-indigo-400">Primary Slot</div>
+                <div className="text-xs uppercase font-bold text-indigo-400">Primary Link</div>
                 <div className="font-semibold text-sm text-gray-200 mt-1">
-                  {user.equippedGear?.find(g => g.slot === 'primary')?.item || 'Empty Slot'}
+                  {user.equippedGear?.find(g => g.slot === 'primary')?.item || 'No Spirit Linked'}
                 </div>
               </div>
               {user.equippedGear?.find(g => g.slot === 'primary') && (
@@ -438,9 +438,9 @@ export default function Dashboard() {
             </div>
             <div className="bg-gray-800/80 p-4 rounded-xl border border-gray-700 flex justify-between items-center">
               <div>
-                <div className="text-xs uppercase font-bold text-indigo-400">Secondary Slot</div>
+                <div className="text-xs uppercase font-bold text-indigo-400">Secondary Link</div>
                 <div className="font-semibold text-sm text-gray-200 mt-1">
-                  {user.equippedGear?.find(g => g.slot === 'secondary')?.item || 'Empty Slot'}
+                  {user.equippedGear?.find(g => g.slot === 'secondary')?.item || 'No Spirit Linked'}
                 </div>
               </div>
               {user.equippedGear?.find(g => g.slot === 'secondary') && (
@@ -461,29 +461,29 @@ export default function Dashboard() {
           <div className="glass-effect rounded-2xl p-6 h-fit space-y-6">
             <div>
               <h2 className="text-xl font-semibold mb-6 border-b border-gray-700 pb-2">Your Stats</h2>
-              
+
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-400">Energy Level</span>
-                  <span className="font-mono text-amber-400 text-xl">{user.energy ?? 100} ⚡</span>
+                  <span className="text-gray-400">Spiritual Energy</span>
+                  <span className="font-mono text-amber-400 text-xl">{user.energy ?? 100} ✨</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-400">Toasts Collected</span>
-                  <span className="font-mono text-orange-400 text-xl">{user.toastsCollected ?? user.toasts ?? 0} 🍞</span>
+                  <span className="text-gray-400">Souls Harvested</span>
+                  <span className="font-mono text-orange-400 text-xl">{user.toastsCollected ?? user.toasts ?? 0} 👻</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-400">Vault Balance</span>
-                  <span className="font-mono text-emerald-400 text-xl">{user.bankBalance ?? 0} 🏦</span>
+                  <span className="text-gray-400">Karma Vault</span>
+                  <span className="font-mono text-emerald-400 text-xl">{user.bankBalance ?? 0} ⚖️</span>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 gap-3 mt-6">
-                <button 
+                <button
                   onClick={handleRecharge}
                   disabled={isRecharging || (user.toastsCollected ?? user.toasts ?? 0) < 5 || (user.energy ?? 0) >= maxEnergy}
                   className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl transition-all transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(16,185,129,0.3)]"
                 >
-                  Consume 5 Toasts (+25 ⚡)
+                  Consume 5 Souls (+25 ✨)
                 </button>
 
                 <button
@@ -491,50 +491,47 @@ export default function Dashboard() {
                   disabled={isSpinning}
                   className="w-full py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold rounded-xl transition-all transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 shadow-[0_0_15px_rgba(168,85,247,0.3)]"
                 >
-                  Spin Quantum Wheel 🎡
+                  Wheel of Fate 🎡
                 </button>
 
                 <button
                   onClick={handleOverclock}
                   disabled={isOverclocking || isOverclockActive || (user.toastsCollected ?? 0) < 50}
-                  className={`w-full py-3 font-bold rounded-xl transition-all transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 ${
-                    isOverclockActive 
-                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50'
-                      : 'bg-gradient-to-r from-amber-600 to-yellow-600 text-white shadow-[0_0_15px_rgba(245,158,11,0.3)]'
-                  }`}
+                  className={`w-full py-3 font-bold rounded-xl transition-all transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 ${isOverclockActive
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50'
+                    : 'bg-gradient-to-r from-amber-600 to-yellow-600 text-white shadow-[0_0_15px_rgba(245,158,11,0.3)]'
+                    }`}
                 >
-                  {isOverclockActive ? '⚡ Overclock Active (15m)' : 'Quantum Overclock (50 🍞) ⚡'}
+                  {isOverclockActive ? '✨ Divine Burst Active (15m)' : 'Divine Burst (50 👻) ✨'}
                 </button>
 
                 <button
                   onClick={handleBuyHarvester}
                   disabled={isBuyingHarvester || user.hasHarvester || (user.toastsCollected ?? 0) < 500}
-                  className={`w-full py-3 font-bold rounded-xl transition-all transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 ${
-                    user.hasHarvester
-                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/50'
-                      : 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)]'
-                  }`}
+                  className={`w-full py-3 font-bold rounded-xl transition-all transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 ${user.hasHarvester
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/50'
+                    : 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)]'
+                    }`}
                 >
-                  {user.hasHarvester ? '⚙️ Harvester Active (+1 🍞/10s)' : 'Unlock Toast Harvester (500 🍞) ⚙️'}
+                  {user.hasHarvester ? '⚙️ Relic Active (+1 👻/10s)' : 'Unlock Reaper Relic (500 👻) ⚙️'}
                 </button>
               </div>
             </div>
 
             <div>
-              <h3 className="text-sm text-gray-400 mb-3 uppercase tracking-wider">Faction Alliance 🚩</h3>
+              <h3 className="text-sm text-gray-400 mb-3 uppercase tracking-wider">Soul Affiliation 🚩</h3>
               <div className="space-y-2">
-                {['Chrono Guardians', 'Paradox Seekers', 'Quantum Guild'].map(fac => (
+                {['Angelic Guard', 'Grim Reapers', 'Underworld Smugglers'].map(fac => (
                   <button
                     key={fac}
                     onClick={() => handleChooseFaction(fac)}
                     disabled={isChoosingFaction || user.faction === fac}
-                    className={`w-full p-2.5 rounded-lg border text-left text-xs transition-all flex justify-between items-center ${
-                      user.faction === fac
-                        ? 'bg-indigo-600/30 border-indigo-500 text-indigo-200 font-bold'
-                        : 'bg-gray-800/40 border-gray-700 text-gray-400 hover:bg-gray-800'
-                    }`}
+                    className={`w-full p-2.5 rounded-lg border text-left text-xs transition-all flex justify-between items-center ${user.faction === fac
+                      ? 'bg-indigo-600/30 border-indigo-500 text-indigo-200 font-bold'
+                      : 'bg-gray-800/40 border-gray-700 text-gray-400 hover:bg-gray-800'
+                      }`}
                   >
-                    <span>{fac === 'Chrono Guardians' ? '🛡️ Chrono Guardians (+20% Boss DMG)' : fac === 'Paradox Seekers' ? '🔍 Paradox Seekers (+15% Scan Chance)' : '💰 Quantum Guild (+15% Vault Rate)'}</span>
+                    <span>{fac === 'Angelic Guard' ? '🛡️ Angelic Guard (+20% Demon DMG)' : fac === 'Grim Reapers' ? '🔍 Grim Reapers (+15% Séance Chance)' : '💰 Underworld Smugglers (+15% Karma Rate)'}</span>
                     {user.faction === fac && <span className="text-[10px] bg-indigo-500 text-white px-1.5 py-0.5 rounded">Joined</span>}
                   </button>
                 ))}
@@ -622,8 +619,8 @@ export default function Dashboard() {
           {/* Actions Panel */}
           <div className="lg:col-span-2 space-y-8">
             <div className="glass-effect rounded-2xl p-6">
-              <h2 className="text-xl font-semibold mb-6 border-b border-gray-700 pb-2">Time Machine Console</h2>
-              
+              <h2 className="text-xl font-semibold mb-6 border-b border-gray-700 pb-2">Reincarnation Gateway</h2>
+
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
                 {timePeriods.map(period => (
                   <button
@@ -637,7 +634,7 @@ export default function Dashboard() {
                   </button>
                 ))}
               </div>
-              
+
               <p className="text-sm text-gray-400 text-center">
                 Select a destination era. Travel costs 25 energy.
               </p>
@@ -646,37 +643,36 @@ export default function Dashboard() {
             <div className="glass-effect rounded-2xl p-6 relative overflow-hidden group">
               <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl group-hover:bg-blue-500/20 transition-all duration-500"></div>
               <h2 className="text-xl font-semibold mb-6 border-b border-gray-700 pb-2 relative z-10">Local Area Scanner</h2>
-              
+
               <div className="text-center py-8 relative z-10">
                 <button
                   onClick={handleDiscover}
                   disabled={isDiscovering || isTraveling || (user.energy ?? 0) < scanCost}
                   className="px-8 py-4 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-bold rounded-xl transition-all duration-300 transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:transform-none shadow-[0_0_15px_rgba(6,182,212,0.4)] hover:shadow-[0_0_25px_rgba(6,182,212,0.6)]"
                 >
-                  Scan for Toasters ({scanCost} Energy)
+                  Hold Séance ({scanCost} Energy)
                 </button>
                 <p className="text-sm text-gray-400 mt-4">
-                  Discover ancient artifacts and unique toasters nearby.
+                  Discover ancient artifacts and unique souls nearby.
                 </p>
               </div>
             </div>
 
             <div className="glass-effect rounded-2xl p-6 relative overflow-hidden">
-              <h2 className="text-xl font-semibold mb-6 border-b border-gray-700 pb-2">Toaster Inventory</h2>
+              <h2 className="text-xl font-semibold mb-6 border-b border-gray-700 pb-2">Soul Core Inventory</h2>
               {user.inventory && user.inventory.length > 0 ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   {user.inventory.map((inv, idx) => (
                     <div key={idx} className={`p-4 rounded-xl border flex flex-col items-center justify-center text-center transition-all ${getRarityColor(inv.rarity)}`}>
-                      <div className="text-4xl mb-2">🍞</div>
+                      <div className="text-4xl mb-2">👻</div>
                       <div className="font-medium text-sm text-gray-200">{inv.item}</div>
                       <div className="text-xs text-amber-500 mt-1">x{inv.quantity}</div>
-                      {inv.rarity && <div className={`text-[10px] mt-1 uppercase font-bold tracking-wider ${
-                        inv.rarity === 'Legendary' ? 'text-yellow-400' :
+                      {inv.rarity && <div className={`text-[10px] mt-1 uppercase font-bold tracking-wider ${inv.rarity === 'Legendary' ? 'text-yellow-400' :
                         inv.rarity === 'Epic' ? 'text-purple-400' :
-                        inv.rarity === 'Rare' ? 'text-blue-400' : 'text-gray-400'
-                      }`}>{inv.rarity}</div>}
+                          inv.rarity === 'Rare' ? 'text-blue-400' : 'text-gray-400'
+                        }`}>{inv.rarity}</div>}
                       <div className="text-[10px] text-gray-500 mt-2 capitalize">Found in: {inv.obtainedFrom}</div>
-                      
+
                       <div className="flex gap-1.5 w-full mt-3">
                         <button
                           onClick={() => handleEquipGear('primary', inv.item, inv.rarity || 'Common')}
@@ -707,15 +703,15 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <div className="text-center py-8 text-gray-500 italic">
-                  Your inventory is empty. Scan the area to find toasters!
+                  Your phylactery is empty. Hold a Séance to collect souls!
                 </div>
               )}
             </div>
 
             <div className="glass-effect rounded-2xl p-6 relative overflow-hidden">
-              <h2 className="text-xl font-semibold mb-6 border-b border-gray-700 pb-2">Black Market Upgrades</h2>
+              <h2 className="text-xl font-semibold mb-6 border-b border-gray-700 pb-2">Underworld Upgrades</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                
+
                 <div className="bg-gray-800/80 p-5 rounded-xl border border-gray-700 flex flex-col justify-between">
                   <div>
                     <h3 className="font-semibold text-lg text-amber-300">Capacitor Expansion</h3>
@@ -724,12 +720,12 @@ export default function Dashboard() {
                   {hasCapacitor ? (
                     <div className="text-center py-2 bg-emerald-500/20 text-emerald-400 rounded-lg font-bold">Purchased</div>
                   ) : (
-                    <button 
+                    <button
                       onClick={() => handleUpgrade('capacitor')}
                       disabled={isUpgrading || (user.toastsCollected ?? 0) < 200}
                       className="w-full py-2 bg-gradient-to-r from-orange-600 to-red-600 text-white font-bold rounded-lg hover:from-orange-500 hover:to-red-500 disabled:opacity-50 transition-all"
                     >
-                      Buy (200 🍞)
+                      Buy (200 👻)
                     </button>
                   )}
                 </div>
@@ -742,12 +738,12 @@ export default function Dashboard() {
                   {hasScanner ? (
                     <div className="text-center py-2 bg-emerald-500/20 text-emerald-400 rounded-lg font-bold">Purchased</div>
                   ) : (
-                    <button 
+                    <button
                       onClick={() => handleUpgrade('scanner')}
                       disabled={isUpgrading || (user.toastsCollected ?? 0) < 300}
                       className="w-full py-2 bg-gradient-to-r from-orange-600 to-red-600 text-white font-bold rounded-lg hover:from-orange-500 hover:to-red-500 disabled:opacity-50 transition-all"
                     >
-                      Buy (300 🍞)
+                      Buy (300 👻)
                     </button>
                   )}
                 </div>
@@ -757,15 +753,15 @@ export default function Dashboard() {
 
             <div className="glass-effect rounded-2xl p-6 relative overflow-hidden border border-red-500/30">
               <h2 className="text-xl font-semibold mb-4 border-b border-gray-700 pb-2 text-red-400 flex items-center gap-2">
-                <span>Time Rift Boss Battle</span>
+                <span>Underworld Demon Battle</span>
                 <span className="text-xs px-2 py-0.5 bg-red-500/20 text-red-300 rounded font-normal">Active Event</span>
               </h2>
 
               <div className="bg-gray-800/80 p-5 rounded-xl border border-gray-700 space-y-4">
                 <div className="flex justify-between items-center">
                   <div>
-                    <h3 className="font-bold text-lg text-red-300">{user.bossName || 'Chrono-Dragon'} 👾</h3>
-                    <p className="text-xs text-gray-400 mt-0.5">Defeat to earn +500 🍞 and a Legendary Toaster!</p>
+                    <h3 className="font-bold text-lg text-red-300">{user.bossName || 'Arch-Demon'} 👾</h3>
+                    <p className="text-xs text-gray-400 mt-0.5">Defeat to earn +500 👻 and a Legendary Spirit!</p>
                   </div>
                   <div className="text-right font-mono text-sm">
                     <span className="text-red-400 font-bold">{user.bossHp ?? 1000}</span>
@@ -774,7 +770,7 @@ export default function Dashboard() {
                 </div>
 
                 <div className="w-full bg-gray-700 h-3 rounded-full overflow-hidden">
-                  <div 
+                  <div
                     className="bg-gradient-to-r from-red-600 to-orange-500 h-full transition-all duration-500"
                     style={{ width: `${Math.max(0, Math.min(100, ((user.bossHp ?? 1000) / (user.bossMaxHp ?? 1000)) * 100))}%` }}
                   ></div>
@@ -845,10 +841,10 @@ export default function Dashboard() {
           <div className="bg-gray-900 border border-cyan-500/40 rounded-2xl max-w-2xl w-full p-6 space-y-6 max-h-[85vh] overflow-y-auto relative">
             <div className="flex justify-between items-center border-b border-gray-800 pb-4">
               <div>
-                <h2 className="text-2xl font-bold text-cyan-300">Toaster Museum Codex 📖</h2>
+                <h2 className="text-2xl font-bold text-cyan-300">Soul Museum Codex 📖</h2>
                 <p className="text-xs text-gray-400 mt-1">Collection Progress: {codexData.collectedCount} / {codexData.totalCount} ({codexData.completionPercentage}%)</p>
               </div>
-              <button 
+              <button
                 onClick={() => setShowCodex(false)}
                 className="text-gray-400 hover:text-white text-xl font-bold p-2"
               >
@@ -863,19 +859,21 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {codexData.codex.map((item: any) => (
                 <div key={item.id} className={`p-4 rounded-xl border flex gap-4 items-center ${item.collected ? 'bg-gray-800/90 border-cyan-500/50' : 'bg-gray-950/60 border-gray-800 opacity-60'}`}>
-                  <div className="text-4xl">{item.collected ? '🍞' : '❓'}</div>
+                  <div className="text-4xl">{item.collected ? '👻' : '❓'}</div>
                   <div>
                     <h3 className={`font-bold text-sm ${item.collected ? 'text-white' : 'text-gray-500'}`}>
                       {item.collected ? item.name : 'Unknown Artifact'}
                     </h3>
                     <div className="text-[10px] uppercase font-bold text-amber-400 mt-0.5">{item.era} • {item.rarity}</div>
-                    <p className="text-xs text-gray-400 mt-1 italic">{item.collected ? item.lore : 'Scan timelines to discover.'}</p>
+                    <p className="text-xs text-gray-400 mt-1 italic">{item.collected ? item.lore : 'Scan lifelines to discover.'}</p>
                   </div>
                 </div>
               ))}
             </div>
           </div>
         </div>
+      )}
+
       {showMinigame && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-gray-900 border border-amber-500/50 rounded-2xl max-w-md w-full p-6 text-center space-y-6">

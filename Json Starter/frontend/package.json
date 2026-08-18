@@ -1,9 +1,9 @@
 {
-  "name": "time-traveling-toaster-frontend",
+  "name": "json-baker-frontend",
   "private": true,
   "version": "2.0.0",
   "type": "module",
-  "description": "Revolutionary Time Traveling Toaster Frontend with ALL features",
+  "description": "Json Baker: Life After Death Frontend",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

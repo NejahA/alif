@@ -56,82 +56,88 @@ export default function LandingPage() {
   const features = [
     {
       icon: <ClockIcon />,
-      title: 'Time Travel',
-      description: 'Journey through six historical eras from prehistoric to futuristic.',
+      title: 'Reincarnation Cycles',
+      description: 'Journey through six spiritual eras from purgatory to enlightenment.',
     },
     {
       icon: <ToasterIcon />,
-      title: 'Toaster Discovery',
-      description: 'Discover unique toasters in each time period with special abilities.',
+      title: 'Soul Discovery',
+      description: 'Discover unique spirits in each lifetime with specialized abilities.',
     },
     {
       icon: <ZapIcon />,
-      title: 'Energy System',
-      description: 'Manage your energy wisely to travel and toast effectively.',
+      title: 'Karma System',
+      description: 'Manage your spiritual karma wisely to travel and bake safely.',
     },
     {
       icon: <GlobeIcon />,
-      title: 'Multi-Period Exploration',
-      description: 'Explore different eras and uncover their secrets.',
+      title: 'Underworld Exploration',
+      description: 'Explore the different sections of the afterlife and uncover its secrets.',
     },
     {
       icon: <CoffeeIcon />,
-      title: 'Toast Collection',
-      description: 'Collect toasts to unlock achievements and rewards.',
+      title: 'Essence Collection',
+      description: 'Collect leftover lifeforce to unlock divine achievements and relics.',
     },
     {
       icon: <RocketIcon />,
-      title: 'Real-time Updates',
-      description: 'Live updates and notifications for discoveries.',
+      title: 'Spiritual Updates',
+      description: 'Live updates and notifications for dimensional anomalies.',
     },
   ];
 
   const timePeriods = [
-    { name: 'Prehistoric', color: 'bg-amber-900', period: 'prehistoric' },
-    { name: 'Medieval', color: 'bg-rose-900', period: 'medieval' },
-    { name: 'Renaissance', color: 'bg-yellow-800', period: 'renaissance' },
-    { name: 'Industrial', color: 'bg-gray-700', period: 'industrial' },
-    { name: 'Modern', color: 'bg-emerald-700', period: 'modern' },
-    { name: 'Futuristic', color: 'bg-cyan-700', period: 'futuristic' },
+    { name: 'Purgatory', color: 'bg-amber-900', period: 'prehistoric' },
+    { name: 'Limbo', color: 'bg-rose-900', period: 'medieval' },
+    { name: 'Elysium', color: 'bg-yellow-800', period: 'renaissance' },
+    { name: 'Tartarus', color: 'bg-gray-700', period: 'industrial' },
+    { name: 'Valhalla', color: 'bg-emerald-700', period: 'modern' },
+    { name: 'Nirvana', color: 'bg-cyan-700', period: 'futuristic' },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white">
-      {/* Hero Section */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
-          <div className="text-center">
-            <h1 className="text-5xl md:text-7xl font-bold mb-6">
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-amber-400 via-orange-500 to-yellow-400">
-                Time Traveling
-              </span>
-              <br />
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-gray-300 via-white to-gray-300">
-                Toaster
-              </span>
-            </h1>
-            <p className="text-xl md:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto">
-              Revolutionize your breakfast with the ultimate time-traveling toaster experience.
-              Discover, toast, and explore across six historical eras!
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-              <Link
-                to="/register"
-                className="px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold rounded-xl hover:from-amber-600 hover:to-orange-600 transition-all transform hover:scale-105 shadow-lg"
-              >
-                Start Your Journey
-              </Link>
-              <Link
-                to="/login"
-                className="px-8 py-4 glass-effect text-white font-semibold rounded-xl hover:bg-white/20 transition-all"
-              >
-                Existing Traveler
-              </Link>
-            </div>
+    <div className="min-h-screen bg-black text-white selection:bg-amber-500 selection:text-black">
+      {/* Navigation */}
+      <nav className="fixed w-full z-50 top-0 transition-all duration-300 bg-black/80 backdrop-blur-md border-b border-gray-800">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-amber-400 to-yellow-600">
+              JSON BAKER
+            </span>
+          </div>
+          <div className="flex gap-4">
+            <Link to="/login" className="px-5 py-2 text-sm font-semibold hover:text-amber-400 transition-colors">Login</Link>
+            <Link to="/register" className="px-5 py-2 text-sm font-bold bg-amber-500 text-black hover:bg-amber-400 rounded-full transition-all hover:scale-105 active:scale-95">Enter the Afterlife</Link>
           </div>
         </div>
-      </div>
+      </nav>
+
+      {/* Hero Section */}
+      <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-amber-600/20 rounded-full blur-[120px] -z-10"></div>
+        <div className="max-w-7xl mx-auto px-6 text-center">
+          <h1 className="text-5xl lg:text-7xl font-black mb-6 tracking-tight leading-tight">
+            Master the <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">Life After Death</span>
+          </h1>
+          <p className="text-xl text-gray-400 mb-10 max-w-2xl mx-auto">
+            Bake souls, harness karma, and explore the underworld. A definitive afterlife experience.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+            <Link
+              to="/register"
+              className="px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold rounded-xl hover:from-amber-600 hover:to-orange-600 transition-all transform hover:scale-105 shadow-lg"
+            >
+              Enter The Gateway Now
+            </Link>
+            <Link
+              to="/login"
+              className="px-8 py-4 glass-effect text-white font-semibold rounded-xl hover:bg-white/20 transition-all"
+            >
+              Existing Soul
+            </Link>
+          </div>
+        </div>
+      </section>
 
       {/* Features Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
@@ -158,7 +164,7 @@ export default function LandingPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <h2 className="text-4xl font-bold text-center mb-12">
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-400">
-            Travel Through Time
+            Travel Through Realms
           </span>
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -168,7 +174,7 @@ export default function LandingPage() {
               className={`${period.color} rounded-xl p-6 text-center transform hover:scale-110 transition-all cursor-pointer animate-pulse-glow`}
             >
               <div className="text-2xl font-bold mb-2">{period.name}</div>
-              <div className="text-sm opacity-80">Era</div>
+              <div className="text-sm opacity-80">Realm</div>
             </div>
           ))}
         </div>
@@ -198,7 +204,7 @@ export default function LandingPage() {
       <footer className="border-t border-gray-800 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <p className="text-gray-400">
-            © {new Date().getFullYear()} Time Traveling Toaster. Revolutionizing breakfast since the beginning of time.
+            © {new Date().getFullYear()} Json Baker. Revolutionizing the afterlife since the beginning of time.
           </p>
           <div className="mt-4 flex justify-center gap-6">
             <a href="/api-docs" className="text-amber-400 hover:text-amber-300">

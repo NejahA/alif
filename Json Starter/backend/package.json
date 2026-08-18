@@ -1,7 +1,7 @@
 {
-  "name": "time-traveling-toaster-backend",
+  "name": "json-baker-backend",
   "version": "2.0.0",
-  "description": "API server for the Revolutionary Time Traveling Toaster with ALL features",
+  "description": "API server for Json Baker: Life After Death",
   "type": "module",
   "main": "src/index.js",
   "scripts": {
