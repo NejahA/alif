@@ -555,6 +555,8 @@ class Synapse {
     activityLog.push(this.lastFiredAt);
     if (activityLog.length > MAX_ACTIVITY) activityLog.shift();
     playBlip(this.hue, this.volume);
+    if (typeof playPentatonicNote === 'function') playPentatonicNote(this.hue);
+    if (typeof addXP === 'function') addXP(5, 'Synapse Fired');
     this.targetVolume = Math.min(1, this.volume + 0.15);
     this.firing = true;
     this.fireTimer = 0;
@@ -803,185 +805,6 @@ class Synapse {
           ctx.roundRect(chipX, chipY, cw, chipFont + chipPadY * 2, 3);
           ctx.stroke();
           ctx.fillStyle = 'hsla(220, 70%, 75%, 0.8)';
-          ctx.fillText('+' + extra, chipX + cw / 2, chipY + (chipFont + chipPadY * 2) / 2);
-        }
-      }
-    }
-  }
-
-    if (this.glow > 0.05 && this.sproutProgress > 0.1) {
-      const grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, r * 5);
-      grad.addColorStop(0, `hsla(${h}, 70%, 60%, ${0.08 * this.glow * this.sproutProgress})`);
-      grad.addColorStop(1, `hsla(${h}, 70%, 60%, 0)`);
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.arc(this.x, this.y, r * 5, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    if (this.firing) {
-      const expand = this.fireTimer * 1.5;
-      const alpha = Math.max(0, 0.3 - this.fireTimer * 0.01) * this.sproutProgress;
-      ctx.strokeStyle = `hsla(${h}, 80%, 70%, ${alpha})`;
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.arc(this.x, this.y, r + expand, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-
-    // Search highlight ring
-    if (searchTerm && this.message.toLowerCase().includes(searchTerm.toLowerCase())) {
-      const pulse = Math.sin(performance.now() * 0.005) * 0.3 + 0.7;
-      ctx.strokeStyle = `hsla(50, 100%, 70%, ${0.3 * pulse})`;
-      ctx.lineWidth = 2;
-      ctx.setLineDash([3, 3]);
-      ctx.beginPath();
-      ctx.arc(this.x, this.y, r + 12, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.setLineDash([]);
-    }
-
-    ctx.shadowColor = `hsla(${h}, 80%, 70%, ${0.3 * this.glow * this.sproutProgress})`;
-    ctx.shadowBlur = 20 * this.glow * this.sproutProgress;
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, r, 0, Math.PI * 2);
-
-    const grad = ctx.createRadialGradient(this.x - r * 0.3, this.y - r * 0.3, 0, this.x, this.y, r);
-    grad.addColorStop(0, `hsla(${h}, 80%, 80%, ${(0.6 + 0.4 * this.glow) * this.sproutProgress})`);
-    grad.addColorStop(0.5, `hsla(${h}, 70%, 55%, ${(0.5 + 0.3 * this.glow) * this.sproutProgress})`);
-    grad.addColorStop(1, `hsla(${h}, 60%, 35%, ${(0.3 + 0.2 * this.glow) * this.sproutProgress})`);
-    ctx.fillStyle = grad;
-    ctx.fill();
-    ctx.shadowBlur = 0;
-
-    if (this.sproutProgress > 0.3) {
-      ctx.beginPath();
-      ctx.arc(this.x, this.y, r * 0.3, 0, Math.PI * 2);
-      ctx.fillStyle = `hsla(${h}, 90%, 85%, ${0.5 * this.glow * this.sproutProgress})`;
-      ctx.fill();
-    }
-
-    // Auto-fire indicator
-    if (this.autoFire && this.isReady) {
-      ctx.strokeStyle = `hsla(${h}, 80%, 70%, 0.25)`;
-      ctx.lineWidth = 1;
-      ctx.setLineDash([2, 4]);
-      ctx.beginPath();
-      ctx.arc(this.x, this.y, r + 6, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.setLineDash([]);
-    }
-
-    // Star indicator
-    if (this.starred && this.isReady) {
-      const starPulse = Math.sin(performance.now() * 0.005) * 0.2 + 0.6;
-      ctx.fillStyle = `rgba(255, 215, 0, ${starPulse})`;
-      ctx.font = '10px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('★', this.x, this.y - r - 8);
-    }
-
-    // Pin indicator
-    if (this.pinned && this.isReady) {
-      const pinPulse = Math.sin(this.pinTimer * 0.04) * 0.15 + 0.35;
-      ctx.strokeStyle = `rgba(255, 255, 255, ${pinPulse})`;
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      const pinSize = 4;
-      const pinX = this.x + r + 4;
-      const pinY = this.y - r - 2;
-      ctx.moveTo(pinX, pinY);
-      ctx.lineTo(pinX + pinSize, pinY + pinSize);
-      ctx.lineTo(pinX - pinSize, pinY + pinSize);
-      ctx.closePath();
-      ctx.stroke();
-    }
-
-    // Sticky note label
-    if (this.message && this.isReady) {
-      const lines = this.message.split('\n').filter(l => l.trim());
-      const displayText = lines[0].length > 30 ? lines[0].slice(0, 27) + '...' : lines[0];
-      const fontSize = 10;
-      ctx.font = `${fontSize}px "Courier New", monospace`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-
-      const textMetrics = ctx.measureText(displayText);
-      const textWidth = textMetrics.width;
-      const padX = 8;
-      const padY = 4;
-      const noteW = textWidth + padX * 2;
-      const noteH = fontSize + padY * 2;
-      const noteX = this.x - noteW / 2;
-      const noteY = this.y + r + 8;
-
-      ctx.shadowColor = `hsla(${h}, 40%, 20%, 0.4)`;
-      ctx.shadowBlur = 8;
-      ctx.shadowOffsetY = 2;
-      ctx.fillStyle = `hsla(${h}, 50%, 30%, 0.25)`;
-      ctx.beginPath();
-      ctx.roundRect(noteX, noteY, noteW, noteH, 4);
-      ctx.fill();
-      ctx.shadowBlur = 0;
-      ctx.shadowOffsetY = 0;
-
-      ctx.strokeStyle = `hsla(${h}, 60%, 60%, 0.2)`;
-      ctx.lineWidth = 0.5;
-      ctx.beginPath();
-      ctx.roundRect(noteX, noteY, noteW, noteH, 4);
-      ctx.stroke();
-
-      ctx.fillStyle = `hsla(${h}, 60%, 80%, 0.85)`;
-      ctx.fillText(displayText, this.x, noteY + noteH / 2);
-
-      // Tag chips below the note (max 2, then +N)
-      if (this.tags.length > 0) {
-        const chips = this.tags.slice(0, 2);
-        const extra = this.tags.length - chips.length;
-        const chipFont = 8;
-        ctx.font = `${chipFont}px "Courier New", monospace`;
-        let chipX = this.x;
-        const chipY = noteY + noteH + 4;
-        const chipPadX = 5;
-        const chipPadY = 2;
-        const totalExtra = extra > 0 ? ctx.measureText('+' + extra).width + chipPadX * 2 + 4 : 0;
-        const totalWidth = chips.reduce((sum, t) => {
-          return sum + ctx.measureText(t).width + chipPadX * 2 + 4;
-        }, 0) + (totalExtra || 0) - 4;
-        chipX = this.x - totalWidth / 2;
-
-        for (const t of chips) {
-          const tw = ctx.measureText(t).width;
-          const cw = tw + chipPadX * 2;
-          ctx.fillStyle = 'hsla(220, 60%, 50%, 0.25)';
-          ctx.beginPath();
-          ctx.roundRect(chipX, chipY, cw, chipFont + chipPadY * 2, 3);
-          ctx.fill();
-          ctx.strokeStyle = 'hsla(220, 60%, 70%, 0.25)';
-          ctx.lineWidth = 0.5;
-          ctx.beginPath();
-          ctx.roundRect(chipX, chipY, cw, chipFont + chipPadY * 2, 3);
-          ctx.stroke();
-          ctx.fillStyle = 'hsla(220, 70%, 75%, 0.8)';
-          ctx.fillText(t, chipX + cw / 2, chipY + (chipFont + chipPadY * 2) / 2);
-          chipX += cw + 4;
-        }
-
-        if (extra > 0) {
-          const tw = ctx.measureText('+' + extra).width;
-          const cw = tw + chipPadX * 2;
-          ctx.fillStyle = 'hsla(220, 60%, 50%, 0.25)';
-          ctx.beginPath();
-          ctx.roundRect(chipX, chipY, cw, chipFont + chipPadY * 2, 3);
-          ctx.fill();
-          ctx.strokeStyle = 'hsla(220, 60%, 70%, 0.25)';
-          ctx.lineWidth = 0.5;
-          ctx.beginPath();
-          ctx.roundRect(chipX, chipY, cw, chipFont + chipPadY * 2, 3);
-          ctx.stroke();
-          ctx.fillStyle = 'hsla(220, 70%, 75%, 0.8)';
-          ctx.fillText('+' + extra, chipX + cw / 2, chipY + (chipFont + chipPadY * 2) / 2);
         }
       }
     }
@@ -1944,30 +1767,6 @@ function update(dt) {
       particles.splice(i, 1);
     }
   }
-
-  // spawn ambient particles
-  spawnAmbientParticles();
-
-  // Decay: synapses slowly lose charge over time
-  if (decayEnabled) {
-    for (const s of synapses) {
-      if (s.isReady && !s.pinned && !s.autoFire) {
-        s.targetVolume = Math.max(0.05, s.targetVolume - dt * 0.002);
-      }
-    }
-  }
-
-  // Pomodoro tick
-  if (pomodoroRunning && pomodoroTimeLeft > 0) {
-    pomodoroTimeLeft -= dt;
-    if (pomodoroTimeLeft <= 0) {
-      pomodoroTimeLeft = 0;
-      pomodoroRunning = false;
-      onPomodoroComplete();
-    }
-    updatePomodoroDisplay();
-  }
-}
 
   // tick synapses (sprouting progress)
   for (const s of synapses) {
@@ -4437,6 +4236,413 @@ importText.addEventListener('input', () => {
     }
   } catch {
     importPreview.textContent = '';
+  }
+});
+
+// --- Integrated Features: Soundscape Lab, RPG Soul Codex, Kanban View, AI Oracle ---
+
+// 1. Soundscape & Pentatonic Web Audio Engine
+let droneOsc = null, droneGain = null;
+let rainNode = null, rainGain = null;
+let binauralOsc1 = null, binauralOsc2 = null, binauralGain = null;
+
+function getAudioContext() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+  return audioCtx;
+}
+
+// Pentatonic note synth when node fires
+const PENTATONIC_FREQS = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25, 783.99, 880.00];
+function playPentatonicNote(hue = 220) {
+  if (soundMuted) return;
+  const toggle = $('synth-notes-toggle');
+  if (toggle && !toggle.checked) return;
+  try {
+    const ctx = getAudioContext();
+    const index = Math.floor((hue / 360) * PENTATONIC_FREQS.length) % PENTATONIC_FREQS.length;
+    const freq = PENTATONIC_FREQS[index];
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+
+    gain.gain.setValueAtTime(0.001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.15, ctx.currentTime + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.8);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.85);
+  } catch (e) {}
+}
+
+// Ambient Drone
+function setDroneVolume(val) {
+  if (val <= 0) {
+    if (droneGain) droneGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+    return;
+  }
+  const ctx = getAudioContext();
+  if (!droneOsc) {
+    droneOsc = ctx.createOscillator();
+    droneGain = ctx.createGain();
+    droneOsc.type = 'triangle';
+    droneOsc.frequency.setValueAtTime(110, ctx.currentTime); // A2 note
+    droneOsc.connect(droneGain);
+    droneGain.connect(ctx.destination);
+    droneOsc.start();
+  }
+  droneGain.gain.setTargetAtTime((val / 100) * 0.2, ctx.currentTime, 0.1);
+}
+
+// Rain Noise Generator
+function setRainVolume(val) {
+  if (val <= 0) {
+    if (rainGain) rainGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+    return;
+  }
+  const ctx = getAudioContext();
+  if (!rainNode) {
+    const bufferSize = ctx.sampleRate * 2;
+    const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const output = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      output[i] = Math.random() * 2 - 1;
+    }
+    rainNode = ctx.createBufferSource();
+    rainNode.buffer = noiseBuffer;
+    rainNode.loop = true;
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(800, ctx.currentTime);
+
+    rainGain = ctx.createGain();
+    rainNode.connect(filter);
+    filter.connect(rainGain);
+    rainGain.connect(ctx.destination);
+    rainNode.start();
+  }
+  rainGain.gain.setTargetAtTime((val / 100) * 0.12, ctx.currentTime, 0.1);
+}
+
+// Binaural Beat (432Hz focus)
+function setBinauralVolume(val) {
+  if (val <= 0) {
+    if (binauralGain) binauralGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+    return;
+  }
+  const ctx = getAudioContext();
+  if (!binauralOsc1) {
+    binauralOsc1 = ctx.createOscillator();
+    binauralOsc2 = ctx.createOscillator();
+    binauralGain = ctx.createGain();
+
+    binauralOsc1.frequency.setValueAtTime(216, ctx.currentTime); // Left
+    binauralOsc2.frequency.setValueAtTime(224, ctx.currentTime); // Right (8Hz Alpha Beat)
+
+    binauralOsc1.connect(binauralGain);
+    binauralOsc2.connect(binauralGain);
+    binauralGain.connect(ctx.destination);
+    binauralOsc1.start();
+    binauralOsc2.start();
+  }
+  binauralGain.gain.setTargetAtTime((val / 100) * 0.1, ctx.currentTime, 0.1);
+}
+
+// 2. RPG Soul Karma & Reincarnation Progression System
+const RPG_KEY = 'hi§ro_rpg_state';
+let rpgState = {
+  level: 1,
+  xp: 0,
+  energy: 100,
+  maxEnergy: 100,
+  souls: 0,
+  karma: 0,
+  rank: 'Novice Reaper'
+};
+
+function loadRPGState() {
+  try {
+    const stored = localStorage.getItem(RPG_KEY);
+    if (stored) Object.assign(rpgState, JSON.parse(stored));
+  } catch (e) {}
+  updateRPGHUD();
+}
+
+function saveRPGState() {
+  try {
+    localStorage.setItem(RPG_KEY, JSON.stringify(rpgState));
+  } catch (e) {}
+  updateRPGHUD();
+}
+
+function updateRPGHUD() {
+  const lvlBadge = $('rpg-level-badge');
+  const energyBadge = $('rpg-energy-badge');
+  if (lvlBadge) lvlBadge.textContent = `Lvl ${rpgState.level}`;
+  if (energyBadge) energyBadge.textContent = `✨ ${rpgState.energy}`;
+
+  const titleEl = $('rpg-title');
+  if (titleEl) titleEl.textContent = `Reincarnation Level ${rpgState.level}`;
+  const energyVal = $('rpg-energy-val');
+  if (energyVal) energyVal.textContent = `${rpgState.energy} / ${rpgState.maxEnergy} ✨`;
+  const soulsVal = $('rpg-souls-val');
+  if (soulsVal) soulsVal.textContent = `${rpgState.souls} 👻`;
+  const karmaVal = $('rpg-karma-val');
+  if (karmaVal) karmaVal.textContent = `${rpgState.karma} ⚖️`;
+  const rankVal = $('rpg-rank-val');
+  if (rankVal) rankVal.textContent = rpgState.rank;
+
+  const nextXP = rpgState.level * 100;
+  const xpText = $('rpg-xp-text');
+  if (xpText) xpText.textContent = `${rpgState.xp} / ${nextXP} XP`;
+  const xpFill = $('rpg-xp-fill');
+  if (xpFill) xpFill.style.width = Math.min(100, (rpgState.xp / nextXP) * 100) + '%';
+}
+
+function addXP(amount, actionName = '') {
+  rpgState.xp += amount;
+  rpgState.souls += Math.floor(amount / 2);
+  const nextXP = rpgState.level * 100;
+  if (rpgState.xp >= nextXP) {
+    rpgState.level += 1;
+    rpgState.xp -= nextXP;
+    rpgState.maxEnergy += 25;
+    rpgState.energy = rpgState.maxEnergy;
+    if (rpgState.level >= 10) rpgState.rank = 'Grand Weaver';
+    else if (rpgState.level >= 5) rpgState.rank = 'Ethereal Walker';
+    else if (rpgState.level >= 3) rpgState.rank = 'Grim Reaper';
+    showToast(`🎉 Level Up! You reached Level ${rpgState.level} (${rpgState.rank})`);
+  } else if (actionName) {
+    showToast(`+${amount} XP (${actionName})`);
+  }
+  saveRPGState();
+}
+
+function performSeance() {
+  if (rpgState.energy < 25) {
+    showToast('Not enough Spiritual Energy! Wait for regeneration or complete Pomodoro focus.');
+    return;
+  }
+  rpgState.energy -= 25;
+  rpgState.karma += 50;
+  addXP(40, 'Séance Completed');
+  showToast('🔮 Séance performed! Karma +50 ⚖️, XP +40');
+}
+
+// Energy regeneration ticker
+setInterval(() => {
+  if (rpgState.energy < rpgState.maxEnergy) {
+    rpgState.energy = Math.min(rpgState.maxEnergy, rpgState.energy + 2);
+    saveRPGState();
+  }
+}, 10000);
+
+// 3. Kanban Task Board Controller
+function toggleKanbanView() {
+  const overlay = $('kanban-overlay');
+  if (!overlay) return;
+  const isHidden = overlay.classList.contains('hidden');
+  if (isHidden) {
+    renderKanban();
+    overlay.classList.remove('hidden');
+  } else {
+    overlay.classList.add('hidden');
+  }
+}
+
+function renderKanban() {
+  const cols = {
+    backlog: $('kanban-col-backlog'),
+    in_progress: $('kanban-col-in_progress'),
+    starred: $('kanban-col-starred'),
+    completed: $('kanban-col-completed')
+  };
+
+  Object.values(cols).forEach(col => { if (col) col.innerHTML = ''; });
+  const counts = { backlog: 0, in_progress: 0, starred: 0, completed: 0 };
+
+  synapses.forEach(syn => {
+    if (!syn.isReady) return;
+    let colKey = 'backlog';
+    if (syn.growth >= 90) colKey = 'completed';
+    else if (syn.starred) colKey = 'starred';
+    else if (syn.firedCount > 0) colKey = 'in_progress';
+
+    counts[colKey]++;
+    const card = document.createElement('div');
+    card.className = 'kanban-card';
+    card.setAttribute('draggable', 'true');
+    card.innerHTML = `
+      <div class="kanban-card-title">${escapeHTML(syn.message || 'Untitled Synapse')}</div>
+      <div class="kanban-card-meta">
+        <span>⚡ Charge: ${Math.round(syn.growth || 0)}%</span>
+        <span>${syn.starred ? '⭐ Starred' : ''}</span>
+      </div>
+      ${syn.tags && syn.tags.length > 0 ? `<div class="kanban-card-tags">${syn.tags.map(t => `<span class="kanban-card-tag">#${escapeHTML(t)}</span>`).join('')}</div>` : ''}
+    `;
+
+    card.onclick = () => {
+      toggleKanbanView();
+      selectSynapse(syn);
+      focusOn(syn);
+    };
+
+    if (cols[colKey]) cols[colKey].appendChild(card);
+  });
+
+  // Update header column counts
+  document.querySelectorAll('.kanban-col').forEach(col => {
+    const key = col.getAttribute('data-col');
+    const countEl = col.querySelector('.col-count');
+    if (countEl && counts[key] !== undefined) countEl.textContent = counts[key];
+  });
+}
+
+// 4. AI Mind-Map Oracle Generator
+function sproutMindMapTree(topicName) {
+  if (!topicName || !topicName.trim()) return;
+  const cleanTopic = topicName.trim();
+  
+  // Center root node
+  const rootX = -viewX + W / 2;
+  const rootY = -viewY + H / 2;
+  
+  const rootSyn = new Synapse(rootX, rootY);
+  rootSyn.message = `🧠 ${cleanTopic}`;
+  rootSyn.starred = true;
+  rootSyn.hue = Math.floor(Math.random() * 360);
+  rootSyn.tags = ['mindmap', cleanTopic.toLowerCase()];
+  synapses.push(rootSyn);
+
+  const subBranches = [
+    `Key Concepts of ${cleanTopic}`,
+    `Objectives & Goals`,
+    `Action Items`,
+    `Resources & Notes`,
+    `Future Ideas`
+  ];
+
+  const radius = 220;
+  subBranches.forEach((branchTitle, idx) => {
+    const angle = (idx / subBranches.length) * Math.PI * 2;
+    const childX = rootX + Math.cos(angle) * radius;
+    const childY = rootY + Math.sin(angle) * radius;
+
+    const childSyn = new Synapse(childX, childY);
+    childSyn.message = branchTitle;
+    childSyn.hue = (rootSyn.hue + (idx * 40)) % 360;
+    childSyn.tags = [cleanTopic.toLowerCase()];
+    synapses.push(childSyn);
+    connectSynapses(rootSyn, childSyn);
+  });
+
+  addXP(30, 'Sprouted Mind-Map Tree');
+  save();
+  render();
+  showToast(`🔮 Sprouted AI Mind-Map Tree for "${cleanTopic}"!`);
+}
+
+function escapeHTML(str) {
+  return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// 5. Wire Up Event Listeners for New Panels
+document.addEventListener('DOMContentLoaded', () => {
+  loadRPGState();
+
+  // Top bar triggers
+  const btnSoundscape = $('btn-soundscape');
+  if (btnSoundscape) btnSoundscape.onclick = () => $('soundscape-panel').classList.toggle('hidden');
+
+  const btnKanban = $('btn-kanban');
+  if (btnKanban) btnKanban.onclick = () => toggleKanbanView();
+
+  const btnKanbanClose = $('btn-kanban-close');
+  if (btnKanbanClose) btnKanbanClose.onclick = () => toggleKanbanView();
+
+  const btnKanbanAdd = $('btn-kanban-add');
+  if (btnKanbanAdd) btnKanbanAdd.onclick = () => {
+    toggleKanbanView();
+    const syn = new Synapse(-viewX + W/2, -viewY + H/2);
+    syn.message = 'New Task';
+    synapses.push(syn);
+    selectSynapse(syn);
+  };
+
+  const btnRPG = $('btn-rpg');
+  if (btnRPG) btnRPG.onclick = () => $('rpg-panel').classList.toggle('hidden');
+
+  const rpgBadge = $('rpg-hud-badge');
+  if (rpgBadge) rpgBadge.onclick = () => $('rpg-panel').classList.toggle('hidden');
+
+  const btnCloseRPG = $('btn-close-rpg');
+  if (btnCloseRPG) btnCloseRPG.onclick = () => $('rpg-panel').classList.add('hidden');
+
+  const btnSeance = $('btn-rpg-seance');
+  if (btnSeance) btnSeance.onclick = () => performSeance();
+
+  const btnAI = $('btn-ai-oracle');
+  if (btnAI) btnAI.onclick = () => $('ai-oracle-panel').classList.toggle('hidden');
+
+  const btnCloseAI = $('btn-close-ai-oracle');
+  if (btnCloseAI) btnCloseAI.onclick = () => $('ai-oracle-panel').classList.add('hidden');
+
+  const btnGenTree = $('btn-generate-tree');
+  if (btnGenTree) btnGenTree.onclick = () => {
+    const input = $('oracle-topic-input');
+    if (input && input.value) {
+      sproutMindMapTree(input.value);
+      input.value = '';
+      $('ai-oracle-panel').classList.add('hidden');
+    }
+  };
+
+  document.querySelectorAll('.btn-oracle-preset').forEach(btn => {
+    btn.onclick = () => {
+      const topic = btn.getAttribute('data-topic');
+      if (topic) {
+        sproutMindMapTree(topic);
+        $('ai-oracle-panel').classList.add('hidden');
+      }
+    };
+  });
+
+  const btnCloseSoundscape = $('btn-close-soundscape');
+  if (btnCloseSoundscape) btnCloseSoundscape.onclick = () => $('soundscape-panel').classList.add('hidden');
+
+  // Synth Sliders
+  const droneSlider = $('synth-drone-vol');
+  if (droneSlider) droneSlider.oninput = (e) => {
+    setDroneVolume(e.target.value);
+    $('synth-drone-val').textContent = e.target.value > 0 ? e.target.value + '%' : 'off';
+  };
+
+  const rainSlider = $('synth-rain-vol');
+  if (rainSlider) rainSlider.oninput = (e) => {
+    setRainVolume(e.target.value);
+    $('synth-rain-val').textContent = e.target.value > 0 ? e.target.value + '%' : 'off';
+  };
+
+  const binauralSlider = $('synth-binaural-vol');
+  if (binauralSlider) binauralSlider.oninput = (e) => {
+    setBinauralVolume(e.target.value);
+    $('synth-binaural-val').textContent = e.target.value > 0 ? e.target.value + '%' : 'off';
+  };
+});
+
+// Shortcut K for Kanban view
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'k' && !e.ctrlKey && !e.metaKey && !editingSynapse) {
+    toggleKanbanView();
   }
 });
 

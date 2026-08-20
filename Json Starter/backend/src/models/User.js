@@ -108,6 +108,23 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  activeBuffs: [{
+    type: { type: String },
+    expiresAt: Date
+  }],
+  prestigeLevel: {
+    type: Number,
+    default: 0,
+  },
+  prestigeMultiplier: {
+    type: Number,
+    default: 1,
+  },
+  familiars: [{
+    name: String,
+    passiveEffect: String,
+    unlockedAt: Date
+  }],
   lastTimeTravel: Date,
   refreshToken: String,
   isActive: {

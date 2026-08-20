@@ -45,6 +45,15 @@
         <button id="btn-lock" class="icon-btn" title="Lock garden (read-only) (L)">🔓</button>
         <button id="btn-pomodoro" class="icon-btn" title="Pomodoro focus timer">⏱</button>
         <button id="btn-present" class="icon-btn" title="Presentation mode (starred synapses)">▶</button>
+        <div class="top-sep"></div>
+        <button id="btn-soundscape" class="icon-btn" title="Soundscape Lab & Audio Synth">🎵</button>
+        <button id="btn-kanban" class="icon-btn" title="Toggle Kanban Task Board (K)">📋</button>
+        <button id="btn-rpg" class="icon-btn" title="Soul Reincarnation RPG & Karma">⚔️</button>
+        <button id="btn-ai-oracle" class="icon-btn" title="AI Mind-Map Brainstorming Oracle">🔮</button>
+        <div id="rpg-hud-badge" class="rpg-hud-badge" title="Click to open RPG Soul Codex">
+          <span id="rpg-level-badge" class="rpg-badge-lvl">Lvl 1</span>
+          <span id="rpg-energy-badge" class="rpg-badge-energy">✨ 100</span>
+        </div>
       </div>
     </div>
 
@@ -340,6 +349,145 @@
         <button id="btn-pom-start" class="action-btn">&#9654; start</button>
         <button id="btn-pom-reset" class="action-btn">&#8634; reset</button>
         <button id="btn-close-pomodoro" class="action-btn secondary">close</button>
+      </div>
+    </div>
+
+    <!-- Soundscape Lab Panel -->
+    <div id="soundscape-panel" class="panel hidden">
+      <div class="panel-section">
+        <div class="synapse-header">
+          <span class="synapse-label">SOUNDSCAPE LAB</span>
+          <span class="synapse-id">ambient audio synth engine</span>
+        </div>
+        <div class="synth-group">
+          <label class="synth-label">🎵 Ambient Synth Drone</label>
+          <div class="synth-slider-row">
+            <input type="range" id="synth-drone-vol" min="0" max="100" value="0" class="hue-slider">
+            <span id="synth-drone-val" class="hue-value">off</span>
+          </div>
+        </div>
+        <div class="synth-group">
+          <label class="synth-label">🌧 Nature Rain Noise Generator</label>
+          <div class="synth-slider-row">
+            <input type="range" id="synth-rain-vol" min="0" max="100" value="0" class="hue-slider">
+            <span id="synth-rain-val" class="hue-value">off</span>
+          </div>
+        </div>
+        <div class="synth-group">
+          <label class="synth-label">🧘 Binaural Pulse (432Hz Focus Wave)</label>
+          <div class="synth-slider-row">
+            <input type="range" id="synth-binaural-vol" min="0" max="100" value="0" class="hue-slider">
+            <span id="synth-binaural-val" class="hue-value">off</span>
+          </div>
+        </div>
+        <div class="synth-group">
+          <label class="toggle-label">
+            <input type="checkbox" id="synth-notes-toggle" checked>
+            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            <span class="toggle-text">Play pentatonic scale notes when nodes fire</span>
+          </label>
+        </div>
+      </div>
+      <div class="panel-actions">
+        <button id="btn-close-soundscape" class="action-btn secondary">close</button>
+      </div>
+    </div>
+
+    <!-- RPG Soul Codex Panel -->
+    <div id="rpg-panel" class="panel hidden">
+      <div class="panel-section">
+        <div class="synapse-header">
+          <span class="synapse-label">SOUL CODEX</span>
+          <span class="synapse-id" id="rpg-title">Reincarnation Level 1</span>
+        </div>
+        <div class="rpg-stats-grid">
+          <div class="rpg-stat-box">
+            <span class="rpg-stat-title">Spiritual Energy</span>
+            <span id="rpg-energy-val" class="rpg-stat-val text-amber">100 ✨</span>
+          </div>
+          <div class="rpg-stat-box">
+            <span class="rpg-stat-title">Harvested Souls</span>
+            <span id="rpg-souls-val" class="rpg-stat-val text-orange">0 👻</span>
+          </div>
+          <div class="rpg-stat-box">
+            <span class="rpg-stat-title">Karma Balance</span>
+            <span id="rpg-karma-val" class="rpg-stat-val text-emerald">0 ⚖️</span>
+          </div>
+          <div class="rpg-stat-box">
+            <span class="rpg-stat-title">Rank Title</span>
+            <span id="rpg-rank-val" class="rpg-stat-val text-indigo">Novice Reaper</span>
+          </div>
+        </div>
+        <div class="rpg-xp-container">
+          <div class="rpg-xp-label">
+            <span>Soul Level Progress</span>
+            <span id="rpg-xp-text">0 / 100 XP</span>
+          </div>
+          <div class="rpg-xp-bar"><div id="rpg-xp-fill" class="rpg-xp-fill" style="width: 0%;"></div></div>
+        </div>
+        <div class="rpg-relics-section">
+          <span class="synapse-label">EQUIPPED RELICS & BUFFS</span>
+          <div id="rpg-relics-list" class="rpg-relics-list">
+            <div class="rpg-relic-item active">⚙️ Reaper Relic (+1 👻 / 10s auto-harvest)</div>
+            <div class="rpg-relic-item active">🛡️ Angelic Guard (+20% Energy Regen)</div>
+          </div>
+        </div>
+      </div>
+      <div class="panel-actions">
+        <button id="btn-rpg-seance" class="action-btn">✨ Perform Séance (-25 Energy)</button>
+        <button id="btn-close-rpg" class="action-btn secondary">close</button>
+      </div>
+    </div>
+
+    <!-- AI Mind-Map Oracle Panel -->
+    <div id="ai-oracle-panel" class="panel hidden">
+      <div class="panel-section">
+        <div class="synapse-header">
+          <span class="synapse-label">AI MIND-MAP ORACLE</span>
+          <span class="synapse-id">auto-sprout topic trees</span>
+        </div>
+        <div class="oracle-input-group">
+          <input type="text" id="oracle-topic-input" placeholder="enter topic (e.g. Quantum Physics, Web Dev, Game Loop)..." autocomplete="off" spellcheck="false">
+          <button id="btn-generate-tree" class="action-btn">🔮 Sprout Tree</button>
+        </div>
+        <div class="oracle-presets">
+          <span class="rate-label">Quick topics:</span>
+          <button class="action-btn small btn-oracle-preset" data-topic="Project Roadmap">📋 Project Roadmap</button>
+          <button class="action-btn small btn-oracle-preset" data-topic="Brainstorming Ideas">💡 Brainstorming</button>
+          <button class="action-btn small btn-oracle-preset" data-topic="Daily Habits">⚡ Daily Habits</button>
+        </div>
+      </div>
+      <div class="panel-actions">
+        <button id="btn-close-ai-oracle" class="action-btn secondary">close</button>
+      </div>
+    </div>
+
+    <!-- Kanban Task Board Overlay Container -->
+    <div id="kanban-overlay" class="kanban-overlay hidden">
+      <div class="kanban-header">
+        <h2>📋 Synapse Kanban Task Board</h2>
+        <div class="kanban-actions">
+          <button id="btn-kanban-add" class="action-btn small">+ New Task</button>
+          <button id="btn-kanban-close" class="action-btn secondary small">Exit Kanban (Canvas Mode)</button>
+        </div>
+      </div>
+      <div id="kanban-columns" class="kanban-columns">
+        <div class="kanban-col" data-col="backlog">
+          <div class="kanban-col-header">📋 Backlog / Seeds (<span class="col-count">0</span>)</div>
+          <div class="kanban-col-list" id="kanban-col-backlog"></div>
+        </div>
+        <div class="kanban-col" data-col="in_progress">
+          <div class="kanban-col-header">⚡ In Progress (<span class="col-count">0</span>)</div>
+          <div class="kanban-col-list" id="kanban-col-in_progress"></div>
+        </div>
+        <div class="kanban-col" data-col="starred">
+          <div class="kanban-col-header">⭐ Starred / Focus (<span class="col-count">0</span>)</div>
+          <div class="kanban-col-list" id="kanban-col-starred"></div>
+        </div>
+        <div class="kanban-col" data-col="completed">
+          <div class="kanban-col-header">✅ Completed / Charged (<span class="col-count">0</span>)</div>
+          <div class="kanban-col-list" id="kanban-col-completed"></div>
+        </div>
       </div>
     </div>
 

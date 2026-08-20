@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ALIVERSE — Master Ecosystem Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Outfit:wght@500;700;800&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <div id="app">
+    <!-- Top Navigation Bar -->
+    <header id="top-bar">
+      <div class="brand">
+        <div class="logo-orb"></div>
+        <h1>ALIVERSE</h1>
+        <span class="version-tag">v1.0.0</span>
+      </div>
+
+      <div class="search-container">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="search-input" placeholder="Search 60+ Alif projects, tech stack, categories..."
+          autocomplete="off">
+        <button id="btn-clear-search" class="clear-btn hidden">✕</button>
+      </div>
+
+      <div class="header-actions">
+        <div class="view-toggle">
+          <button id="btn-view-galaxy" class="toggle-btn active">🌌 Galaxy Map</button>
+          <button id="btn-view-grid" class="toggle-btn">🗂️ Grid Codex</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Stats HUD Ribbon -->
+    <div id="stats-ribbon">
+      <div class="stat-pill">
+        <span class="stat-icon">📦</span>
+        <span class="stat-label">Total Projects</span>
+        <span id="stat-total" class="stat-val">--</span>
+      </div>
+      <div class="stat-pill">
+        <span class="stat-icon">🏷️</span>
+        <span class="stat-label">Categories</span>
+        <span id="stat-categories" class="stat-val">6 Domains</span>
+      </div>
+      <div class="stat-pill">
+        <span class="stat-icon">⚡</span>
+        <span class="stat-label">API Hub Status</span>
+        <span id="stat-status" class="stat-val text-emerald">Connected</span>
+      </div>
+      <div class="stat-pill">
+        <span class="stat-icon">🕒</span>
+        <span class="stat-label">Workspace Path</span>
+        <span class="stat-val text-dim">/alif</span>
+      </div>
+    </div>
+
+    <!-- Category Filters -->
+    <div id="category-bar">
+      <button class="cat-chip active" data-cat="all">All Domains</button>
+      <button class="cat-chip" data-cat="Canvas & Knowledge">🧠 Canvas & Knowledge</button>
+      <button class="cat-chip" data-cat="RPG & Gaming">⚔️ RPG & Gaming</button>
+      <button class="cat-chip" data-cat="Audio & Soundscapes">🎵 Audio & Soundscapes</button>
+      <button class="cat-chip" data-cat="Tasks & Management">⚡ Tasks & Management</button>
+      <button class="cat-chip" data-cat="Desktop Apps">🖥️ Desktop Apps</button>
+      <button class="cat-chip" data-cat="Experimental Engines">🌌 Experimental Engines</button>
+    </div>
+
+    <!-- Main Content Area -->
+    <main id="main-content">
+      <!-- 2D Canvas Galaxy Map -->
+      <div id="galaxy-view" class="view-panel">
+        <canvas id="galaxy-canvas"></canvas>
+        <div class="galaxy-controls-overlay">
+          <span>Click any star to inspect project</span>
+          <span>Scroll: Zoom | Drag: Pan</span>
+        </div>
+      </div>
+
+      <!-- Grid Codex View -->
+      <div id="grid-view" class="view-panel hidden">
+        <div id="projects-grid" class="projects-grid"></div>
+      </div>
+    </main>
+
+    <!-- Project Details Inspector Modal -->
+    <div id="inspector-modal" class="modal hidden">
+      <div class="modal-backdrop"></div>
+      <div class="modal-card">
+        <div class="modal-header">
+          <div class="modal-title-group">
+            <span id="modal-icon" class="modal-icon">📦</span>
+            <div>
+              <h2 id="modal-name">Project Title</h2>
+              <span id="modal-category" class="modal-category-badge">Category</span>
+            </div>
+          </div>
+          <button id="btn-close-modal" class="close-btn">✕</button>
+        </div>
+        <div class="modal-body">
+          <p id="modal-desc" class="modal-desc">Project description...</p>
+          <div class="modal-meta-grid">
+            <div class="meta-box">
+              <span class="meta-label">Path</span>
+              <code id="modal-path" class="meta-val">/alif/...</code>
+            </div>
+            <div class="meta-box">
+              <span class="meta-label">Version</span>
+              <span id="modal-version" class="meta-val">1.0.0</span>
+            </div>
+            <div class="meta-box">
+              <span class="meta-label">Files</span>
+              <span id="modal-files" class="meta-val">--</span>
+            </div>
+            <div class="meta-box">
+              <span class="meta-label">HTML UI</span>
+              <span id="modal-html" class="meta-val">Yes</span>
+            </div>
+          </div>
+          <div class="modal-section">
+            <span class="section-title">PACKAGE SCRIPTS</span>
+            <div id="modal-scripts" class="scripts-list"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="btn-modal-close-action" class="btn secondary">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+
+</html>

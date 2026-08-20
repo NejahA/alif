@@ -1,3 +1,156 @@
+++ b/Json Starter/backend/package.json	
+  "name": "json-baker-backend",
+  "description": "API server for Json Baker: Life After Death",
+++ b/Json Starter/backend/src/index.js	
+      logger.info(`JSON Baker backend listening on port ${config.port} [${config.env}]`);
+++ b/Json Starter/frontend/index.html	
+    <title>JSON Baker | Life After Death</title>
+    <meta name="description" content="Json Baker - A Life After Death Experience">
+++ b/Json Starter/frontend/package.json	
+  "name": "json-baker-frontend",
+  "description": "Json Baker: Life After Death Frontend",
+++ b/Json Starter/frontend/src/pages/Dashboard.tsx	
+    if (!user) return '🥉 Lost Soul';
+    if (toasts >= 500) return '👑 Grand Reaper';
+    if (eras >= 3) return '🥇 Ethereal Walker';
+    if (items >= 5) return '🥈 Spirit Collector';
+    return '🥉 Lost Soul';
+      toast.error(error.response?.data?.message || 'Reincarnation gateway failed');
+      toast.error(error.response?.data?.message || 'Séance failed');
+      toast.error(error.response?.data?.message || 'Wheel of fate failed');
+      toast.error(error.response?.data?.message || 'Claim karma interest failed');
+      toast.error(error.response?.data?.message || 'Affiliation selection failed');
+  const themeClass =
+    currentTheme === 'golden' ? 'from-amber-950 via-black to-yellow-950 text-amber-50' :
+      currentTheme === 'steampunk' ? 'from-stone-900 via-stone-950 to-amber-950 text-amber-100' :
+        'from-gray-900 via-black to-gray-900 text-white';
+
+              Welcome, {user.username} ({user.role})
+            <button
+            <span>Active Soul Resonance 🛡️</span>
+            <span className="text-xs text-gray-400 font-normal">(Equipped spirits grant active perks)</span>
+                <div className="text-xs uppercase font-bold text-indigo-400">Primary Link</div>
+                  {user.equippedGear?.find(g => g.slot === 'primary')?.item || 'No Spirit Linked'}
+                <div className="text-xs uppercase font-bold text-indigo-400">Secondary Link</div>
+                  {user.equippedGear?.find(g => g.slot === 'secondary')?.item || 'No Spirit Linked'}
+
+                  <span className="text-gray-400">Spiritual Energy</span>
+                  <span className="font-mono text-amber-400 text-xl">{user.energy ?? 100} ✨</span>
+                  <span className="text-gray-400">Souls Harvested</span>
+                  <span className="font-mono text-orange-400 text-xl">{user.toastsCollected ?? user.toasts ?? 0} 👻</span>
+                  <span className="text-gray-400">Karma Vault</span>
+                  <span className="font-mono text-emerald-400 text-xl">{user.bankBalance ?? 0} ⚖️</span>
+                <button
+                  Consume 5 Souls (+25 ✨)
+                  Wheel of Fate 🎡
+                  className={`w-full py-3 font-bold rounded-xl transition-all transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 ${isOverclockActive
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50'
+                    : 'bg-gradient-to-r from-amber-600 to-yellow-600 text-white shadow-[0_0_15px_rgba(245,158,11,0.3)]'
+                    }`}
+                  {isOverclockActive ? '✨ Divine Burst Active (15m)' : 'Divine Burst (50 👻) ✨'}
+                  className={`w-full py-3 font-bold rounded-xl transition-all transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 ${user.hasHarvester
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/50'
+                    : 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)]'
+                    }`}
+                  {user.hasHarvester ? '⚙️ Relic Active (+1 👻/10s)' : 'Unlock Reaper Relic (500 👻) ⚙️'}
+              <h3 className="text-sm text-gray-400 mb-3 uppercase tracking-wider">Soul Affiliation 🚩</h3>
+                {['Angelic Guard', 'Grim Reapers', 'Underworld Smugglers'].map(fac => (
+                    className={`w-full p-2.5 rounded-lg border text-left text-xs transition-all flex justify-between items-center ${user.faction === fac
+                      ? 'bg-indigo-600/30 border-indigo-500 text-indigo-200 font-bold'
+                      : 'bg-gray-800/40 border-gray-700 text-gray-400 hover:bg-gray-800'
+                      }`}
+                    <span>{fac === 'Angelic Guard' ? '🛡️ Angelic Guard (+20% Demon DMG)' : fac === 'Grim Reapers' ? '🔍 Grim Reapers (+15% Séance Chance)' : '💰 Underworld Smugglers (+15% Karma Rate)'}</span>
+              <h2 className="text-xl font-semibold mb-6 border-b border-gray-700 pb-2">Reincarnation Gateway</h2>
+
+
+
+                  Hold Séance ({scanCost} Energy)
+                  Discover ancient artifacts and unique souls nearby.
+              <h2 className="text-xl font-semibold mb-6 border-b border-gray-700 pb-2">Soul Core Inventory</h2>
+                      <div className="text-4xl mb-2">👻</div>
+                      {inv.rarity && <div className={`text-[10px] mt-1 uppercase font-bold tracking-wider ${inv.rarity === 'Legendary' ? 'text-yellow-400' :
+                          inv.rarity === 'Rare' ? 'text-blue-400' : 'text-gray-400'
+                        }`}>{inv.rarity}</div>}
+
+                  Your phylactery is empty. Hold a Séance to collect souls!
+              <h2 className="text-xl font-semibold mb-6 border-b border-gray-700 pb-2">Underworld Upgrades</h2>
+
+                    <button
+                      Buy (200 👻)
+                    <button
+                      Buy (300 👻)
+                <span>Underworld Demon Battle</span>
+                    <h3 className="font-bold text-lg text-red-300">{user.bossName || 'Arch-Demon'} 👾</h3>
+                    <p className="text-xs text-gray-400 mt-0.5">Defeat to earn +500 👻 and a Legendary Spirit!</p>
+                  <div
+                <h2 className="text-2xl font-bold text-cyan-300">Soul Museum Codex 📖</h2>
+              <button
+                  <div className="text-4xl">{item.collected ? '👻' : '❓'}</div>
+                    <p className="text-xs text-gray-400 mt-1 italic">{item.collected ? item.lore : 'Scan lifelines to discover.'}</p>
+      )}
+
+++ b/Json Starter/frontend/src/pages/LandingPage.tsx	
+      title: 'Reincarnation Cycles',
+      description: 'Journey through six spiritual eras from purgatory to enlightenment.',
+      title: 'Soul Discovery',
+      description: 'Discover unique spirits in each lifetime with specialized abilities.',
+      title: 'Karma System',
+      description: 'Manage your spiritual karma wisely to travel and bake safely.',
+      title: 'Underworld Exploration',
+      description: 'Explore the different sections of the afterlife and uncover its secrets.',
+      title: 'Essence Collection',
+      description: 'Collect leftover lifeforce to unlock divine achievements and relics.',
+      title: 'Spiritual Updates',
+      description: 'Live updates and notifications for dimensional anomalies.',
+    { name: 'Purgatory', color: 'bg-amber-900', period: 'prehistoric' },
+    { name: 'Limbo', color: 'bg-rose-900', period: 'medieval' },
+    { name: 'Elysium', color: 'bg-yellow-800', period: 'renaissance' },
+    { name: 'Tartarus', color: 'bg-gray-700', period: 'industrial' },
+    { name: 'Valhalla', color: 'bg-emerald-700', period: 'modern' },
+    { name: 'Nirvana', color: 'bg-cyan-700', period: 'futuristic' },
+    <div className="min-h-screen bg-black text-white selection:bg-amber-500 selection:text-black">
+      {/* Navigation */}
+      <nav className="fixed w-full z-50 top-0 transition-all duration-300 bg-black/80 backdrop-blur-md border-b border-gray-800">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-amber-400 to-yellow-600">
+              JSON BAKER
+            </span>
+          </div>
+          <div className="flex gap-4">
+            <Link to="/login" className="px-5 py-2 text-sm font-semibold hover:text-amber-400 transition-colors">Login</Link>
+            <Link to="/register" className="px-5 py-2 text-sm font-bold bg-amber-500 text-black hover:bg-amber-400 rounded-full transition-all hover:scale-105 active:scale-95">Enter the Afterlife</Link>
+          </div>
+        </div>
+      </nav>
+
+      <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-amber-600/20 rounded-full blur-[120px] -z-10"></div>
+        <div className="max-w-7xl mx-auto px-6 text-center">
+          <h1 className="text-5xl lg:text-7xl font-black mb-6 tracking-tight leading-tight">
+            Master the <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">Life After Death</span>
+          </h1>
+          <p className="text-xl text-gray-400 mb-10 max-w-2xl mx-auto">
+            Bake souls, harness karma, and explore the underworld. A definitive afterlife experience.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+            <Link
+              to="/register"
+              className="px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold rounded-xl hover:from-amber-600 hover:to-orange-600 transition-all transform hover:scale-105 shadow-lg"
+            >
+              Enter The Gateway Now
+            </Link>
+            <Link
+              to="/login"
+              className="px-8 py-4 glass-effect text-white font-semibold rounded-xl hover:bg-white/20 transition-all"
+            >
+              Existing Soul
+            </Link>
+      </section>
+            Travel Through Realms
+              <div className="text-sm opacity-80">Realm</div>
+            © {new Date().getFullYear()} Json Baker. Revolutionizing the afterlife since the beginning of time.
+++ b/changes.txt
 ++ b/time-traveling-toaster/backend/package.json
   "version": "2.0.0",
   "description": "API server for the Revolutionary Time Traveling Toaster with ALL features",
@@ -4826,3 +4979,28 @@ export default defineConfig({
     outDir: 'dist',
   },
 });
+++ b/commit_message.txt
+ It appears that you have converted your Vite configuration files from Java[4D[K
+JavaScript to TypeScript. Here's a brief overview of the changes you've mad[3D[K
+made:
+
+1. `vite.config.js` to `vite.config.ts`: You have changed the extension of [K
+the Vite configuration file from JavaScript (`.js`) to TypeScript (`.ts`).
+
+2. TypeScript declaration file (`.d.ts`): You have created a new TypeScript[10D[K
+TypeScript declaration file (`.d.ts`) for your Vite configuration.
+
+In your TypeScript configuration file (`vite.config.ts`), you have imported[8D[K
+imported the necessary modules and set up your Vite configuration similar t[1D[K
+to how it was in the JavaScript version. The only difference is that you ar[2D[K
+are using TypeScript syntax, which includes type annotations and strict typ[3D[K
+typing.
+
+The TypeScript declaration file (`vite.config.d.ts`) exports the default ex[2D[K
+export as a type, which allows TypeScript to understand that `_default` is [K
+the default export of the `vite` module.
+
+Overall, these changes allow you to use TypeScript features in your Vite co[2D[K
+configuration, which can lead to better type checking and autocompletion in[2D[K
+in your IDE.
+
