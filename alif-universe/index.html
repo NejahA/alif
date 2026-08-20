@@ -51,6 +51,11 @@
         <span id="stat-categories" class="stat-val">6 Domains</span>
       </div>
       <div class="stat-pill">
+        <span class="stat-icon">▶️</span>
+        <span class="stat-label">Processes</span>
+        <span id="stat-processes" class="stat-val text-amber">0 Active</span>
+      </div>
+      <div class="stat-pill">
         <span class="stat-icon">⚡</span>
         <span class="stat-label">API Hub Status</span>
         <span id="stat-status" class="stat-val text-emerald">Connected</span>
@@ -79,8 +84,7 @@
       <div id="galaxy-view" class="view-panel">
         <canvas id="galaxy-canvas"></canvas>
         <div class="galaxy-controls-overlay">
-          <span>Click any star to inspect project</span>
-          <span>Scroll: Zoom | Drag: Pan</span>
+          <span>Click star: Inspect / Launch | Scroll: Zoom | Drag: Pan</span>
         </div>
       </div>
 
@@ -125,12 +129,61 @@
             </div>
           </div>
           <div class="modal-section">
-            <span class="section-title">PACKAGE SCRIPTS</span>
+            <span class="section-title">PACKAGE SCRIPTS (Click tag to execute)</span>
             <div id="modal-scripts" class="scripts-list"></div>
           </div>
         </div>
         <div class="modal-footer">
+          <button id="btn-modal-launch-action" class="btn primary">🚀 Launch Live Project</button>
           <button id="btn-modal-close-action" class="btn secondary">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live App Viewer Modal (Iframe Embed) -->
+    <div id="app-viewer-modal" class="modal hidden">
+      <div class="modal-backdrop"></div>
+      <div class="modal-card modal-card-fullscreen">
+        <div class="modal-header viewer-header">
+          <div class="modal-title-group">
+            <span id="viewer-icon" class="modal-icon">🌐</span>
+            <div>
+              <h2 id="viewer-name">Live Project Launcher</h2>
+              <span id="viewer-path" class="modal-category-badge">/apps/...</span>
+            </div>
+          </div>
+          <div class="viewer-actions">
+            <button id="btn-viewer-reload" class="viewer-btn" title="Reload App">🔄 Reload</button>
+            <button id="btn-viewer-external" class="viewer-btn" title="Open Direct">↗️ Open Direct Window</button>
+            <button id="btn-viewer-close" class="close-btn">✕</button>
+          </div>
+        </div>
+        <div class="modal-body viewer-body">
+          <iframe id="app-iframe" src="about:blank" frameborder="0"></iframe>
+        </div>
+      </div>
+    </div>
+
+    <!-- Terminal Console Modal -->
+    <div id="terminal-modal" class="modal hidden">
+      <div class="modal-backdrop"></div>
+      <div class="modal-card modal-card-terminal">
+        <div class="modal-header terminal-header">
+          <div class="modal-title-group">
+            <span class="modal-icon">💻</span>
+            <div>
+              <h2 id="terminal-title">Project Terminal</h2>
+              <span id="terminal-status" class="status-badge status-running">Running</span>
+            </div>
+          </div>
+          <div class="terminal-actions">
+            <button id="btn-terminal-stop" class="btn danger-btn">⏹️ Stop Process</button>
+            <button id="btn-terminal-clear" class="btn secondary">🧹 Clear</button>
+            <button id="btn-terminal-close" class="close-btn">✕</button>
+          </div>
+        </div>
+        <div class="modal-body terminal-body">
+          <pre id="terminal-logs" class="terminal-logs"></pre>
         </div>
       </div>
     </div>

@@ -4,6 +4,9 @@ let projectsData = [];
 let filteredProjects = [];
 let activeCategory = 'all';
 let searchQuery = '';
+let selectedProjectForModal = null;
+let currentPid = null;
+let activeEventSource = null;
 
 // DOM Elements
 const canvas = document.getElementById('galaxy-canvas');
@@ -15,7 +18,13 @@ const btnViewGalaxy = document.getElementById('btn-view-galaxy');
 const btnViewGrid = document.getElementById('btn-view-grid');
 const galaxyView = document.getElementById('galaxy-view');
 const gridView = document.getElementById('grid-view');
+
+// Modals
 const inspectorModal = document.getElementById('inspector-modal');
+const appViewerModal = document.getElementById('app-viewer-modal');
+const terminalModal = document.getElementById('terminal-modal');
+const appIframe = document.getElementById('app-iframe');
+const terminalLogs = document.getElementById('terminal-logs');
 
 // Galaxy View State
 let W = window.innerWidth, H = window.innerHeight;
@@ -34,7 +43,7 @@ const DOMAIN_ANGLES = {
   'Experimental Engines': (5 * Math.PI) / 3
 };
 
-// Fetch API
+// Fetch Projects & Stats
 async function fetchProjects() {
   try {
     const res = await fetch('/api/projects');
@@ -47,8 +56,22 @@ async function fetchProjects() {
       initGalaxyNodes();
     }
   } catch (err) {
-    console.warn('Backend API fallback to static sample mode:', err);
+    console.warn('Backend API offline or static mode:', err);
   }
+}
+
+async function fetchStats() {
+  try {
+    const res = await fetch('/api/stats');
+    const data = await res.json();
+    if (data.ok) {
+      const procEl = document.getElementById('stat-processes');
+      if (procEl) {
+        procEl.textContent = `${data.activeProcesses || 0} Active`;
+        procEl.className = data.activeProcesses > 0 ? 'stat-val text-emerald' : 'stat-val text-amber';
+      }
+    }
+  } catch (e) { }
 }
 
 // Filter projects
@@ -92,9 +115,18 @@ function renderGrid() {
       </div>
       <div class="card-bottom">
         <span class="tech-badge">${p.hasHtml ? '🌐 Web App' : '📦 Node Suite'}</span>
-        <span>📁 ${p.fileCount} items</span>
+        ${p.hasHtml ? `<button class="card-launch-btn btn-card-launch">🚀 Launch</button>` : `<button class="card-launch-btn btn-card-inspect">⚙️ Inspect</button>`}
       </div>
     `;
+
+    // Click handler for launch button specifically or card
+    const launchBtn = card.querySelector('.btn-card-launch');
+    if (launchBtn) {
+      launchBtn.onclick = (e) => {
+        e.stopPropagation();
+        launchLiveApp(p);
+      };
+    }
 
     card.onclick = () => openInspector(p);
     projectsGrid.appendChild(card);
@@ -104,6 +136,8 @@ function renderGrid() {
 // Inspector Modal
 function openInspector(p) {
   if (!inspectorModal) return;
+  selectedProjectForModal = p;
+
   document.getElementById('modal-icon').textContent = p.icon;
   document.getElementById('modal-name').textContent = p.name;
   document.getElementById('modal-category').textContent = p.category;
@@ -111,19 +145,39 @@ function openInspector(p) {
   document.getElementById('modal-path').textContent = p.path;
   document.getElementById('modal-version').textContent = p.version;
   document.getElementById('modal-files').textContent = `${p.fileCount} files/dirs`;
-  document.getElementById('modal-html').textContent = p.hasHtml ? 'Yes (index.html)' : 'No (backend/cli)';
+  document.getElementById('modal-html').textContent = p.hasHtml ? `Yes (${p.entryHtml || 'index.html'})` : 'No (backend/cli)';
+
+  const btnLaunchModal = document.getElementById('btn-modal-launch-action');
+  if (btnLaunchModal) {
+    if (p.hasHtml) {
+      btnLaunchModal.textContent = '🚀 Launch Live Project';
+      btnLaunchModal.style.display = 'inline-block';
+      btnLaunchModal.onclick = () => {
+        closeInspector();
+        launchLiveApp(p);
+      };
+    } else {
+      btnLaunchModal.style.display = 'none';
+    }
+  }
 
   const scriptsContainer = document.getElementById('modal-scripts');
   if (scriptsContainer) {
     scriptsContainer.innerHTML = '';
     const scriptKeys = Object.keys(p.scripts || {});
     if (scriptKeys.length === 0) {
-      scriptsContainer.innerHTML = '<span style="font-size: 11px; color: var(--text-dim);">No scripts defined</span>';
+      scriptsContainer.innerHTML = '<span style="font-size: 11px; color: var(--text-dim);">No package.json scripts defined</span>';
     } else {
       scriptKeys.forEach(k => {
         const tag = document.createElement('span');
         tag.className = 'script-tag';
-        tag.textContent = `${k}: ${p.scripts[k]}`;
+        tag.textContent = `▶️ ${k}: ${p.scripts[k]}`;
+        tag.title = 'Click to run this script live';
+        tag.onclick = (e) => {
+          e.stopPropagation();
+          closeInspector();
+          runProjectScript(p, k);
+        };
         scriptsContainer.appendChild(tag);
       });
     }
@@ -134,6 +188,139 @@ function openInspector(p) {
 
 function closeInspector() {
   if (inspectorModal) inspectorModal.classList.add('hidden');
+}
+
+// --- Live App Launcher (Iframe Embed) ---
+function launchLiveApp(p) {
+  if (!appViewerModal || !appIframe) return;
+
+  const appUrl = `/apps/${encodeURIComponent(p.name)}/${p.entryHtml || 'index.html'}`;
+
+  document.getElementById('viewer-icon').textContent = p.icon;
+  document.getElementById('viewer-name').textContent = `${p.name} — Live App`;
+  document.getElementById('viewer-path').textContent = appUrl;
+
+  appIframe.src = appUrl;
+  appViewerModal.classList.remove('hidden');
+
+  // Reload action
+  const btnReload = document.getElementById('btn-viewer-reload');
+  if (btnReload) {
+    btnReload.onclick = () => {
+      appIframe.src = appUrl;
+    };
+  }
+
+  // Open Direct Action
+  const btnExternal = document.getElementById('btn-viewer-external');
+  if (btnExternal) {
+    btnExternal.onclick = () => {
+      window.open(appUrl, '_blank');
+    };
+  }
+}
+
+function closeLiveApp() {
+  if (!appViewerModal || !appIframe) return;
+  appIframe.src = 'about:blank';
+  appViewerModal.classList.add('hidden');
+}
+
+// --- Live Script Execution & Terminal Console ---
+async function runProjectScript(p, scriptName) {
+  if (!terminalModal || !terminalLogs) return;
+
+  terminalLogs.innerHTML = '';
+  document.getElementById('terminal-title').textContent = `${p.name} — npm run ${scriptName}`;
+  const statusBadge = document.getElementById('terminal-status');
+  if (statusBadge) {
+    statusBadge.textContent = 'Launching...';
+    statusBadge.className = 'status-badge status-running';
+  }
+
+  terminalModal.classList.remove('hidden');
+
+  if (activeEventSource) {
+    activeEventSource.close();
+    activeEventSource = null;
+  }
+
+  try {
+    const res = await fetch('/api/run-script', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ projectName: p.name, scriptName })
+    });
+
+    const data = await res.json();
+    if (!data.ok) {
+      appendTerminalLog('stderr', `Error launching script: ${data.error}`);
+      return;
+    }
+
+    currentPid = data.pid;
+    fetchStats();
+
+    // Stream SSE logs
+    activeEventSource = new EventSource(`/api/logs/${currentPid}`);
+
+    activeEventSource.onmessage = (event) => {
+      try {
+        const log = JSON.parse(event.data);
+        appendTerminalLog(log.type, log.text);
+
+        if (log.text && log.text.includes('exited with code')) {
+          if (statusBadge) {
+            statusBadge.textContent = 'Stopped';
+            statusBadge.className = 'status-badge status-stopped';
+          }
+          fetchStats();
+        }
+      } catch (e) { }
+    };
+
+    activeEventSource.onerror = () => {
+      if (statusBadge) {
+        statusBadge.textContent = 'Disconnected';
+        statusBadge.className = 'status-badge status-stopped';
+      }
+    };
+
+  } catch (err) {
+    appendTerminalLog('stderr', `Connection failed: ${err.message}`);
+  }
+}
+
+function appendTerminalLog(type, text) {
+  if (!terminalLogs) return;
+  const line = document.createElement('div');
+  line.className = `log-${type || 'stdout'}`;
+  line.textContent = text;
+  terminalLogs.appendChild(line);
+  terminalLogs.scrollTop = terminalLogs.scrollHeight;
+}
+
+async function stopCurrentProcess() {
+  if (!currentPid) return;
+  try {
+    await fetch('/api/stop-process', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pid: currentPid })
+    });
+    appendTerminalLog('system', '🛑 Process stop signal sent');
+    fetchStats();
+  } catch (err) {
+    appendTerminalLog('stderr', `Stop error: ${err.message}`);
+  }
+}
+
+function closeTerminal() {
+  if (activeEventSource) {
+    activeEventSource.close();
+    activeEventSource = null;
+  }
+  if (terminalModal) terminalModal.classList.add('hidden');
 }
 
 // --- Galaxy Canvas Engine ---
@@ -195,7 +382,6 @@ function drawGalaxy() {
   ctx.fillText('ALIF CORE', 0, 0);
 
   // Render Orbit Rings & Nodes
-  const now = performance.now();
   hoveredNode = null;
 
   galaxyNodes.forEach(node => {
@@ -258,6 +444,8 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('resize', resizeCanvas);
 
   fetchProjects();
+  fetchStats();
+  setInterval(fetchStats, 5000);
 
   // Search input
   if (searchInput) {
@@ -304,11 +492,27 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   }
 
-  // Inspector Modal Close
+  // Inspector Modal Controls
   const btnCloseModal = document.getElementById('btn-close-modal');
   if (btnCloseModal) btnCloseModal.onclick = closeInspector;
   const btnModalCloseAction = document.getElementById('btn-modal-close-action');
   if (btnModalCloseAction) btnModalCloseAction.onclick = closeInspector;
+
+  // Live App Viewer Controls
+  const btnViewerClose = document.getElementById('btn-viewer-close');
+  if (btnViewerClose) btnViewerClose.onclick = closeLiveApp;
+
+  // Terminal Modal Controls
+  const btnTerminalClose = document.getElementById('btn-terminal-close');
+  if (btnTerminalClose) btnTerminalClose.onclick = closeTerminal;
+  const btnTerminalStop = document.getElementById('btn-terminal-stop');
+  if (btnTerminalStop) btnTerminalStop.onclick = stopCurrentProcess;
+  const btnTerminalClear = document.getElementById('btn-terminal-clear');
+  if (btnTerminalClear) {
+    btnTerminalClear.onclick = () => {
+      if (terminalLogs) terminalLogs.innerHTML = '';
+    };
+  }
 
   // Mouse pan/zoom on Galaxy View
   if (canvas) {
@@ -326,7 +530,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     canvas.addEventListener('mousedown', (e) => {
       if (hoveredNode) {
-        openInspector(hoveredNode.project);
+        if (hoveredNode.project.hasHtml) {
+          launchLiveApp(hoveredNode.project);
+        } else {
+          openInspector(hoveredNode.project);
+        }
       } else {
         isDragging = true;
         dragStartX = e.clientX;
@@ -345,3 +553,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
   requestAnimationFrame(drawGalaxy);
 });
+
