@@ -19,11 +19,12 @@ app.use(express.static(__dirname));
 // Track active child processes
 const activeProcesses = new Map();
 
-// Helper to find entry HTML file in a project folder
+// Helper to find entry HTML file in a project folder (with deep recursive search)
 function findEntryHtml(dirPath) {
   const candidates = [
     'index.html',
     'web/index.html',
+    'build/web/index.html',
     'public/index.html',
     'dist/index.html',
     'src/index.html',
@@ -39,20 +40,27 @@ function findEntryHtml(dirPath) {
     }
   }
 
-  // Recursive shallow search if not in standard candidates
-  try {
-    const items = fs.readdirSync(dirPath, { withFileTypes: true });
-    for (const item of items) {
-      if (item.isDirectory() && !item.name.startsWith('.') && item.name !== 'node_modules') {
-        const subIndex = path.join(item.name, 'index.html');
-        if (fs.existsSync(path.join(dirPath, subIndex))) {
-          return subIndex;
+  // Deep search (up to depth 3) for index.html files
+  function searchSubdirs(currentDir, relativePrefix = '', depth = 0) {
+    if (depth > 3) return null;
+    try {
+      const items = fs.readdirSync(currentDir, { withFileTypes: true });
+      for (const item of items) {
+        if (item.isDirectory() && !item.name.startsWith('.') && item.name !== 'node_modules') {
+          const subRel = relativePrefix ? `${relativePrefix}/${item.name}` : item.name;
+          const indexPath = path.join(currentDir, item.name, 'index.html');
+          if (fs.existsSync(indexPath)) {
+            return `${subRel}/index.html`;
+          }
+          const nested = searchSubdirs(path.join(currentDir, item.name), subRel, depth + 1);
+          if (nested) return nested;
         }
       }
-    }
-  } catch (e) { }
+    } catch (e) { }
+    return null;
+  }
 
-  return null;
+  return searchSubdirs(dirPath);
 }
 
 // Categorization helper based on folder name & package.json
@@ -144,6 +152,41 @@ app.use('/apps/:projectName', (req, res, next) => {
     return res.status(404).send('Project directory not found');
   }
 
+  let reqPath = req.path;
+  if (reqPath === '/' || reqPath === '') {
+    const entryHtml = findEntryHtml(targetDir);
+    if (entryHtml) {
+      return res.redirect(`/apps/${encodeURIComponent(projectName)}/${entryHtml}`);
+    }
+  }
+
+  const fullFilePath = path.join(targetDir, reqPath);
+
+  // HTML Base Href Rewriting for Flutter and Web Apps
+  if (fs.existsSync(fullFilePath) && fs.statSync(fullFilePath).isFile() && fullFilePath.endsWith('.html')) {
+    try {
+      let htmlContent = fs.readFileSync(fullFilePath, 'utf8');
+
+      const relativeFilePath = path.relative(targetDir, fullFilePath);
+      const subDir = path.dirname(relativeFilePath);
+      const subDirPath = (subDir === '.' || subDir === '') ? '' : subDir.replace(/\\/g, '/') + '/';
+      const baseHref = `/apps/${encodeURIComponent(projectName)}/${subDirPath}`;
+
+      if (/<base\s+[^>]*>/i.test(htmlContent)) {
+        htmlContent = htmlContent.replace(/<base\s+[^>]*>/i, `<base href="${baseHref}">`);
+      } else if (/<head>/i.test(htmlContent)) {
+        htmlContent = htmlContent.replace(/<head>/i, `<head>\n  <base href="${baseHref}">`);
+      } else {
+        htmlContent = `<base href="${baseHref}">\n` + htmlContent;
+      }
+
+      res.setHeader('Content-Type', 'text/html; charset=UTF-8');
+      return res.send(htmlContent);
+    } catch (e) {
+      console.error('Error rewriting HTML base href:', e);
+    }
+  }
+
   express.static(targetDir, { dotfiles: 'ignore' })(req, res, next);
 });
 
@@ -208,12 +251,19 @@ app.post('/api/run-script', (req, res) => {
     startTime: new Date().toISOString(),
     process: proc,
     running: true,
+    detectedPort: null,
     logs: [],
     listeners: new Set()
   };
 
   function appendLog(type, text) {
-    const logEntry = { type, time: new Date().toLocaleTimeString(), text };
+    // Detect server port in logs
+    const portMatch = text.match(/(?:http:\/\/(?:localhost|127\.0\.0\.1|0\.0\.0\.0):|port\s*:?\s*|running at\s+http:\/\/localhost:)(\d{4,5})/i);
+    if (portMatch && portMatch[1]) {
+      procInfo.detectedPort = portMatch[1];
+    }
+
+    const logEntry = { type, time: new Date().toLocaleTimeString(), text, port: procInfo.detectedPort };
     procInfo.logs.push(logEntry);
     if (procInfo.logs.length > 500) procInfo.logs.shift();
 
@@ -274,6 +324,7 @@ app.get('/api/processes', (req, res) => {
       scriptName: p.scriptName,
       startTime: p.startTime,
       running: p.running,
+      detectedPort: p.detectedPort,
       exitCode: p.exitCode
     });
   });
@@ -311,4 +362,5 @@ app.get('/api/logs/:pid', (req, res) => {
 app.listen(PORT, () => {
   console.log(`🌌 ALIVERSE Master Hub running at http://localhost:${PORT}`);
 });
+
 

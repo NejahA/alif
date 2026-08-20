@@ -150,14 +150,24 @@ function openInspector(p) {
   const btnLaunchModal = document.getElementById('btn-modal-launch-action');
   if (btnLaunchModal) {
     if (p.hasHtml) {
-      btnLaunchModal.textContent = '🚀 Launch Live Project';
+      btnLaunchModal.textContent = '🚀 Launch Web App';
       btnLaunchModal.style.display = 'inline-block';
       btnLaunchModal.onclick = () => {
         closeInspector();
         launchLiveApp(p);
       };
     } else {
-      btnLaunchModal.style.display = 'none';
+      const serverScript = Object.keys(p.scripts || {}).find(k => ['dev', 'start', 'server', 'backend', 'dev:full'].includes(k.toLowerCase())) || Object.keys(p.scripts || {})[0];
+      if (serverScript) {
+        btnLaunchModal.textContent = `⚡ Start Server (${serverScript})`;
+        btnLaunchModal.style.display = 'inline-block';
+        btnLaunchModal.onclick = () => {
+          closeInspector();
+          runProjectScript(p, serverScript);
+        };
+      } else {
+        btnLaunchModal.style.display = 'none';
+      }
     }
   }
 
@@ -191,12 +201,12 @@ function closeInspector() {
 }
 
 // --- Live App Launcher (Iframe Embed) ---
-function launchLiveApp(p) {
+function launchLiveApp(p, overrideUrl = null) {
   if (!appViewerModal || !appIframe) return;
 
-  const appUrl = `/apps/${encodeURIComponent(p.name)}/${p.entryHtml || 'index.html'}`;
+  const appUrl = overrideUrl || `/apps/${encodeURIComponent(p.name)}/${p.entryHtml || 'index.html'}`;
 
-  document.getElementById('viewer-icon').textContent = p.icon;
+  document.getElementById('viewer-icon').textContent = p.icon || '🌐';
   document.getElementById('viewer-name').textContent = `${p.name} — Live App`;
   document.getElementById('viewer-path').textContent = appUrl;
 
@@ -238,6 +248,9 @@ async function runProjectScript(p, scriptName) {
     statusBadge.className = 'status-badge status-running';
   }
 
+  const btnConnect = document.getElementById('btn-terminal-connect');
+  if (btnConnect) btnConnect.classList.add('hidden');
+
   terminalModal.classList.remove('hidden');
 
   if (activeEventSource) {
@@ -268,6 +281,16 @@ async function runProjectScript(p, scriptName) {
       try {
         const log = JSON.parse(event.data);
         appendTerminalLog(log.type, log.text);
+
+        if (log.port) {
+          if (btnConnect) {
+            btnConnect.textContent = `⚡ Connect Viewer (Port ${log.port})`;
+            btnConnect.classList.remove('hidden');
+            btnConnect.onclick = () => {
+              launchLiveApp(p, `http://localhost:${log.port}`);
+            };
+          }
+        }
 
         if (log.text && log.text.includes('exited with code')) {
           if (statusBadge) {
