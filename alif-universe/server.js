@@ -3,7 +3,7 @@ import cors from 'cors';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { spawn } from 'child_process';
+import { spawn, exec } from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -19,17 +19,19 @@ app.use(express.static(__dirname));
 // Track active child processes
 const activeProcesses = new Map();
 
-// Helper to find entry HTML file in a project folder (with deep recursive search)
+// Helper to find entry HTML file in a project folder
 function findEntryHtml(dirPath) {
   const candidates = [
     'index.html',
+    'public/index.html',
     'web/index.html',
     'build/web/index.html',
-    'public/index.html',
     'dist/index.html',
+    'build/index.html',
+    'frontend/index.html',
+    'frontend/public/index.html',
     'src/index.html',
     'web-demo/index.html',
-    'frontend/index.html',
     'templates/index.html',
     'apps/web/index.html'
   ];
@@ -40,13 +42,13 @@ function findEntryHtml(dirPath) {
     }
   }
 
-  // Deep search (up to depth 3) for index.html files
+  // Shallow search (up to depth 2) for index.html files
   function searchSubdirs(currentDir, relativePrefix = '', depth = 0) {
-    if (depth > 3) return null;
+    if (depth > 2) return null;
     try {
       const items = fs.readdirSync(currentDir, { withFileTypes: true });
       for (const item of items) {
-        if (item.isDirectory() && !item.name.startsWith('.') && item.name !== 'node_modules') {
+        if (item.isDirectory() && !item.name.startsWith('.') && item.name !== 'node_modules' && item.name !== 'dist' && item.name !== 'build') {
           const subRel = relativePrefix ? `${relativePrefix}/${item.name}` : item.name;
           const indexPath = path.join(currentDir, item.name, 'index.html');
           if (fs.existsSync(indexPath)) {
@@ -63,24 +65,54 @@ function findEntryHtml(dirPath) {
   return searchSubdirs(dirPath);
 }
 
-// Categorization helper based on folder name & package.json
-function categorizeProject(name, pkgJson = {}) {
+// Tech Stack Detector
+function detectTechStack(dirPath, pkgJson = {}, entryHtml = null) {
+  const stack = [];
+  const deps = { ...(pkgJson.dependencies || {}), ...(pkgJson.devDependencies || {}) };
+  const n = path.basename(dirPath).toLowerCase();
+
+  if (deps.react || deps['react-dom'] || n.includes('react')) stack.push('React');
+  if (deps['@angular/core']) stack.push('Angular');
+  if (deps.vue) stack.push('Vue');
+  if (deps.next) stack.push('Next.js');
+  if (deps.express) stack.push('Express');
+  if (deps.electron || n.includes('electron')) stack.push('Electron');
+  if (deps.flutter || fs.existsSync(path.join(dirPath, 'pubspec.yaml'))) stack.push('Flutter');
+  if (deps.vite) stack.push('Vite');
+  if (deps.tailwindcss) stack.push('Tailwind');
+
+  try {
+    const files = fs.readdirSync(dirPath);
+    if (files.some(f => f.endsWith('.py'))) stack.push('Python');
+    if (files.some(f => f.endsWith('.cs') || f.endsWith('.csproj'))) stack.push('.NET / C#');
+    if (files.some(f => f.endsWith('.rs'))) stack.push('Rust');
+    if (files.some(f => f.endsWith('.go'))) stack.push('Go');
+  } catch (e) { }
+
+  if (entryHtml && stack.length === 0) stack.push('HTML5 / JS');
+  if (pkgJson.name && stack.length === 0) stack.push('Node.js');
+
+  return [...new Set(stack)];
+}
+
+// Categorization helper based on folder name, package.json, and structure
+function categorizeProject(name, pkgJson = {}, dirPath = '') {
   const n = name.toLowerCase();
   const desc = (pkgJson.description || '').toLowerCase();
 
-  if (n.includes('sound') || n.includes('melodix') || desc.includes('audio') || desc.includes('sound')) {
+  if (n.includes('sound') || n.includes('melodix') || n.includes('audio') || n.includes('440') || n.includes('432') || n.includes('regulator') || n.includes('antis') || n.includes('aeris') || desc.includes('audio') || desc.includes('sound') || desc.includes('music')) {
     return { category: 'Audio & Soundscapes', icon: '🎵', hue: 280 };
   }
-  if (n.includes('json') || n.includes('rpg') || n.includes('derangement') || desc.includes('reincarnation') || desc.includes('game')) {
+  if (n.includes('json') || n.includes('rpg') || n.includes('game') || n.includes('derangement') || n.includes('kalcioom') || n.includes('999') || n.includes('ludic') || n.includes('ashned') || n.includes('mayson') || desc.includes('reincarnation') || desc.includes('game') || desc.includes('rpg')) {
     return { category: 'RPG & Gaming', icon: '⚔️', hue: 25 };
   }
-  if (n.includes('task') || n.includes('pomodoro') || n.includes('board') || n.includes('admin') || n.includes('nexus')) {
+  if (n.includes('task') || n.includes('pomodoro') || n.includes('board') || n.includes('admin') || n.includes('nexus') || n.includes('broker') || n.includes('applicator') || n.includes('privacy') || desc.includes('task') || desc.includes('management')) {
     return { category: 'Tasks & Management', icon: '⚡', hue: 160 };
   }
-  if (n.includes('desktop') || n.includes('kiros') || n.includes('windoes') || n.includes('telipso')) {
+  if (n.includes('desktop') || n.includes('kiros') || n.includes('windoes') || n.includes('telipso') || n.includes('imports') || n.includes('flutter') || n.includes('virtuo') || n.includes('snlyt') || desc.includes('desktop') || desc.includes('windows')) {
     return { category: 'Desktop Apps', icon: '🖥️', hue: 200 };
   }
-  if (n.includes('canvas') || n.includes('hi§ro') || n.includes('scribelog') || n.includes('ponder')) {
+  if (n.includes('canvas') || n.includes('hiro') || n.includes('hi§ro') || n.includes('scribelog') || n.includes('ponder') || n.includes('inkwell') || n.includes('nebula') || desc.includes('canvas') || desc.includes('journal') || desc.includes('notes') || desc.includes('spaced-repetition')) {
     return { category: 'Canvas & Knowledge', icon: '🧠', hue: 220 };
   }
   return { category: 'Experimental Engines', icon: '🌌', hue: 320 };
@@ -91,8 +123,14 @@ function scanWorkspace() {
   const items = fs.readdirSync(ROOT_DIR, { withFileTypes: true });
   const projects = [];
 
+  const ignoreList = new Set([
+    '.git', '.github', 'node_modules', 'alif-universe', 'src', 'home',
+    'melodixpublic', 'melodixsrc', 'melodixsrccomponents', 'melodixsrctypes',
+    'pomodoro_timerassetssounds', 'volatillfrontendsrc', 'trutouthweb-demo'
+  ]);
+
   for (const item of items) {
-    if (!item.isDirectory() || item.name.startsWith('.') || item.name === 'node_modules' || item.name === 'alif-universe') {
+    if (!item.isDirectory() || item.name.startsWith('.') || ignoreList.has(item.name)) {
       continue;
     }
 
@@ -112,17 +150,25 @@ function scanWorkspace() {
     const hasHtml = entryHtml !== null;
 
     let fileCount = 0;
+    let codeFilesCount = 0;
     try {
       const files = fs.readdirSync(dirPath);
       fileCount = files.length;
+      codeFilesCount = files.filter(f => /\.(js|ts|py|cs|html|css|json|rs|go|md)$/i.test(f)).length;
     } catch (e) { }
 
-    const meta = categorizeProject(item.name, pkgJson);
+    // Skip empty or fragment directories that have no package.json, no index.html, and 0 code files
+    if (!hasPkg && !hasHtml && codeFilesCount === 0) {
+      continue;
+    }
+
+    const meta = categorizeProject(item.name, pkgJson, dirPath);
+    const techStack = detectTechStack(dirPath, pkgJson, entryHtml);
 
     projects.push({
       name: item.name,
       title: pkgJson.name || item.name,
-      description: pkgJson.description || `Subproject located at ${item.name}`,
+      description: pkgJson.description || `Subproject module located at /${item.name}`,
       version: pkgJson.version || '1.0.0',
       category: meta.category,
       icon: meta.icon,
@@ -131,6 +177,7 @@ function scanWorkspace() {
       hasHtml: hasHtml,
       entryHtml: entryHtml,
       fileCount: fileCount,
+      techStack: techStack,
       path: dirPath,
       scripts: pkgJson.scripts || {}
     });
@@ -162,7 +209,7 @@ app.use('/apps/:projectName', (req, res, next) => {
 
   const fullFilePath = path.join(targetDir, reqPath);
 
-  // HTML Base Href Rewriting for Flutter and Web Apps
+  // HTML Base Href Rewriting for Web Apps
   if (fs.existsSync(fullFilePath) && fs.statSync(fullFilePath).isFile() && fullFilePath.endsWith('.html')) {
     try {
       let htmlContent = fs.readFileSync(fullFilePath, 'utf8');
@@ -306,10 +353,14 @@ app.post('/api/stop-process', (req, res) => {
 
   try {
     if (procInfo.process && procInfo.running) {
-      procInfo.process.kill('SIGTERM');
+      if (process.platform === 'win32' && procInfo.process.pid) {
+        exec(`taskkill /F /T /PID ${procInfo.process.pid}`, () => {});
+      } else {
+        procInfo.process.kill('SIGTERM');
+      }
       procInfo.running = false;
     }
-    res.json({ ok: true, message: 'Process stopped' });
+    res.json({ ok: true, message: 'Process stop signal sent' });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }
