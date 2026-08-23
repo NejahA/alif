@@ -82,13 +82,139 @@
     <!-- Galaxy Tooltip -->
     <div id="galaxy-tooltip" class="galaxy-tooltip"></div>
 
+    <!-- Right-Click Context Menu -->
+    <div id="galaxy-ctx-menu" class="galaxy-ctx-menu hidden">
+      <div class="ctx-title" id="ctx-title">Project</div>
+      <div class="ctx-divider"></div>
+      <button class="ctx-item" data-action="launch"><span class="ctx-icon">🚀</span>Launch App</button>
+      <button class="ctx-item" data-action="inspect"><span class="ctx-icon">⚙️</span>Inspect Details</button>
+      <button class="ctx-item" data-action="newwin"><span class="ctx-icon">🔗</span>Open in New Tab</button>
+      <button class="ctx-item" data-action="fly"><span class="ctx-icon">🎯</span>Fly To &amp; Focus</button>
+      <button class="ctx-item" data-action="grid"><span class="ctx-icon">🗂️</span>Reveal in Grid View</button>
+      <div class="ctx-divider"></div>
+      <button class="ctx-item ctx-item-danger" data-action="deselect"><span class="ctx-icon">✖️</span>Deselect</button>
+    </div>
+
     <!-- Main Content Area -->
     <main id="main-content">
       <!-- 2D Canvas Galaxy Map -->
       <div id="galaxy-view" class="view-panel">
         <canvas id="galaxy-canvas"></canvas>
+        <!-- Mini-map / Radar -->
+        <div class="minimap-wrap" id="minimapWrap">
+          <div class="minimap-title">🌌 Radar</div>
+          <canvas id="minimap-canvas" width="180" height="180"></canvas>
+          <button class="minimap-reset" id="minimapReset" title="Reset view">⟲ Reset View</button>
+        </div>
+        <!-- Bottom-left HUD -->
+        <div class="galaxy-hud" id="galaxyHud">
+          <div class="hud-line"><span class="hud-label">FPS</span><span class="hud-value" id="hudFps">60</span></div>
+          <div class="hud-line"><span class="hud-label">Zoom</span><span class="hud-value" id="hudZoom">1.00×</span></div>
+          <div class="hud-line"><span class="hud-label">Nodes</span><span class="hud-value" id="hudNodes">0</span></div>
+          <div class="hud-line hud-keyboard" id="hudKeyboard" title="Arrow keys navigate · Enter launch · F fly-to · Esc deselect"></div>
+        </div>
+
+        <!-- ========== COSMIC TIMELINE (SCAFFOLD) ========== -->
+        <!-- Timeline Toggle Button (always visible) -->
+        <button id="btn-timeline-toggle" class="timeline-toggle" title="Toggle Cosmic Timeline (Ctrl+T)">
+          <span class="timeline-toggle-icon">⏳</span>
+          <span class="timeline-toggle-label">Cosmic Timeline</span>
+          <span class="timeline-toggle-badge" id="timeline-badge">NOW</span>
+        </button>
+
+        <!-- Cosmic Timeline Panel (collapsible) -->
+        <div id="cosmic-timeline" class="cosmic-timeline hidden">
+          <div class="timeline-header">
+            <div class="timeline-title-row">
+              <span class="timeline-icon">🌟</span>
+              <div>
+                <div class="timeline-title">COSMIC TIMELINE</div>
+                <div class="timeline-subtitle">Stellar Evolution · Project Births · Commit Comets</div>
+              </div>
+            </div>
+            <div class="timeline-date-display">
+              <span class="date-label">Stardate</span>
+              <span class="date-value" id="timeline-current-date">—</span>
+              <span class="date-sep">→</span>
+              <span class="date-label">Present</span>
+              <span class="date-value" id="timeline-present-date">—</span>
+            </div>
+          </div>
+
+          <div class="timeline-slider-area">
+            <!-- Slider Track with Project Birth Markers -->
+            <div class="timeline-track-wrap">
+              <div class="timeline-track" id="timeline-track">
+                <div class="timeline-track-fill" id="timeline-track-fill"></div>
+                <div class="timeline-markers" id="timeline-markers"></div>
+                <div class="timeline-thumb" id="timeline-thumb">
+                  <div class="timeline-thumb-ring"></div>
+                  <div class="timeline-thumb-core"></div>
+                </div>
+              </div>
+              <input type="range" id="timeline-range" class="timeline-range" min="0" max="1000" value="1000" step="1">
+            </div>
+
+            <!-- Date Labels (ticks) -->
+            <div class="timeline-ticks" id="timeline-ticks"></div>
+          </div>
+
+          <div class="timeline-controls">
+            <div class="timeline-playback">
+              <button id="btn-timeline-rewind" class="tl-btn" title="Rewind (skip to earliest)">⏮</button>
+              <button id="btn-timeline-play" class="tl-btn tl-btn-primary" title="Play / Pause">▶</button>
+              <button id="btn-timeline-fastforward" class="tl-btn" title="Fast Forward (skip to present)">⏭</button>
+            </div>
+
+            <div class="timeline-speed-group">
+              <span class="speed-label">Speed</span>
+              <div class="speed-btns">
+                <button class="speed-btn" data-speed="0.5">0.5×</button>
+                <button class="speed-btn active" data-speed="1">1×</button>
+                <button class="speed-btn" data-speed="2">2×</button>
+                <button class="speed-btn" data-speed="5">5×</button>
+              </div>
+            </div>
+
+            <div class="timeline-stats">
+              <div class="tl-stat">
+                <span class="tl-stat-icon">⭐</span>
+                <span class="tl-stat-label">Born</span>
+                <span class="tl-stat-val" id="tl-stat-born">0</span>
+                <span class="tl-stat-sep">/</span>
+                <span class="tl-stat-val-dim" id="tl-stat-total">0</span>
+              </div>
+              <div class="tl-stat">
+                <span class="tl-stat-icon">☄️</span>
+                <span class="tl-stat-label">Comets</span>
+                <span class="tl-stat-val" id="tl-stat-comets">0</span>
+              </div>
+              <div class="tl-stat">
+                <span class="tl-stat-icon">💫</span>
+                <span class="tl-stat-label">Epoch</span>
+                <span class="tl-stat-val" id="tl-stat-epoch">Present</span>
+              </div>
+            </div>
+
+            <div class="timeline-toggle-group">
+              <label class="tl-toggle">
+                <input type="checkbox" id="tl-toggle-comets" checked>
+                <span class="tl-toggle-track"></span>
+                <span class="tl-toggle-knob"></span>
+                <span class="tl-toggle-label">☄️ Comets</span>
+              </label>
+              <label class="tl-toggle">
+                <input type="checkbox" id="tl-toggle-protostars" checked>
+                <span class="tl-toggle-track"></span>
+                <span class="tl-toggle-knob"></span>
+                <span class="tl-toggle-label">✨ Protostars</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
         <div class="galaxy-controls-overlay">
-          <span>Hover star: Preview | Click: Launch/Inspect | Scroll: Zoom | Drag: Pan</span>
+          <span>Hover: Preview | Click: Launch/Inspect | Dbl-click: Fly-to | R-click: Menu | Arrows: Navigate | Scroll: Zoom | Drag: Pan | Ctrl+T: Timeline</span>
         </div>
       </div>
 

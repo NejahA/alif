@@ -165,6 +165,43 @@ function scanWorkspace() {
     const meta = categorizeProject(item.name, pkgJson, dirPath);
     const techStack = detectTechStack(dirPath, pkgJson, entryHtml);
 
+    // ==== COSMIC TIMELINE: birth date & commits (scaffold mock) ====
+    // Try to use real folder creation time; fall back to deterministic pseudo-random
+    let birthTimeMs = 0;
+    try {
+      const st = fs.statSync(dirPath);
+      birthTimeMs = st.birthtimeMs || st.ctimeMs || st.mtimeMs;
+    } catch (e) {}
+    const NOW = Date.now();
+    const TWO_YEARS = 1000 * 60 * 60 * 24 * 365 * 2;
+    if (!birthTimeMs || birthTimeMs < NOW - TWO_YEARS || birthTimeMs > NOW) {
+      // Deterministic hash offset based on project name
+      const hash = item.name.split('').reduce((a, c) => (a * 31 + c.charCodeAt(0)) | 0, 7);
+      const offset = TWO_YEARS * 0.1 + TWO_YEARS * 0.8 * (Math.abs(hash % 1000) / 1000);
+      birthTimeMs = NOW - offset;
+    }
+    // Deterministic commits between birthTimeMs and now
+    const commitHash = item.name.split('').reduce((a, c) => (a * 131 + c.charCodeAt(0)) | 0, 17);
+    const nCommits = 3 + (Math.abs(commitHash) % 22);
+    const commitMsgs = [
+      'Initial scaffolding', 'Bug fixes & polish', 'New feature added',
+      'Refactor internals', 'UI/UX improvements', 'Performance optimization',
+      'Documentation update', 'Dependency upgrade'
+    ];
+    const commits = [];
+    for (let i = 0; i < nCommits; i++) {
+      const t = (i + 1) / (nCommits + 1);
+      const jitter = 0.15 * (Math.abs(((commitHash * (i + 5)) % 1000) / 1000) - 0.5);
+      const commitT = Math.max(0, Math.min(1, t + jitter));
+      const commitDate = birthTimeMs + (NOW - birthTimeMs) * commitT;
+      commits.push({
+        date: Math.round(commitDate),
+        msg: commitMsgs[Math.abs((commitHash + i * 7)) % commitMsgs.length],
+        hue: meta.hue
+      });
+    }
+    commits.sort((a, b) => a.date - b.date);
+
     projects.push({
       name: item.name,
       title: pkgJson.name || item.name,
@@ -179,7 +216,9 @@ function scanWorkspace() {
       fileCount: fileCount,
       techStack: techStack,
       path: dirPath,
-      scripts: pkgJson.scripts || {}
+      scripts: pkgJson.scripts || {},
+      birthDate: Math.round(birthTimeMs),
+      commits: commits
     });
   }
 

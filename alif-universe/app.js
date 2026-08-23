@@ -19,6 +19,12 @@ const btnViewGrid = document.getElementById('btn-view-grid');
 const galaxyView = document.getElementById('galaxy-view');
 const gridView = document.getElementById('grid-view');
 
+const minimapCanvas = document.getElementById('minimap-canvas');
+const minimapCtx = minimapCanvas ? minimapCanvas.getContext('2d') : null;
+const minimapResetBtn = document.getElementById('minimapReset');
+const ctxMenu = document.getElementById('galaxy-ctx-menu');
+const ctxTitle = document.getElementById('ctx-title');
+
 // Modals
 const inspectorModal = document.getElementById('inspector-modal');
 const appViewerModal = document.getElementById('app-viewer-modal');
@@ -29,13 +35,57 @@ const terminalLogs = document.getElementById('terminal-logs');
 // Galaxy View State
 let W = window.innerWidth, H = window.innerHeight;
 let viewX = 0, viewY = 0, viewZoom = 1;
+let targetViewX = 0, targetViewY = 0, targetViewZoom = 1;
+let isTweeningCamera = false;
 let isDragging = false, dragStartX = 0, dragStartY = 0;
 let hoveredNode = null;
 let selectedNode = null;
+let ctxMenuNode = null;
 let galaxyNodes = [];
 let starParticles = [];
 let mouseTrailParticles = [];
 let rippleEffects = [];
+let searchHighlightTime = 0;
+let screenShakeX = 0, screenShakeY = 0, screenShakeT = 0;
+let supernovaEffects = [];
+let lastFrameT = performance.now();
+let fpsAvg = 60;
+
+// ====== COSMIC TIMELINE — STATE (SCAFFOLD)  ======
+const TIMELINE = {
+  enabled: true,
+  open: false,
+  playing: false,
+  playbackSpeed: 1,
+  showComets: true,
+  showProtostars: true,
+
+  // Date range (epoch ms)
+  earliestDate: 0,
+  presentDate: 0,
+
+  // Current position 0..1 (0 = earliest, 1 = present)
+  progress: 1,
+
+  // Birth data per project
+  births: [],
+
+  // Commit comet events
+  comets: [],
+  activeCometEffects: [],
+
+  // Stats tracks
+  bornCount: 0,
+  cometCount: 0
+};
+// ================================================
+const hudFpsEl = document.getElementById('hudFps');
+const hudZoomEl = document.getElementById('hudZoom');
+const hudNodesEl = document.getElementById('hudNodes');
+const hudKeyboardEl = document.getElementById('hudKeyboard');
+if (hudKeyboardEl) {
+  hudKeyboardEl.innerHTML = `<span class="kbd">←</span><span class="kbd">→</span><span class="kbd">↑</span><span class="kbd">↓</span><span class="kbd">Enter</span><span class="kbd">F</span>`;
+}
 
 // Category Domain Centers & Angles in Galaxy View
 const DOMAIN_CONFIG = {
@@ -46,6 +96,354 @@ const DOMAIN_CONFIG = {
   'Desktop Apps': { angle: (4 * Math.PI) / 3, icon: '🖥️', hue: 200 },
   'Experimental Engines': { angle: (5 * Math.PI) / 3, icon: '🌌', hue: 320 }
 };
+const DOMAIN_RADIUS = 280;
+
+function flyToNode(node, zoom = 1.9, durationMs = 900) {
+  if (!node) return;
+  // Start values
+  const sx = viewX, sy = viewY, sz = viewZoom;
+  // Target world coords: center the node (subtract so node is at origin)
+  const tx = -node.x * zoom;
+  const ty = -node.y * zoom;
+  const tz = zoom;
+  const start = performance.now();
+  isTweeningCamera = true;
+  function step(now) {
+    const t = Math.min(1, (now - start) / durationMs);
+    // easeInOutCubic
+    const e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    viewX = sx + (tx - sx) * e;
+    viewY = sy + (ty - sy) * e;
+    viewZoom = sz + (tz - sz) * e;
+    targetViewX = viewX; targetViewY = viewY; targetViewZoom = viewZoom;
+    if (t < 1) requestAnimationFrame(step);
+    else isTweeningCamera = false;
+  }
+  requestAnimationFrame(step);
+}
+
+function resetView(durationMs = 700) {
+  const sx = viewX, sy = viewY, sz = viewZoom;
+  const tx = 0, ty = 0, tz = 1;
+  const start = performance.now();
+  isTweeningCamera = true;
+  function step(now) {
+    const t = Math.min(1, (now - start) / durationMs);
+    const e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    viewX = sx + (tx - sx) * e;
+    viewY = sy + (ty - sy) * e;
+    viewZoom = sz + (tz - sz) * e;
+    targetViewX = viewX; targetViewY = viewY; targetViewZoom = viewZoom;
+    if (t < 1) requestAnimationFrame(step);
+    else isTweeningCamera = false;
+  }
+  requestAnimationFrame(step);
+}
+
+function drawMinimap() {
+  if (!minimapCtx || !minimapCanvas) return;
+  const mW = minimapCanvas.width, mH = minimapCanvas.height;
+  minimapCtx.clearRect(0, 0, mW, mH);
+
+  // Bounds of world: use nodes + domain outer radius
+  const pad = 120;
+  let minX = -DOMAIN_RADIUS - pad, maxX = DOMAIN_RADIUS + pad;
+  let minY = -DOMAIN_RADIUS - pad, maxY = DOMAIN_RADIUS + pad;
+  galaxyNodes.forEach(n => {
+    if (n.x < minX) minX = n.x;
+    if (n.x > maxX) maxX = n.x;
+    if (n.y < minY) minY = n.y;
+    if (n.y > maxY) maxY = n.y;
+  });
+  const worldW = maxX - minX, worldH = maxY - minY;
+  const scale = Math.min((mW - 16) / worldW, (mH - 16) / worldH);
+  const offX = (mW - worldW * scale) / 2;
+  const offY = (mH - worldH * scale) / 2;
+  const toMap = (wx, wy) => ({
+    x: offX + (wx - minX) * scale,
+    y: offY + (wy - minY) * scale
+  });
+
+  // Domain rings (6 centers)
+  Object.values(DOMAIN_CONFIG).forEach(cfg => {
+    const cx = Math.cos(cfg.angle) * DOMAIN_RADIUS;
+    const cy = Math.sin(cfg.angle) * DOMAIN_RADIUS;
+    const p = toMap(cx, cy);
+    minimapCtx.fillStyle = `hsla(${cfg.hue}, 80%, 70%, 0.14)`;
+    minimapCtx.beginPath();
+    minimapCtx.arc(p.x, p.y, 18, 0, Math.PI * 2);
+    minimapCtx.fill();
+    minimapCtx.fillStyle = `hsla(${cfg.hue}, 80%, 70%, 0.75)`;
+    minimapCtx.beginPath();
+    minimapCtx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+    minimapCtx.fill();
+  });
+
+  // Core
+  const core = toMap(0, 0);
+  minimapCtx.fillStyle = 'rgba(168, 85, 247, 0.9)';
+  minimapCtx.beginPath();
+  minimapCtx.arc(core.x, core.y, 4, 0, Math.PI * 2);
+  minimapCtx.fill();
+
+  // Nodes
+  galaxyNodes.forEach(n => {
+    const p = toMap(n.x, n.y);
+    minimapCtx.fillStyle = `hsl(${n.hue}, 75%, ${n === selectedNode ? 90 : 65}%)`;
+    minimapCtx.beginPath();
+    minimapCtx.arc(p.x, p.y, n === hoveredNode || n === selectedNode ? 3.2 : 1.8, 0, Math.PI * 2);
+    minimapCtx.fill();
+  });
+
+  // Viewport rectangle
+  const viewLeftW = -(W / 2 + viewX) / viewZoom;
+  const viewRightW = (W / 2 - viewX) / viewZoom;
+  const viewTopW = -(H / 2 + viewY) / viewZoom;
+  const viewBottomW = (H / 2 - viewY) / viewZoom;
+  const tl = toMap(viewLeftW, viewTopW);
+  const br = toMap(viewRightW, viewBottomW);
+  minimapCtx.strokeStyle = 'rgba(196, 181, 253, 0.85)';
+  minimapCtx.lineWidth = 1.2;
+  minimapCtx.strokeRect(
+    Math.max(2, tl.x),
+    Math.max(2, tl.y),
+    Math.min(mW - 4, br.x - tl.x),
+    Math.min(mH - 4, br.y - tl.y)
+  );
+
+  minimapCtx._lastMap = { minX, maxX, minY, maxY, offX, offY, scale };
+}
+
+function minimapClickToWorld(e) {
+  if (!minimapCanvas || !minimapCtx || !minimapCtx._lastMap) return;
+  const rect = minimapCanvas.getBoundingClientRect();
+  const sx = (e.clientX - rect.left) * (minimapCanvas.width / rect.width);
+  const sy = (e.clientY - rect.top) * (minimapCanvas.height / rect.height);
+  const { minX, minY, offX, offY, scale } = minimapCtx._lastMap;
+  const wx = (sx - offX) / scale + minX;
+  const wy = (sy - offY) / scale + minY;
+  // Pan so world (wx, wy) goes to center of view, with current zoom
+  const newX = -wx * viewZoom;
+  const newY = -wy * viewZoom;
+  const sx0 = viewX, sy0 = viewY;
+  const start = performance.now();
+  isTweeningCamera = true;
+  function step(now) {
+    const t = Math.min(1, (now - start) / 450);
+    const e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    viewX = sx0 + (newX - sx0) * e;
+    viewY = sy0 + (newY - sy0) * e;
+    targetViewX = viewX; targetViewY = viewY; targetViewZoom = viewZoom;
+    if (t < 1) requestAnimationFrame(step);
+    else isTweeningCamera = false;
+  }
+  requestAnimationFrame(step);
+}
+
+function hideContextMenu() {
+  if (ctxMenu) ctxMenu.classList.add('hidden');
+  ctxMenuNode = null;
+}
+
+function showContextMenu(node, clientX, clientY) {
+  if (!ctxMenu || !ctxTitle) return;
+  ctxMenuNode = node;
+  ctxTitle.textContent = `${node.project.icon || '✨'} ${node.project.name}`;
+  const menuW = 230, menuH = 280;
+  const left = Math.min(window.innerWidth - menuW, clientX + 6);
+  const top = Math.min(window.innerHeight - menuH, clientY + 6);
+  ctxMenu.style.left = left + 'px';
+  ctxMenu.style.top = top + 'px';
+  ctxMenu.classList.remove('hidden');
+}
+
+function handleContextAction(action) {
+  const node = ctxMenuNode;
+  hideContextMenu();
+  if (!node) return;
+  const p = node.project;
+  switch (action) {
+    case 'launch':
+      selectedNode = node;
+      if (p.hasHtml) launchLiveApp(p); else openInspector(p);
+      break;
+    case 'inspect':
+      selectedNode = node;
+      openInspector(p);
+      break;
+    case 'newwin':
+      selectedNode = node;
+      if (p.hasHtml) {
+        const url = `/apps/${encodeURIComponent(p.name)}/${p.entryHtml || 'index.html'}`;
+        window.open(url, '_blank');
+      } else {
+        openInspector(p);
+      }
+      break;
+    case 'fly':
+      selectedNode = node;
+      flyToNode(node, 2);
+      break;
+    case 'grid':
+      if (btnViewGrid) btnViewGrid.click();
+      // scroll to card after it renders
+      setTimeout(() => {
+        const cards = projectsGrid ? projectsGrid.querySelectorAll('.project-card') : [];
+        cards.forEach(card => {
+          const title = card.querySelector('.card-title');
+          if (title && title.textContent.trim() === p.name) {
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            card.style.boxShadow = '0 0 0 2px rgba(168, 85, 247, 0.7), 0 10px 30px rgba(0,0,0,0.5)';
+            setTimeout(() => { card.style.boxShadow = ''; }, 1800);
+          }
+        });
+      }, 120);
+      break;
+    case 'deselect':
+      selectedNode = null;
+      break;
+  }
+}
+
+// ====== SCREEN SHAKE ======
+function triggerShake(intensity = 8, duration = 320) {
+  screenShakeT = duration;
+  screenShakeX = intensity;
+  screenShakeY = intensity;
+}
+
+function updateShake(dt) {
+  if (screenShakeT > 0) {
+    screenShakeT -= dt;
+    if (screenShakeT < 0) {
+      screenShakeX = 0;
+      screenShakeY = 0;
+      screenShakeT = 0;
+    } else {
+      const f = screenShakeT > 0 ? Math.min(1, screenShakeT / 320) : 0;
+      const ix = screenShakeX * f;
+      const iy = screenShakeY * f;
+      screenShakeX = ix; screenShakeY = iy;
+    }
+  }
+}
+
+// ====== SUPERNOVA ======
+function spawnSupernova(node) {
+  const count = 60;
+  const tx = node.x, ty = node.y, hue = node.hue;
+  supernovaEffects.push({
+    x: tx, y: ty, hue, t: 0, maxT: 900,
+    maxR: node.radius * 8,
+  });
+  // Particle burst
+  for (let i = 0; i < count; i++) {
+    const angle = (i / count) * Math.PI * 2 + Math.random() * 0.3;
+    const speed = 1.8 + Math.random() * 5.5;
+    mouseTrailParticles.push({
+      x: tx, y: ty,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      size: 1.6 + Math.random() * 4,
+      hue: hue + (Math.random() - 0.5) * 70,
+      life: 1,
+      decay: 0.008 + Math.random() * 0.02
+    });
+  }
+  // Ripples
+  for (let i = 0; i < 3; i++) {
+    rippleEffects.push({
+      x: tx, y: ty,
+      radius: node.radius * 0.8 + i * 6,
+      speed: 2.5 + i * 1.1,
+      hue: hue + i * 20,
+      life: 1,
+      decay: 0.016 + i * 0.005
+    });
+  }
+}
+
+// ====== CATEGORY FLY-TO ======
+function flyToCategory(categoryName) {
+  if (!galaxyNodes.length) return;
+  if (categoryName === 'all' || categoryName === 'All Projects') {
+    resetView(700);
+    return;
+  }
+  // Find center of all nodes with this category, OR fall back to domain center
+  const members = galaxyNodes.filter(n => n.project.category === categoryName);
+  let targetX, targetY, targetZoom = 1.6;
+  if (members.length) {
+    const cx = members.reduce((s, n) => s + n.x, 0) / members.length;
+    const cy = members.reduce((s, n) => s + n.y, 0) / members.length;
+    // If they're spread out, zoom slightly less
+    const spreads = members.map(n => Math.hypot(n.x - cx, n.y - cy));
+    const avgSpread = spreads.reduce((a, b) => a + b, 0) / spreads.length;
+    targetZoom = Math.max(1.1, 1.9 - avgSpread / 180);
+    targetX = cx; targetY = cy;
+  } else if (DOMAIN_CONFIG[categoryName]) {
+    const cfg = DOMAIN_CONFIG[categoryName];
+    targetX = Math.cos(cfg.angle) * DOMAIN_RADIUS;
+    targetY = Math.sin(cfg.angle) * DOMAIN_RADIUS;
+    targetZoom = 1.55;
+  } else {
+    resetView(700);
+    return;
+  }
+  // Tween camera
+  const sx0 = viewX, sy0 = viewY, sz0 = viewZoom;
+  const tx2 = -targetX * targetZoom;
+  const ty2 = -targetY * targetZoom;
+  const start = performance.now();
+  isTweeningCamera = true;
+  function step(now) {
+    const t = Math.min(1, (now - start) / 900);
+    const e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    viewX = sx0 + (tx2 - sx0) * e;
+    viewY = sy0 + (ty2 - sy0) * e;
+    viewZoom = sz0 + (targetZoom - sz0) * e;
+    targetViewX = viewX; targetViewY = viewY; targetViewZoom = viewZoom;
+    if (t < 1) requestAnimationFrame(step);
+    else isTweeningCamera = false;
+  }
+  requestAnimationFrame(step);
+  triggerShake(3, 260);
+}
+
+// ====== KEYBOARD NAVIGATION ======
+function selectNearestNode(direction) {
+  if (!galaxyNodes.length) return null;
+  const origin = selectedNode ? { x: selectedNode.x, y: selectedNode.y } : { x: 0, y: 0 };
+  let best = null, bestScore = Infinity;
+  galaxyNodes.forEach(n => {
+    if (n === selectedNode) return;
+    const dx = n.x - origin.x;
+    const dy = n.y - origin.y;
+    const dist = Math.hypot(dx, dy);
+    let inDir = false;
+    switch (direction) {
+      case 'up':    inDir = dy < -4 && Math.abs(dy) > Math.abs(dx) * 0.5; break;
+      case 'down':  inDir = dy >  4 && Math.abs(dy) > Math.abs(dx) * 0.5; break;
+      case 'left':  inDir = dx < -4 && Math.abs(dx) > Math.abs(dy) * 0.5; break;
+      case 'right': inDir = dx >  4 && Math.abs(dx) > Math.abs(dy) * 0.5; break;
+      case 'any':   inDir = true; break;
+    }
+    if (!inDir) return;
+    // Prefer nodes roughly in the direction + close
+    const score = dist + (dist === 0 ? 0 : 0);
+    if (score < bestScore) { bestScore = score; best = n; }
+  });
+  // If nothing in-direction, fall back to closest overall
+  if (!best) {
+    galaxyNodes.forEach(n => {
+      if (n === selectedNode) return;
+      const d = Math.hypot(n.x - origin.x, n.y - origin.y);
+      if (d < bestScore) { bestScore = d; best = n; }
+    });
+  }
+  if (best) selectedNode = best;
+  return best;
+}
 
 // Background Star Particles
 function initStarParticles() {
@@ -73,6 +471,7 @@ async function fetchProjects() {
       updateCategoryCounts();
       applyFilters();
       initGalaxyNodes();
+      timelineInitFromProjects();
     }
   } catch (err) {
     console.warn('Backend API offline or static mode:', err);
@@ -92,6 +491,429 @@ async function fetchStats() {
     }
   } catch (e) { }
 }
+
+// ====================================================
+// ====== COSMIC TIMELINE — CORE FUNCTIONS (SCAFFOLD)
+// ====================================================
+
+function timelineInitFromProjects() {
+  if (!projectsData.length) return;
+
+  const present = Date.now();
+  const TWO_YEARS_MS = 1000 * 60 * 60 * 24 * 365 * 2;
+  const fallbackEarliest = present - TWO_YEARS_MS;
+
+  TIMELINE.presentDate = present;
+
+  TIMELINE.births = projectsData.map((p, i) => {
+    // Use server-provided data when available
+    let birthEpoch = p.birthDate || 0;
+    let commits = (p.commits && Array.isArray(p.commits)) ? p.commits.slice() : null;
+
+    // Fall back to deterministic pseudo-random generation
+    if (!birthEpoch || birthEpoch < fallbackEarliest || birthEpoch > present) {
+      const spread = TWO_YEARS_MS * 0.85;
+      const jitter = spread * (0.1 + 0.9 * ((i * 2654435761 % 232) / 232));
+      birthEpoch = fallbackEarliest + 30 * 86400000 + jitter;
+    }
+    if (!commits) {
+      const commitCount = 3 + Math.floor(Math.random() * 22);
+      commits = [];
+      for (let c = 0; c < commitCount; c++) {
+        commits.push({
+          date: birthEpoch + (present - birthEpoch) * (0.05 + 0.9 * Math.random()),
+          msg: ['Init scaffolding', 'Bug fixes', 'UI polish', 'New feature', 'Refactor', 'Optimization'][c % 6],
+          hue: p.hue || 260
+        });
+      }
+    }
+    return {
+      name: p.name,
+      hue: p.hue || 260,
+      icon: p.icon || '✨',
+      birthEpoch,
+      commits
+    };
+  }).sort((a, b) => a.birthEpoch - b.birthEpoch);
+
+  // Clamp earliest date to min birth - 30 days
+  const minBirth = TIMELINE.births.length ? TIMELINE.births[0].birthEpoch : fallbackEarliest;
+  TIMELINE.earliestDate = minBirth - 30 * 86400000;
+
+  TIMELINE.comets = TIMELINE.births.flatMap(b =>
+    b.commits.map(c => ({ ...c, name: b.name, hue: b.hue }))
+  ).sort((a, b) => a.date - b.date);
+
+  timelineResetToPresent();
+  timelineRebuildMarkers();
+  timelineRebuildTicks();
+}
+
+function timelineCurrentDate() {
+  return new Date(TIMELINE.earliestDate + (TIMELINE.presentDate - TIMELINE.earliestDate) * TIMELINE.progress);
+}
+
+function timelineSetProgress(p, { fromUser = false } = {}) {
+  const prev = TIMELINE.progress;
+  TIMELINE.progress = Math.max(0, Math.min(1, p));
+  const changed = Math.abs(prev - TIMELINE.progress) > 0.0001;
+  if (changed || fromUser) {
+    timelineUpdateBirthState();
+    timelineSpawnCrossedComets(prev, TIMELINE.progress);
+    timelineSyncUI();
+  }
+}
+
+function timelineResetToPresent() {
+  TIMELINE.progress = 1;
+  TIMELINE.playing = false;
+  timelineUpdateBirthState();
+  timelineSyncUI();
+}
+
+function timelineRewind() {
+  timelineSetProgress(0, { fromUser: true });
+  TIMELINE.playing = false;
+  timelineSyncUI();
+}
+
+function timelineFastForward() {
+  timelineSetProgress(1, { fromUser: true });
+  TIMELINE.playing = false;
+  timelineSyncUI();
+}
+
+function timelineTogglePlay() {
+  if (TIMELINE.progress >= 1 && !TIMELINE.playing) {
+    timelineSetProgress(0, { fromUser: true });
+  }
+  TIMELINE.playing = !TIMELINE.playing;
+  timelineSyncUI();
+}
+
+function timelineSetSpeed(speed) {
+  TIMELINE.playbackSpeed = speed;
+  document.querySelectorAll('.speed-btn').forEach(b => {
+    b.classList.toggle('active', parseFloat(b.dataset.speed) === speed);
+  });
+}
+
+function timelineUpdate(dt) {
+  if (!TIMELINE.enabled) return;
+
+  if (TIMELINE.playing) {
+    const TWO_YEARS_MS = TIMELINE.presentDate - TIMELINE.earliestDate;
+    const ONE_DAY_MS = 86400000;
+    const daysPerRealSec = 14 * TIMELINE.playbackSpeed;
+    const advance = (daysPerRealSec * ONE_DAY_MS * dt) / 1000 / TWO_YEARS_MS;
+    const next = TIMELINE.progress + advance;
+    if (next >= 1) {
+      timelineSetProgress(1);
+      TIMELINE.playing = false;
+      timelineSyncUI();
+    } else {
+      timelineSetProgress(next);
+    }
+  }
+
+  if (TIMELINE.activeCometEffects.length) {
+    const impacts = [];
+    TIMELINE.activeCometEffects = TIMELINE.activeCometEffects.filter(c => {
+      c.life -= dt / c.lifespan;
+      c.x += c.vx * (dt / 16.67);
+      c.y += c.vy * (dt / 16.67);
+      c.trail.unshift({ x: c.x, y: c.y });
+      if (c.trail.length > c.trailMax) c.trail.pop();
+      if (c.life <= 0) {
+        impacts.push(c);
+        return false;
+      }
+      return true;
+    });
+    impacts.forEach(c => {
+      // Ripples at impact point
+      for (let i = 0; i < 2; i++) {
+        rippleEffects.push({
+          x: c.x, y: c.y,
+          radius: 4 + i * 5,
+          speed: 1.8 + i * 1.2,
+          hue: c.hue + i * 18,
+          life: 1,
+          decay: 0.025 + i * 0.01
+        });
+      }
+      // Mini particle burst
+      for (let i = 0; i < 14; i++) {
+        const ang = Math.random() * Math.PI * 2;
+        const sp = 0.8 + Math.random() * 2.6;
+        mouseTrailParticles.push({
+          x: c.x, y: c.y,
+          vx: Math.cos(ang) * sp,
+          vy: Math.sin(ang) * sp,
+          size: 1.2 + Math.random() * 2.2,
+          hue: c.hue + (Math.random() - 0.5) * 50,
+          life: 1,
+          decay: 0.02 + Math.random() * 0.025
+        });
+      }
+      // Small screen shake on direct comet hit
+      const targetNode = galaxyNodes.find(n => n.project.name === c.name);
+      if (targetNode) {
+        const d = Math.hypot(targetNode.x - c.x, targetNode.y - c.y);
+        if (d < targetNode.radius * 3) {
+          triggerShake(1.2, 120);
+        }
+      }
+    });
+  }
+}
+
+function timelineUpdateBirthState() {
+  const cur = timelineCurrentDate().getTime();
+  let born = 0;
+  galaxyNodes.forEach(n => {
+    const b = TIMELINE.births.find(b => b.name === n.project.name);
+    if (b) {
+      n._born = b.birthEpoch <= cur;
+      if (n._born) born++;
+      n._birthProgress = Math.max(0, Math.min(1, (cur - b.birthEpoch) / (14 * 86400000)));
+    } else {
+      n._born = true;
+      n._birthProgress = 1;
+      born++;
+    }
+  });
+  TIMELINE.bornCount = born;
+}
+
+function timelineSpawnCrossedComets(prevProgress, curProgress) {
+  if (!TIMELINE.showComets) return;
+  if (prevProgress === curProgress) return;
+  const prevT = TIMELINE.earliestDate + (TIMELINE.presentDate - TIMELINE.earliestDate) * prevProgress;
+  const curT = TIMELINE.earliestDate + (TIMELINE.presentDate - TIMELINE.earliestDate) * curProgress;
+  const lo = Math.min(prevT, curT);
+  const hi = Math.max(prevT, curT);
+  const isForward = curProgress > prevProgress;
+  TIMELINE.comets.forEach(c => {
+    if (c.date >= lo && c.date <= hi) {
+      timelineSpawnCometForCommit(c, isForward);
+    }
+  });
+}
+
+function timelineSpawnCometForCommit(commit, forward) {
+  const targetNode = galaxyNodes.find(n => n.project.name === commit.name);
+  if (!targetNode) return;
+  const originAngle = Math.random() * Math.PI * 2;
+  const originDist = 180 + Math.random() * 120;
+  const ox = targetNode.x + Math.cos(originAngle) * originDist;
+  const oy = targetNode.y + Math.sin(originAngle) * originDist;
+  const dx = targetNode.x - ox;
+  const dy = targetNode.y - oy;
+  const len = Math.hypot(dx, dy) || 1;
+  const speed = 1.4 + Math.random() * 1.6;
+  TIMELINE.activeCometEffects.push({
+    x: ox, y: oy,
+    vx: (dx / len) * speed * (forward ? 1 : -1),
+    vy: (dy / len) * speed * (forward ? 1 : -1),
+    hue: commit.hue,
+    life: 1,
+    lifespan: 900 + Math.random() * 500,
+    size: 2.2 + Math.random() * 1.6,
+    trail: [],
+    trailMax: 16,
+    msg: commit.msg,
+    name: commit.name
+  });
+  TIMELINE.cometCount++;
+}
+
+function timelineSyncUI() {
+  const range = document.getElementById('timeline-range');
+  const trackFill = document.getElementById('timeline-track-fill');
+  const thumb = document.getElementById('timeline-thumb');
+  const badge = document.getElementById('timeline-badge');
+  const curDateEl = document.getElementById('timeline-current-date');
+  const presDateEl = document.getElementById('timeline-present-date');
+  const btnPlay = document.getElementById('btn-timeline-play');
+  const bornEl = document.getElementById('tl-stat-born');
+  const totalEl = document.getElementById('tl-stat-total');
+  const cometsEl = document.getElementById('tl-stat-comets');
+  const epochEl = document.getElementById('tl-stat-epoch');
+  const markersWrap = document.getElementById('timeline-markers');
+
+  if (range) range.value = String(Math.round(TIMELINE.progress * 1000));
+  if (trackFill) trackFill.style.width = (TIMELINE.progress * 100) + '%';
+  if (thumb) thumb.style.left = (TIMELINE.progress * 100) + '%';
+  if (badge) {
+    if (TIMELINE.progress >= 1) {
+      badge.textContent = 'NOW';
+      badge.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+    } else {
+      badge.textContent = '⏳';
+      badge.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)';
+    }
+  }
+  if (curDateEl) curDateEl.textContent = timelineFormatDate(timelineCurrentDate());
+  if (presDateEl) presDateEl.textContent = timelineFormatDate(new Date(TIMELINE.presentDate));
+  if (btnPlay) {
+    btnPlay.classList.toggle('playing', TIMELINE.playing);
+    btnPlay.innerHTML = TIMELINE.playing ? '⏸' : '▶';
+  }
+  if (bornEl) bornEl.textContent = TIMELINE.bornCount;
+  if (totalEl) totalEl.textContent = projectsData.length;
+  if (cometsEl) cometsEl.textContent = TIMELINE.cometCount;
+  if (epochEl) {
+    if (TIMELINE.progress >= 1) epochEl.textContent = 'Present';
+    else if (TIMELINE.progress <= 0) epochEl.textContent = 'Genesis';
+    else epochEl.textContent = timelineFormatDate(timelineCurrentDate(), true);
+  }
+  if (markersWrap) {
+    markersWrap.querySelectorAll('.timeline-marker').forEach(m => {
+      const t = parseFloat(m.dataset.progress);
+      m.classList.toggle('past', t <= TIMELINE.progress);
+      m.classList.toggle('future', t > TIMELINE.progress);
+    });
+  }
+}
+
+function timelineFormatDate(d, short) {
+  if (!d || isNaN(d.getTime())) return '—';
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  if (short) return `${y}.${m}.${day}`;
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${months[d.getMonth()]} ${day}, ${y}`;
+}
+
+function timelineRebuildMarkers() {
+  const wrap = document.getElementById('timeline-markers');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  const span = TIMELINE.presentDate - TIMELINE.earliestDate;
+  if (!span) return;
+  TIMELINE.births.forEach(b => {
+    const progress = (b.birthEpoch - TIMELINE.earliestDate) / span;
+    const el = document.createElement('div');
+    el.className = 'timeline-marker past';
+    el.style.left = (progress * 100) + '%';
+    el.style.setProperty('--marker-hue', `hsl(${b.hue}, 80%, 65%)`);
+    el.dataset.progress = String(progress);
+    el.dataset.projectName = b.name;
+    el.title = `${b.icon || '✨'} ${b.name} — Born ${timelineFormatDate(new Date(b.birthEpoch))} (click to jump)`;
+    el.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      // Scrub to ~3 days before birth so user sees the spawn animation
+      const preDays = 3 * 86400000;
+      const target = Math.max(0, (b.birthEpoch - preDays - TIMELINE.earliestDate) / span);
+      timelineSetProgress(target, { fromUser: true });
+      // Auto-play to animate through the birth
+      if (!TIMELINE.playing) {
+        TIMELINE.playing = true;
+        timelineSyncUI();
+      }
+      // Fly to the matching galaxy node if it exists
+      const node = galaxyNodes.find(n => n.project.name === b.name);
+      if (node) {
+        selectedNode = node;
+        // Zoom out a bit so we can see the comet field
+        flyToNode(node, 1.85, 700);
+      }
+      // Ensure galaxy view is active
+      if (btnViewGalaxy && btnViewGrid) {
+        btnViewGalaxy.classList.add('active');
+        btnViewGrid.classList.remove('active');
+        galaxyView.classList.remove('hidden');
+        gridView.classList.add('hidden');
+      }
+    });
+    wrap.appendChild(el);
+  });
+}
+
+function timelineRebuildTicks() {
+  const wrap = document.getElementById('timeline-ticks');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  const count = 5;
+  for (let i = 0; i < count; i++) {
+    const t = i / (count - 1);
+    const d = new Date(TIMELINE.earliestDate + (TIMELINE.presentDate - TIMELINE.earliestDate) * t);
+    const el = document.createElement('div');
+    el.className = 'timeline-tick';
+    el.textContent = timelineFormatDate(d, true);
+    wrap.appendChild(el);
+  }
+}
+
+function timelineTogglePanel() {
+  const panel = document.getElementById('cosmic-timeline');
+  if (!panel) return;
+  TIMELINE.open = !TIMELINE.open;
+  panel.classList.toggle('hidden', !TIMELINE.open);
+  if (TIMELINE.open && !TIMELINE.births.length) {
+    timelineInitFromProjects();
+  }
+}
+
+function timelineDrawComets(ctx2d) {
+  if (!TIMELINE.showComets || !TIMELINE.activeCometEffects.length) return;
+  TIMELINE.activeCometEffects.forEach(c => {
+    if (c.trail.length > 1) {
+      ctx2d.lineCap = 'round';
+      for (let i = 1; i < c.trail.length; i++) {
+        const alpha = (1 - i / c.trail.length) * c.life * 0.8;
+        const w = (c.size * (1 - i / c.trail.length)) * 0.8 + 0.5;
+        ctx2d.strokeStyle = `hsla(${c.hue}, 95%, 75%, ${alpha})`;
+        ctx2d.lineWidth = w;
+        ctx2d.beginPath();
+        ctx2d.moveTo(c.trail[i - 1].x, c.trail[i - 1].y);
+        ctx2d.lineTo(c.trail[i].x, c.trail[i].y);
+        ctx2d.stroke();
+      }
+    }
+    const glowGrad = ctx2d.createRadialGradient(c.x, c.y, 0, c.x, c.y, c.size * 4);
+    glowGrad.addColorStop(0, `hsla(${c.hue}, 95%, 80%, ${0.9 * c.life})`);
+    glowGrad.addColorStop(1, `hsla(${c.hue}, 95%, 70%, 0)`);
+    ctx2d.fillStyle = glowGrad;
+    ctx2d.beginPath();
+    ctx2d.arc(c.x, c.y, c.size * 4, 0, Math.PI * 2);
+    ctx2d.fill();
+    ctx2d.fillStyle = `hsl(${c.hue}, 100%, 92%)`;
+    ctx2d.beginPath();
+    ctx2d.arc(c.x, c.y, c.size, 0, Math.PI * 2);
+    ctx2d.fill();
+  });
+}
+
+function timelineAdjustNodeForPhase(n, drawState) {
+  if (!TIMELINE.enabled || TIMELINE.progress >= 1) return;
+  if (n._born === undefined) return;
+
+  if (!n._born) {
+    if (!TIMELINE.showProtostars) {
+      drawState.visible = false;
+      return;
+    }
+    drawState.coreLightnessAdd = -25;
+    drawState.alphaMult = 0.22;
+    drawState.radiusMult = 0.55;
+    drawState.labelAlpha = 0.2;
+    drawState.dim = true;
+    drawState.protostar = true;
+  } else if (n._birthProgress < 1) {
+    const p = n._birthProgress;
+    drawState.alphaMult = 0.25 + 0.75 * p;
+    drawState.radiusMult = 0.6 + 0.4 * p;
+    drawState.spawning = true;
+    drawState.birthP = p;
+  }
+}
+
+// ====================================================
+// ====== END COSMIC TIMELINE CORE
+// ====================================================
 
 // Update Category Count Badges
 function updateCategoryCounts() {
@@ -444,17 +1266,33 @@ function initGalaxyNodes() {
       hue: p.hue,
       orbitSpeed: 0.0003 + Math.random() * 0.0004,
       angle: Math.atan2(y, x),
-      dist: dist
+      dist: dist,
+      trail: []
     });
   });
 }
 
 function drawGalaxy() {
   if (!ctx) return;
+
+  // Frame timing
+  const now = performance.now();
+  const dt = Math.min(60, now - lastFrameT);
+  lastFrameT = now;
+  fpsAvg = fpsAvg * 0.92 + (1000 / Math.max(1, dt)) * 0.08;
+  if (hudFpsEl) hudFpsEl.textContent = String(Math.round(fpsAvg));
+  if (hudZoomEl) hudZoomEl.textContent = viewZoom.toFixed(2) + '×';
+  if (hudNodesEl) hudNodesEl.textContent = String(galaxyNodes.length);
+
+  updateShake(dt);
+
+  // Cosmic Timeline update (SCAFFOLD)
+  timelineUpdate(dt);
+
   ctx.clearRect(0, 0, W, H);
 
   ctx.save();
-  ctx.translate(W / 2 + viewX, H / 2 + viewY);
+  ctx.translate(W / 2 + viewX + screenShakeX, H / 2 + viewY + screenShakeY);
   ctx.scale(viewZoom, viewZoom);
 
   // Render Star Particles
@@ -482,6 +1320,38 @@ function drawGalaxy() {
     ctx.fill();
   });
 
+  // Render 6 Domain Orbit Rings + Labels
+  Object.entries(DOMAIN_CONFIG).forEach(([cat, cfg]) => {
+    const cx = Math.cos(cfg.angle) * DOMAIN_RADIUS;
+    const cy = Math.sin(cfg.angle) * DOMAIN_RADIUS;
+    // Outer cluster halo
+    const haloGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 160);
+    haloGrad.addColorStop(0, `hsla(${cfg.hue}, 80%, 65%, 0.06)`);
+    haloGrad.addColorStop(1, `hsla(${cfg.hue}, 80%, 65%, 0)`);
+    ctx.fillStyle = haloGrad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 160, 0, Math.PI * 2);
+    ctx.fill();
+    // Domain orbit ring (dashed)
+    ctx.strokeStyle = `hsla(${cfg.hue}, 70%, 65%, 0.09)`;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 10]);
+    ctx.beginPath();
+    ctx.arc(0, 0, DOMAIN_RADIUS, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // Cluster center dot + label
+    ctx.fillStyle = `hsla(${cfg.hue}, 80%, 70%, 0.55)`;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = `hsla(${cfg.hue}, 70%, 80%, 0.85)`;
+    ctx.font = '600 10px "Inter", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`${cfg.icon} ${cat}`, cx, cy - 155);
+  });
+
   // Render Central Sun (ALIF Core)
   const sunGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, 90);
   sunGrad.addColorStop(0, 'rgba(168, 85, 247, 0.9)');
@@ -502,6 +1372,7 @@ function drawGalaxy() {
   hoveredNode = null;
   const mouseX = (window.lastMouseX - (W / 2 + viewX)) / viewZoom;
   const mouseY = (window.lastMouseY - (H / 2 + viewY)) / viewZoom;
+  if (searchHighlightTime > 0) searchHighlightTime -= 1/60;
 
   galaxyNodes.forEach(node => {
     node.angle += node.orbitSpeed;
@@ -518,51 +1389,171 @@ function drawGalaxy() {
   galaxyNodes.forEach(node => {
     const isHovered = hoveredNode === node;
     const isSelected = selectedNode === node;
+    const matchesSearch = (() => {
+      if (!searchQuery) return false;
+      const q = searchQuery.toLowerCase();
+      const p = node.project;
+      return (p.name && p.name.toLowerCase().includes(q)) ||
+             (p.description && p.description.toLowerCase().includes(q)) ||
+             (p.category && p.category.toLowerCase().includes(q));
+    })();
+    const searchBoost = matchesSearch ? (0.5 + 0.5 * Math.sin(searchHighlightTime * 6)) : 0;
     const emphasised = isHovered || isSelected;
 
+    // ===== COSMIC TIMELINE: phase state computation =====
+    const phase = {
+      visible: true,
+      alphaMult: 1,
+      radiusMult: 1,
+      coreLightnessAdd: 0,
+      glowAlphaMult: 1,
+      labelAlpha: 1,
+      spawning: false,
+      birthPulse: 0,
+      dim: false,
+      protostar: false
+    };
+    timelineAdjustNodeForPhase(node, phase);
+    if (!phase.visible) return;
+    // One-shot spawn effect: first frame when birthProgress crosses 0.5
+    if (phase.spawning && phase.birthP !== undefined && !node._spawnFired && phase.birthP > 0.5) {
+      node._spawnFired = true;
+      // Birth ripples
+      for (let i = 0; i < 3; i++) {
+        rippleEffects.push({
+          x: node.x, y: node.y,
+          radius: node.radius * (0.5 + i * 0.4),
+          speed: 2 + i * 0.9,
+          hue: node.hue + i * 12,
+          life: 1,
+          decay: 0.012 + i * 0.006
+        });
+      }
+      // Particle puff
+      for (let i = 0; i < 24; i++) {
+        const ang = (i / 24) * Math.PI * 2 + Math.random() * 0.25;
+        const sp = 0.9 + Math.random() * 3.2;
+        mouseTrailParticles.push({
+          x: node.x, y: node.y,
+          vx: Math.cos(ang) * sp,
+          vy: Math.sin(ang) * sp,
+          size: 1.5 + Math.random() * 3,
+          hue: node.hue + (Math.random() - 0.5) * 40,
+          life: 1,
+          decay: 0.012 + Math.random() * 0.02
+        });
+      }
+    }
+    if (!phase.spawning) node._spawnFired = false;
+    // =====================================================
+
     // Draw ray to core
-    ctx.strokeStyle = `hsla(${node.hue}, 70%, 60%, ${emphasised ? 0.3 : 0.08})`;
-    ctx.lineWidth = emphasised ? 1.5 : 1;
+    const rayAlpha = (emphasised ? 0.3 : (matchesSearch ? 0.22 : 0.08)) * phase.alphaMult * (phase.dim ? 0.3 : 1);
+    ctx.strokeStyle = `hsla(${node.hue}, 70%, 60%, ${rayAlpha})`;
+    ctx.lineWidth = (emphasised ? 1.5 : (matchesSearch ? 1.2 : 1)) * phase.radiusMult;
     ctx.beginPath();
     ctx.moveTo(0, 0);
     ctx.lineTo(node.x, node.y);
     ctx.stroke();
 
+    const effRadius = node.radius * phase.radiusMult;
+
+    // Protostar ring (flickering dust around unborn project)
+    if (phase.protostar) {
+      const flick = 0.6 + 0.4 * Math.sin(performance.now() * 0.006 + node.hue * 0.13);
+      ctx.strokeStyle = `hsla(${node.hue}, 70%, 50%, ${0.35 * phase.alphaMult * flick})`;
+      ctx.lineWidth = 1.2;
+      ctx.setLineDash([3, 5]);
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, effRadius * 1.8, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // Inner dust halo
+      const dustGrad = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, effRadius * 2.5);
+      dustGrad.addColorStop(0, `hsla(${node.hue}, 60%, 55%, ${0.2 * phase.alphaMult * flick})`);
+      dustGrad.addColorStop(1, `hsla(${node.hue}, 60%, 55%, 0)`);
+      ctx.fillStyle = dustGrad;
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, effRadius * 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Spawning corona (expanding pulse)
+    if (phase.spawning && phase.birthP !== undefined) {
+      const pulse = 0.5 + 0.5 * Math.sin(performance.now() * 0.012);
+      const coronaR = effRadius * (2.2 + phase.birthP * 1.4 + pulse * 0.25);
+      const coronaGrad = ctx.createRadialGradient(node.x, node.y, effRadius * 0.6, node.x, node.y, coronaR);
+      coronaGrad.addColorStop(0, `hsla(${node.hue}, 100%, 75%, ${0.5 * phase.alphaMult * (1 - phase.birthP)})`);
+      coronaGrad.addColorStop(1, `hsla(${node.hue}, 100%, 75%, 0)`);
+      ctx.fillStyle = coronaGrad;
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, coronaR, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
     // Selection ring (persistent)
     if (isSelected) {
-      ctx.strokeStyle = `hsla(${node.hue}, 90%, 80%, 0.85)`;
+      ctx.strokeStyle = `hsla(${node.hue}, 90%, 80%, ${0.85 * phase.alphaMult})`;
       ctx.lineWidth = 2;
       ctx.setLineDash([4, 3]);
       ctx.beginPath();
-      ctx.arc(node.x, node.y, node.radius * 2.2, 0, Math.PI * 2);
+      ctx.arc(node.x, node.y, effRadius * 2.2, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    // Search match pulsing ring
+    if (matchesSearch) {
+      ctx.strokeStyle = `hsla(160, 90%, 75%, ${(0.4 + searchBoost * 0.5) * phase.alphaMult})`;
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([2, 4]);
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, effRadius * (2.6 + searchBoost * 1.3), 0, Math.PI * 2);
       ctx.stroke();
       ctx.setLineDash([]);
     }
 
     // Glow
-    const glowMult = isSelected ? 4.5 : (isHovered ? 4 : 2.5);
-    const glowAlpha = isSelected ? 0.8 : (isHovered ? 0.7 : 0.25);
-    const glowGrad = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, node.radius * glowMult);
+    const glowMultBase = isSelected ? 4.5 : (isHovered ? 4 : (matchesSearch ? 3.4 : 2.5));
+    const glowMult = glowMultBase * phase.radiusMult * (phase.protostar ? 0.5 : 1);
+    const glowAlphaBase = isSelected ? 0.8 : (isHovered ? 0.7 : (matchesSearch ? 0.45 + searchBoost * 0.25 : 0.25));
+    const glowAlpha = glowAlphaBase * phase.alphaMult * phase.glowAlphaMult * (phase.dim ? 0.4 : 1);
+    const glowGrad = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, effRadius * glowMult);
     glowGrad.addColorStop(0, `hsla(${node.hue}, 85%, 70%, ${glowAlpha})`);
     glowGrad.addColorStop(1, `hsla(${node.hue}, 85%, 70%, 0)`);
     ctx.fillStyle = glowGrad;
     ctx.beginPath();
-    ctx.arc(node.x, node.y, node.radius * glowMult, 0, Math.PI * 2);
+    ctx.arc(node.x, node.y, effRadius * glowMult, 0, Math.PI * 2);
     ctx.fill();
 
     // Core Star
-    const coreLightness = isSelected ? '95%' : (isHovered ? '90%' : '65%');
-    const coreSize = isSelected ? node.radius * 1.55 : (isHovered ? node.radius * 1.4 : node.radius);
-    ctx.fillStyle = `hsl(${node.hue}, 80%, ${coreLightness})`;
+    const baseLightness = isSelected ? 95 : (isHovered ? 90 : (matchesSearch ? 85 : 65));
+    const coreLightnessVal = Math.max(20, Math.min(98, baseLightness + phase.coreLightnessAdd));
+    const coreLightness = coreLightnessVal + '%';
+    const coreSizeBase = isSelected ? node.radius * 1.55 : (isHovered ? node.radius * 1.4 : (matchesSearch ? node.radius * 1.22 : node.radius));
+    const coreSize = coreSizeBase * phase.radiusMult * (phase.protostar ? 0.55 : 1);
+    ctx.fillStyle = `hsl(${node.hue}, ${phase.protostar ? 50 : 80}%, ${coreLightness})`;
     ctx.beginPath();
     ctx.arc(node.x, node.y, coreSize, 0, Math.PI * 2);
     ctx.fill();
+    // Protostar dot cross
+    if (phase.protostar) {
+      ctx.strokeStyle = `hsla(${node.hue}, 80%, 70%, ${0.6 * phase.alphaMult})`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(node.x - coreSize * 1.3, node.y);
+      ctx.lineTo(node.x + coreSize * 1.3, node.y);
+      ctx.moveTo(node.x, node.y - coreSize * 1.3);
+      ctx.lineTo(node.x, node.y + coreSize * 1.3);
+      ctx.stroke();
+    }
 
-    // Star Label
-    const labelAlpha = isSelected ? '1' : (isHovered ? '1' : '0.75');
-    ctx.fillStyle = isSelected || isHovered ? '#ffffff' : `rgba(255, 255, 255, ${labelAlpha})`;
-    ctx.font = `${emphasised ? 'bold 12px' : '10px'} "Inter", sans-serif`;
-    ctx.fillText(node.project.name, node.x, node.y + node.radius + 14);
+    // Star Label (hide for protostars dimmed)
+    const labelAlphaBase = isSelected || isHovered ? 1 : (matchesSearch ? 0.95 : 0.75);
+    const labelAlpha = labelAlphaBase * phase.labelAlpha * phase.alphaMult * (phase.dim || phase.protostar ? 0.35 : 1);
+    const labelColor = isSelected || isHovered ? `rgba(255,255,255,${labelAlpha})` : `rgba(255, 255, 255, ${labelAlpha})`;
+    ctx.fillStyle = labelColor;
+    ctx.font = `${(emphasised || matchesSearch) ? 'bold 12px' : '10px'} "Inter", sans-serif`;
+    ctx.fillText(node.project.name, node.x, node.y + effRadius + 14);
   });
 
   // Render Ripple Effects (on top of nodes)
@@ -578,7 +1569,13 @@ function drawGalaxy() {
     ctx.stroke();
   });
 
+  // Cosmic Timeline: draw commit comets (SCAFFOLD)
+  timelineDrawComets(ctx);
+
   ctx.restore();
+
+  // Draw minimap
+  drawMinimap();
 
   // Cursor pointer change
   if (canvas) {
@@ -639,25 +1636,102 @@ document.addEventListener('DOMContentLoaded', () => {
   fetchStats();
   setInterval(fetchStats, 5000);
 
-  // Keyboard Shortcuts (Ctrl+K focus search, Escape close modal)
+  // Keyboard Shortcuts (Ctrl+K focus search, Ctrl+T timeline, Escape close modal)
   window.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
       e.preventDefault();
       if (searchInput) searchInput.focus();
+    } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 't') {
+      e.preventDefault();
+      timelineTogglePanel();
     } else if (e.key === 'Escape') {
+      hideContextMenu();
       closeInspector();
       closeLiveApp();
       closeTerminal();
     }
   });
 
+  // ====== COSMIC TIMELINE EVENT LISTENERS (SCAFFOLD)  ======
+  const btnTimelineToggle = document.getElementById('btn-timeline-toggle');
+  if (btnTimelineToggle) btnTimelineToggle.addEventListener('click', timelineTogglePanel);
+
+  const timelineRange = document.getElementById('timeline-range');
+  if (timelineRange) {
+    timelineRange.addEventListener('input', (e) => {
+      timelineSetProgress(parseInt(e.target.value, 10) / 1000, { fromUser: true });
+    });
+  }
+
+  const btnRewind = document.getElementById('btn-timeline-rewind');
+  if (btnRewind) btnRewind.addEventListener('click', timelineRewind);
+  const btnPlay = document.getElementById('btn-timeline-play');
+  if (btnPlay) btnPlay.addEventListener('click', timelineTogglePlay);
+  const btnFfwd = document.getElementById('btn-timeline-fastforward');
+  if (btnFfwd) btnFfwd.addEventListener('click', timelineFastForward);
+
+  document.querySelectorAll('.speed-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const s = parseFloat(btn.dataset.speed);
+      if (!isNaN(s)) timelineSetSpeed(s);
+    });
+  });
+
+  const tlCometsToggle = document.getElementById('tl-toggle-comets');
+  if (tlCometsToggle) {
+    tlCometsToggle.addEventListener('change', () => {
+      TIMELINE.showComets = tlCometsToggle.checked;
+    });
+  }
+  const tlProtoToggle = document.getElementById('tl-toggle-protostars');
+  if (tlProtoToggle) {
+    tlProtoToggle.addEventListener('change', () => {
+      TIMELINE.showProtostars = tlProtoToggle.checked;
+    });
+  }
+  // =======================================================
+
   // Search input
   if (searchInput) {
     searchInput.oninput = (e) => {
       searchQuery = e.target.value;
+      if (searchQuery) searchHighlightTime = 3;
       if (btnClearSearch) btnClearSearch.classList.toggle('hidden', !searchQuery);
       applyFilters();
     };
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (!galaxyNodes.length) return;
+        const q = searchQuery.toLowerCase().trim();
+        if (!q) return;
+        let best = null; let bestMatch = -1;
+        galaxyNodes.forEach(n => {
+          const p = n.project;
+          const name = (p.name || '').toLowerCase();
+          const desc = (p.description || '').toLowerCase();
+          const cat = (p.category || '').toLowerCase();
+          let score = -1;
+          if (name === q) score = 100;
+          else if (name.startsWith(q)) score = 80;
+          else if (name.includes(q)) score = 60;
+          else if (cat.includes(q)) score = 40;
+          else if (desc.includes(q)) score = 20;
+          if (score > bestMatch) { bestMatch = score; best = n; }
+        });
+        if (best) {
+          if (btnViewGalaxy && btnViewGrid) {
+            btnViewGalaxy.classList.add('active');
+            btnViewGrid.classList.remove('active');
+            galaxyView.classList.remove('hidden');
+            gridView.classList.add('hidden');
+          }
+          searchHighlightTime = 5;
+          selectedNode = best;
+          flyToNode(best, 2.1, 900);
+        }
+      }
+    });
   }
 
   if (btnClearSearch) {
@@ -723,6 +1797,8 @@ document.addEventListener('DOMContentLoaded', () => {
     window.lastMouseX = canvas.width / 2;
     window.lastMouseY = canvas.height / 2;
     let lastTrailTime = 0;
+    let lastClickTime = 0;
+    let dblClickThreshold = 280;
 
     canvas.addEventListener('mousemove', (e) => {
       const rect = canvas.getBoundingClientRect();
@@ -755,6 +1831,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       if (isDragging) {
+        isTweeningCamera = false;
         viewX += e.clientX - dragStartX;
         viewY += e.clientY - dragStartY;
         dragStartX = e.clientX;
@@ -762,8 +1839,23 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    canvas.addEventListener('mousedown', (e) => {
+    canvas.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
       if (hoveredNode) {
+        selectedNode = hoveredNode;
+        showContextMenu(hoveredNode, e.clientX, e.clientY);
+      } else {
+        hideContextMenu();
+      }
+    });
+
+    canvas.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      hideContextMenu();
+      if (hoveredNode) {
+        const now = performance.now();
+        const isDbl = now - lastClickTime < dblClickThreshold;
+        lastClickTime = now;
         selectedNode = hoveredNode;
         const nx = hoveredNode.x;
         const ny = hoveredNode.y;
@@ -793,16 +1885,27 @@ document.addEventListener('DOMContentLoaded', () => {
             decay: 0.018 + Math.random() * 0.02
           });
         }
-        if (hoveredNode.project.hasHtml) {
-          launchLiveApp(hoveredNode.project);
+        if (isDbl) {
+          flyToNode(hoveredNode, 2.0, 850);
         } else {
-          openInspector(hoveredNode.project);
+          if (hoveredNode.project.hasHtml) {
+            launchLiveApp(hoveredNode.project);
+          } else {
+            openInspector(hoveredNode.project);
+          }
         }
       } else {
+        const now = performance.now();
+        const isDbl = now - lastClickTime < dblClickThreshold;
+        lastClickTime = now;
         selectedNode = null;
-        isDragging = true;
-        dragStartX = e.clientX;
-        dragStartY = e.clientY;
+        if (isDbl) {
+          resetView(700);
+        } else {
+          isDragging = true;
+          dragStartX = e.clientX;
+          dragStartY = e.clientY;
+        }
       }
     });
 
@@ -810,10 +1913,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
     canvas.addEventListener('wheel', (e) => {
       e.preventDefault();
+      isTweeningCamera = false;
       const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
       viewZoom = Math.max(0.4, Math.min(3, viewZoom * zoomFactor));
     }, { passive: false });
   }
+
+  // Minimap interactions
+  if (minimapCanvas) {
+    minimapCanvas.addEventListener('click', minimapClickToWorld);
+  }
+  if (minimapResetBtn) {
+    minimapResetBtn.addEventListener('click', () => resetView(700));
+  }
+
+  // Context menu item clicks
+  if (ctxMenu) {
+    ctxMenu.addEventListener('click', (e) => {
+      const btn = e.target.closest('.ctx-item');
+      if (btn && btn.dataset.action) handleContextAction(btn.dataset.action);
+    });
+  }
+
+  // Hide context menu when clicking outside or scrolling
+  window.addEventListener('mousedown', (e) => {
+    if (!ctxMenu) return;
+    if (ctxMenu.classList.contains('hidden')) return;
+    if (!ctxMenu.contains(e.target) && e.target !== canvas) hideContextMenu();
+  });
+  window.addEventListener('scroll', hideContextMenu, true);
+  window.addEventListener('blur', hideContextMenu);
 
   requestAnimationFrame(drawGalaxy);
 });
