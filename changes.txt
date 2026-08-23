@@ -1,648 +1,1982 @@
 ++ b/alif-universe/app.js
-let selectedProjectForModal = null;
-let currentPid = null;
-let activeEventSource = null;
+const minimapCanvas = document.getElementById('minimap-canvas');
+const minimapCtx = minimapCanvas ? minimapCanvas.getContext('2d') : null;
+const minimapResetBtn = document.getElementById('minimapReset');
+const ctxMenu = document.getElementById('galaxy-ctx-menu');
+const ctxTitle = document.getElementById('ctx-title');
 
-// Modals
-const appViewerModal = document.getElementById('app-viewer-modal');
-const terminalModal = document.getElementById('terminal-modal');
-const appIframe = document.getElementById('app-iframe');
-const terminalLogs = document.getElementById('terminal-logs');
-// Fetch Projects & Stats
-    console.warn('Backend API offline or static mode:', err);
-async function fetchStats() {
-  try {
-    const res = await fetch('/api/stats');
-    const data = await res.json();
-    if (data.ok) {
-      const procEl = document.getElementById('stat-processes');
-      if (procEl) {
-        procEl.textContent = `${data.activeProcesses || 0} Active`;
-        procEl.className = data.activeProcesses > 0 ? 'stat-val text-emerald' : 'stat-val text-amber';
+let targetViewX = 0, targetViewY = 0, targetViewZoom = 1;
+let isTweeningCamera = false;
+let ctxMenuNode = null;
+let searchHighlightTime = 0;
+let screenShakeX = 0, screenShakeY = 0, screenShakeT = 0;
+let supernovaEffects = [];
+let lastFrameT = performance.now();
+let fpsAvg = 60;
+
+// ====== COSMIC TIMELINE — STATE (SCAFFOLD)  ======
+const TIMELINE = {
+  enabled: true,
+  open: false,
+  playing: false,
+  playbackSpeed: 1,
+  showComets: true,
+  showProtostars: true,
+
+  // Date range (epoch ms)
+  earliestDate: 0,
+  presentDate: 0,
+
+  // Current position 0..1 (0 = earliest, 1 = present)
+  progress: 1,
+
+  // Birth data per project
+  births: [],
+
+  // Commit comet events
+  comets: [],
+  activeCometEffects: [],
+
+  // Stats tracks
+  bornCount: 0,
+  cometCount: 0
+};
+// ================================================
+const hudFpsEl = document.getElementById('hudFps');
+const hudZoomEl = document.getElementById('hudZoom');
+const hudNodesEl = document.getElementById('hudNodes');
+const hudKeyboardEl = document.getElementById('hudKeyboard');
+if (hudKeyboardEl) {
+  hudKeyboardEl.innerHTML = `<span class="kbd">←</span><span class="kbd">→</span><span class="kbd">↑</span><span class="kbd">↓</span><span class="kbd">Enter</span><span class="kbd">F</span>`;
+}
+const DOMAIN_RADIUS = 280;
+
+function flyToNode(node, zoom = 1.9, durationMs = 900) {
+  if (!node) return;
+  // Start values
+  const sx = viewX, sy = viewY, sz = viewZoom;
+  // Target world coords: center the node (subtract so node is at origin)
+  const tx = -node.x * zoom;
+  const ty = -node.y * zoom;
+  const tz = zoom;
+  const start = performance.now();
+  isTweeningCamera = true;
+  function step(now) {
+    const t = Math.min(1, (now - start) / durationMs);
+    // easeInOutCubic
+    const e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    viewX = sx + (tx - sx) * e;
+    viewY = sy + (ty - sy) * e;
+    viewZoom = sz + (tz - sz) * e;
+    targetViewX = viewX; targetViewY = viewY; targetViewZoom = viewZoom;
+    if (t < 1) requestAnimationFrame(step);
+    else isTweeningCamera = false;
+  }
+  requestAnimationFrame(step);
+}
+
+function resetView(durationMs = 700) {
+  const sx = viewX, sy = viewY, sz = viewZoom;
+  const tx = 0, ty = 0, tz = 1;
+  const start = performance.now();
+  isTweeningCamera = true;
+  function step(now) {
+    const t = Math.min(1, (now - start) / durationMs);
+    const e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    viewX = sx + (tx - sx) * e;
+    viewY = sy + (ty - sy) * e;
+    viewZoom = sz + (tz - sz) * e;
+    targetViewX = viewX; targetViewY = viewY; targetViewZoom = viewZoom;
+    if (t < 1) requestAnimationFrame(step);
+    else isTweeningCamera = false;
+  }
+  requestAnimationFrame(step);
+}
+
+function drawMinimap() {
+  if (!minimapCtx || !minimapCanvas) return;
+  const mW = minimapCanvas.width, mH = minimapCanvas.height;
+  minimapCtx.clearRect(0, 0, mW, mH);
+
+  // Bounds of world: use nodes + domain outer radius
+  const pad = 120;
+  let minX = -DOMAIN_RADIUS - pad, maxX = DOMAIN_RADIUS + pad;
+  let minY = -DOMAIN_RADIUS - pad, maxY = DOMAIN_RADIUS + pad;
+  galaxyNodes.forEach(n => {
+    if (n.x < minX) minX = n.x;
+    if (n.x > maxX) maxX = n.x;
+    if (n.y < minY) minY = n.y;
+    if (n.y > maxY) maxY = n.y;
+  });
+  const worldW = maxX - minX, worldH = maxY - minY;
+  const scale = Math.min((mW - 16) / worldW, (mH - 16) / worldH);
+  const offX = (mW - worldW * scale) / 2;
+  const offY = (mH - worldH * scale) / 2;
+  const toMap = (wx, wy) => ({
+    x: offX + (wx - minX) * scale,
+    y: offY + (wy - minY) * scale
+  });
+
+  // Domain rings (6 centers)
+  Object.values(DOMAIN_CONFIG).forEach(cfg => {
+    const cx = Math.cos(cfg.angle) * DOMAIN_RADIUS;
+    const cy = Math.sin(cfg.angle) * DOMAIN_RADIUS;
+    const p = toMap(cx, cy);
+    minimapCtx.fillStyle = `hsla(${cfg.hue}, 80%, 70%, 0.14)`;
+    minimapCtx.beginPath();
+    minimapCtx.arc(p.x, p.y, 18, 0, Math.PI * 2);
+    minimapCtx.fill();
+    minimapCtx.fillStyle = `hsla(${cfg.hue}, 80%, 70%, 0.75)`;
+    minimapCtx.beginPath();
+    minimapCtx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+    minimapCtx.fill();
+  });
+
+  // Core
+  const core = toMap(0, 0);
+  minimapCtx.fillStyle = 'rgba(168, 85, 247, 0.9)';
+  minimapCtx.beginPath();
+  minimapCtx.arc(core.x, core.y, 4, 0, Math.PI * 2);
+  minimapCtx.fill();
+
+  // Nodes
+  galaxyNodes.forEach(n => {
+    const p = toMap(n.x, n.y);
+    minimapCtx.fillStyle = `hsl(${n.hue}, 75%, ${n === selectedNode ? 90 : 65}%)`;
+    minimapCtx.beginPath();
+    minimapCtx.arc(p.x, p.y, n === hoveredNode || n === selectedNode ? 3.2 : 1.8, 0, Math.PI * 2);
+    minimapCtx.fill();
+  });
+
+  // Viewport rectangle
+  const viewLeftW = -(W / 2 + viewX) / viewZoom;
+  const viewRightW = (W / 2 - viewX) / viewZoom;
+  const viewTopW = -(H / 2 + viewY) / viewZoom;
+  const viewBottomW = (H / 2 - viewY) / viewZoom;
+  const tl = toMap(viewLeftW, viewTopW);
+  const br = toMap(viewRightW, viewBottomW);
+  minimapCtx.strokeStyle = 'rgba(196, 181, 253, 0.85)';
+  minimapCtx.lineWidth = 1.2;
+  minimapCtx.strokeRect(
+    Math.max(2, tl.x),
+    Math.max(2, tl.y),
+    Math.min(mW - 4, br.x - tl.x),
+    Math.min(mH - 4, br.y - tl.y)
+  );
+
+  minimapCtx._lastMap = { minX, maxX, minY, maxY, offX, offY, scale };
+}
+
+function minimapClickToWorld(e) {
+  if (!minimapCanvas || !minimapCtx || !minimapCtx._lastMap) return;
+  const rect = minimapCanvas.getBoundingClientRect();
+  const sx = (e.clientX - rect.left) * (minimapCanvas.width / rect.width);
+  const sy = (e.clientY - rect.top) * (minimapCanvas.height / rect.height);
+  const { minX, minY, offX, offY, scale } = minimapCtx._lastMap;
+  const wx = (sx - offX) / scale + minX;
+  const wy = (sy - offY) / scale + minY;
+  // Pan so world (wx, wy) goes to center of view, with current zoom
+  const newX = -wx * viewZoom;
+  const newY = -wy * viewZoom;
+  const sx0 = viewX, sy0 = viewY;
+  const start = performance.now();
+  isTweeningCamera = true;
+  function step(now) {
+    const t = Math.min(1, (now - start) / 450);
+    const e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    viewX = sx0 + (newX - sx0) * e;
+    viewY = sy0 + (newY - sy0) * e;
+    targetViewX = viewX; targetViewY = viewY; targetViewZoom = viewZoom;
+    if (t < 1) requestAnimationFrame(step);
+    else isTweeningCamera = false;
+  }
+  requestAnimationFrame(step);
+}
+
+function hideContextMenu() {
+  if (ctxMenu) ctxMenu.classList.add('hidden');
+  ctxMenuNode = null;
+}
+
+function showContextMenu(node, clientX, clientY) {
+  if (!ctxMenu || !ctxTitle) return;
+  ctxMenuNode = node;
+  ctxTitle.textContent = `${node.project.icon || '✨'} ${node.project.name}`;
+  const menuW = 230, menuH = 280;
+  const left = Math.min(window.innerWidth - menuW, clientX + 6);
+  const top = Math.min(window.innerHeight - menuH, clientY + 6);
+  ctxMenu.style.left = left + 'px';
+  ctxMenu.style.top = top + 'px';
+  ctxMenu.classList.remove('hidden');
+}
+
+function handleContextAction(action) {
+  const node = ctxMenuNode;
+  hideContextMenu();
+  if (!node) return;
+  const p = node.project;
+  switch (action) {
+    case 'launch':
+      selectedNode = node;
+      if (p.hasHtml) launchLiveApp(p); else openInspector(p);
+      break;
+    case 'inspect':
+      selectedNode = node;
+      openInspector(p);
+      break;
+    case 'newwin':
+      selectedNode = node;
+      if (p.hasHtml) {
+        const url = `/apps/${encodeURIComponent(p.name)}/${p.entryHtml || 'index.html'}`;
+        window.open(url, '_blank');
+      } else {
+        openInspector(p);
+      }
+      break;
+    case 'fly':
+      selectedNode = node;
+      flyToNode(node, 2);
+      break;
+    case 'grid':
+      if (btnViewGrid) btnViewGrid.click();
+      // scroll to card after it renders
+      setTimeout(() => {
+        const cards = projectsGrid ? projectsGrid.querySelectorAll('.project-card') : [];
+        cards.forEach(card => {
+          const title = card.querySelector('.card-title');
+          if (title && title.textContent.trim() === p.name) {
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            card.style.boxShadow = '0 0 0 2px rgba(168, 85, 247, 0.7), 0 10px 30px rgba(0,0,0,0.5)';
+            setTimeout(() => { card.style.boxShadow = ''; }, 1800);
+          }
+        });
+      }, 120);
+      break;
+    case 'deselect':
+      selectedNode = null;
+      break;
+  }
+}
+
+// ====== SCREEN SHAKE ======
+function triggerShake(intensity = 8, duration = 320) {
+  screenShakeT = duration;
+  screenShakeX = intensity;
+  screenShakeY = intensity;
+}
+
+function updateShake(dt) {
+  if (screenShakeT > 0) {
+    screenShakeT -= dt;
+    if (screenShakeT < 0) {
+      screenShakeX = 0;
+      screenShakeY = 0;
+      screenShakeT = 0;
+    } else {
+      const f = screenShakeT > 0 ? Math.min(1, screenShakeT / 320) : 0;
+      const ix = screenShakeX * f;
+      const iy = screenShakeY * f;
+      screenShakeX = ix; screenShakeY = iy;
+    }
+  }
+}
+
+// ====== SUPERNOVA ======
+function spawnSupernova(node) {
+  const count = 60;
+  const tx = node.x, ty = node.y, hue = node.hue;
+  supernovaEffects.push({
+    x: tx, y: ty, hue, t: 0, maxT: 900,
+    maxR: node.radius * 8,
+  });
+  // Particle burst
+  for (let i = 0; i < count; i++) {
+    const angle = (i / count) * Math.PI * 2 + Math.random() * 0.3;
+    const speed = 1.8 + Math.random() * 5.5;
+    mouseTrailParticles.push({
+      x: tx, y: ty,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      size: 1.6 + Math.random() * 4,
+      hue: hue + (Math.random() - 0.5) * 70,
+      life: 1,
+      decay: 0.008 + Math.random() * 0.02
+    });
+  }
+  // Ripples
+  for (let i = 0; i < 3; i++) {
+    rippleEffects.push({
+      x: tx, y: ty,
+      radius: node.radius * 0.8 + i * 6,
+      speed: 2.5 + i * 1.1,
+      hue: hue + i * 20,
+      life: 1,
+      decay: 0.016 + i * 0.005
+    });
+  }
+}
+
+// ====== CATEGORY FLY-TO ======
+function flyToCategory(categoryName) {
+  if (!galaxyNodes.length) return;
+  if (categoryName === 'all' || categoryName === 'All Projects') {
+    resetView(700);
+    return;
+  }
+  // Find center of all nodes with this category, OR fall back to domain center
+  const members = galaxyNodes.filter(n => n.project.category === categoryName);
+  let targetX, targetY, targetZoom = 1.6;
+  if (members.length) {
+    const cx = members.reduce((s, n) => s + n.x, 0) / members.length;
+    const cy = members.reduce((s, n) => s + n.y, 0) / members.length;
+    // If they're spread out, zoom slightly less
+    const spreads = members.map(n => Math.hypot(n.x - cx, n.y - cy));
+    const avgSpread = spreads.reduce((a, b) => a + b, 0) / spreads.length;
+    targetZoom = Math.max(1.1, 1.9 - avgSpread / 180);
+    targetX = cx; targetY = cy;
+  } else if (DOMAIN_CONFIG[categoryName]) {
+    const cfg = DOMAIN_CONFIG[categoryName];
+    targetX = Math.cos(cfg.angle) * DOMAIN_RADIUS;
+    targetY = Math.sin(cfg.angle) * DOMAIN_RADIUS;
+    targetZoom = 1.55;
+  } else {
+    resetView(700);
+    return;
+  }
+  // Tween camera
+  const sx0 = viewX, sy0 = viewY, sz0 = viewZoom;
+  const tx2 = -targetX * targetZoom;
+  const ty2 = -targetY * targetZoom;
+  const start = performance.now();
+  isTweeningCamera = true;
+  function step(now) {
+    const t = Math.min(1, (now - start) / 900);
+    const e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    viewX = sx0 + (tx2 - sx0) * e;
+    viewY = sy0 + (ty2 - sy0) * e;
+    viewZoom = sz0 + (targetZoom - sz0) * e;
+    targetViewX = viewX; targetViewY = viewY; targetViewZoom = viewZoom;
+    if (t < 1) requestAnimationFrame(step);
+    else isTweeningCamera = false;
+  }
+  requestAnimationFrame(step);
+  triggerShake(3, 260);
+}
+
+// ====== KEYBOARD NAVIGATION ======
+function selectNearestNode(direction) {
+  if (!galaxyNodes.length) return null;
+  const origin = selectedNode ? { x: selectedNode.x, y: selectedNode.y } : { x: 0, y: 0 };
+  let best = null, bestScore = Infinity;
+  galaxyNodes.forEach(n => {
+    if (n === selectedNode) return;
+    const dx = n.x - origin.x;
+    const dy = n.y - origin.y;
+    const dist = Math.hypot(dx, dy);
+    let inDir = false;
+    switch (direction) {
+      case 'up':    inDir = dy < -4 && Math.abs(dy) > Math.abs(dx) * 0.5; break;
+      case 'down':  inDir = dy >  4 && Math.abs(dy) > Math.abs(dx) * 0.5; break;
+      case 'left':  inDir = dx < -4 && Math.abs(dx) > Math.abs(dy) * 0.5; break;
+      case 'right': inDir = dx >  4 && Math.abs(dx) > Math.abs(dy) * 0.5; break;
+      case 'any':   inDir = true; break;
+    }
+    if (!inDir) return;
+    // Prefer nodes roughly in the direction + close
+    const score = dist + (dist === 0 ? 0 : 0);
+    if (score < bestScore) { bestScore = score; best = n; }
+  });
+  // If nothing in-direction, fall back to closest overall
+  if (!best) {
+    galaxyNodes.forEach(n => {
+      if (n === selectedNode) return;
+      const d = Math.hypot(n.x - origin.x, n.y - origin.y);
+      if (d < bestScore) { bestScore = d; best = n; }
+    });
+  }
+  if (best) selectedNode = best;
+  return best;
+}
+      timelineInitFromProjects();
+// ====================================================
+// ====== COSMIC TIMELINE — CORE FUNCTIONS (SCAFFOLD)
+// ====================================================
+
+function timelineInitFromProjects() {
+  if (!projectsData.length) return;
+
+  const present = Date.now();
+  const TWO_YEARS_MS = 1000 * 60 * 60 * 24 * 365 * 2;
+  const fallbackEarliest = present - TWO_YEARS_MS;
+
+  TIMELINE.presentDate = present;
+
+  TIMELINE.births = projectsData.map((p, i) => {
+    // Use server-provided data when available
+    let birthEpoch = p.birthDate || 0;
+    let commits = (p.commits && Array.isArray(p.commits)) ? p.commits.slice() : null;
+
+    // Fall back to deterministic pseudo-random generation
+    if (!birthEpoch || birthEpoch < fallbackEarliest || birthEpoch > present) {
+      const spread = TWO_YEARS_MS * 0.85;
+      const jitter = spread * (0.1 + 0.9 * ((i * 2654435761 % 232) / 232));
+      birthEpoch = fallbackEarliest + 30 * 86400000 + jitter;
+    }
+    if (!commits) {
+      const commitCount = 3 + Math.floor(Math.random() * 22);
+      commits = [];
+      for (let c = 0; c < commitCount; c++) {
+        commits.push({
+          date: birthEpoch + (present - birthEpoch) * (0.05 + 0.9 * Math.random()),
+          msg: ['Init scaffolding', 'Bug fixes', 'UI polish', 'New feature', 'Refactor', 'Optimization'][c % 6],
+          hue: p.hue || 260
+        });
       }
     }
-  } catch (e) { }
+    return {
+      name: p.name,
+      hue: p.hue || 260,
+      icon: p.icon || '✨',
+      birthEpoch,
+      commits
+    };
+  }).sort((a, b) => a.birthEpoch - b.birthEpoch);
+
+  // Clamp earliest date to min birth - 30 days
+  const minBirth = TIMELINE.births.length ? TIMELINE.births[0].birthEpoch : fallbackEarliest;
+  TIMELINE.earliestDate = minBirth - 30 * 86400000;
+
+  TIMELINE.comets = TIMELINE.births.flatMap(b =>
+    b.commits.map(c => ({ ...c, name: b.name, hue: b.hue }))
+  ).sort((a, b) => a.date - b.date);
+
+  timelineResetToPresent();
+  timelineRebuildMarkers();
+  timelineRebuildTicks();
 }
 
-        ${p.hasHtml ? `<button class="card-launch-btn btn-card-launch">🚀 Launch</button>` : `<button class="card-launch-btn btn-card-inspect">⚙️ Inspect</button>`}
-    // Click handler for launch button specifically or card
-    const launchBtn = card.querySelector('.btn-card-launch');
-    if (launchBtn) {
-      launchBtn.onclick = (e) => {
-        e.stopPropagation();
-        launchLiveApp(p);
-      };
-    }
+function timelineCurrentDate() {
+  return new Date(TIMELINE.earliestDate + (TIMELINE.presentDate - TIMELINE.earliestDate) * TIMELINE.progress);
+}
 
-  selectedProjectForModal = p;
+function timelineSetProgress(p, { fromUser = false } = {}) {
+  const prev = TIMELINE.progress;
+  TIMELINE.progress = Math.max(0, Math.min(1, p));
+  const changed = Math.abs(prev - TIMELINE.progress) > 0.0001;
+  if (changed || fromUser) {
+    timelineUpdateBirthState();
+    timelineSpawnCrossedComets(prev, TIMELINE.progress);
+    timelineSyncUI();
+  }
+}
 
-  document.getElementById('modal-html').textContent = p.hasHtml ? `Yes (${p.entryHtml || 'index.html'})` : 'No (backend/cli)';
+function timelineResetToPresent() {
+  TIMELINE.progress = 1;
+  TIMELINE.playing = false;
+  timelineUpdateBirthState();
+  timelineSyncUI();
+}
 
-  const btnLaunchModal = document.getElementById('btn-modal-launch-action');
-  if (btnLaunchModal) {
-    if (p.hasHtml) {
-      btnLaunchModal.textContent = '🚀 Launch Live Project';
-      btnLaunchModal.style.display = 'inline-block';
-      btnLaunchModal.onclick = () => {
-        closeInspector();
-        launchLiveApp(p);
-      };
+function timelineRewind() {
+  timelineSetProgress(0, { fromUser: true });
+  TIMELINE.playing = false;
+  timelineSyncUI();
+}
+
+function timelineFastForward() {
+  timelineSetProgress(1, { fromUser: true });
+  TIMELINE.playing = false;
+  timelineSyncUI();
+}
+
+function timelineTogglePlay() {
+  if (TIMELINE.progress >= 1 && !TIMELINE.playing) {
+    timelineSetProgress(0, { fromUser: true });
+  }
+  TIMELINE.playing = !TIMELINE.playing;
+  timelineSyncUI();
+}
+
+function timelineSetSpeed(speed) {
+  TIMELINE.playbackSpeed = speed;
+  document.querySelectorAll('.speed-btn').forEach(b => {
+    b.classList.toggle('active', parseFloat(b.dataset.speed) === speed);
+  });
+}
+
+function timelineUpdate(dt) {
+  if (!TIMELINE.enabled) return;
+
+  if (TIMELINE.playing) {
+    const TWO_YEARS_MS = TIMELINE.presentDate - TIMELINE.earliestDate;
+    const ONE_DAY_MS = 86400000;
+    const daysPerRealSec = 14 * TIMELINE.playbackSpeed;
+    const advance = (daysPerRealSec * ONE_DAY_MS * dt) / 1000 / TWO_YEARS_MS;
+    const next = TIMELINE.progress + advance;
+    if (next >= 1) {
+      timelineSetProgress(1);
+      TIMELINE.playing = false;
+      timelineSyncUI();
     } else {
-      btnLaunchModal.style.display = 'none';
+      timelineSetProgress(next);
     }
   }
-      scriptsContainer.innerHTML = '<span style="font-size: 11px; color: var(--text-dim);">No package.json scripts defined</span>';
-        tag.textContent = `▶️ ${k}: ${p.scripts[k]}`;
-        tag.title = 'Click to run this script live';
-        tag.onclick = (e) => {
-          e.stopPropagation();
-          closeInspector();
-          runProjectScript(p, k);
-        };
-// --- Live App Launcher (Iframe Embed) ---
-function launchLiveApp(p) {
-  if (!appViewerModal || !appIframe) return;
 
-  const appUrl = `/apps/${encodeURIComponent(p.name)}/${p.entryHtml || 'index.html'}`;
-
-  document.getElementById('viewer-icon').textContent = p.icon;
-  document.getElementById('viewer-name').textContent = `${p.name} — Live App`;
-  document.getElementById('viewer-path').textContent = appUrl;
-
-  appIframe.src = appUrl;
-  appViewerModal.classList.remove('hidden');
-
-  // Reload action
-  const btnReload = document.getElementById('btn-viewer-reload');
-  if (btnReload) {
-    btnReload.onclick = () => {
-      appIframe.src = appUrl;
-    };
-  }
-
-  // Open Direct Action
-  const btnExternal = document.getElementById('btn-viewer-external');
-  if (btnExternal) {
-    btnExternal.onclick = () => {
-      window.open(appUrl, '_blank');
-    };
-  }
-}
-
-function closeLiveApp() {
-  if (!appViewerModal || !appIframe) return;
-  appIframe.src = 'about:blank';
-  appViewerModal.classList.add('hidden');
-}
-
-// --- Live Script Execution & Terminal Console ---
-async function runProjectScript(p, scriptName) {
-  if (!terminalModal || !terminalLogs) return;
-
-  terminalLogs.innerHTML = '';
-  document.getElementById('terminal-title').textContent = `${p.name} — npm run ${scriptName}`;
-  const statusBadge = document.getElementById('terminal-status');
-  if (statusBadge) {
-    statusBadge.textContent = 'Launching...';
-    statusBadge.className = 'status-badge status-running';
-  }
-
-  terminalModal.classList.remove('hidden');
-
-  if (activeEventSource) {
-    activeEventSource.close();
-    activeEventSource = null;
-  }
-
-  try {
-    const res = await fetch('/api/run-script', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ projectName: p.name, scriptName })
+  if (TIMELINE.activeCometEffects.length) {
+    const impacts = [];
+    TIMELINE.activeCometEffects = TIMELINE.activeCometEffects.filter(c => {
+      c.life -= dt / c.lifespan;
+      c.x += c.vx * (dt / 16.67);
+      c.y += c.vy * (dt / 16.67);
+      c.trail.unshift({ x: c.x, y: c.y });
+      if (c.trail.length > c.trailMax) c.trail.pop();
+      if (c.life <= 0) {
+        impacts.push(c);
+        return false;
+      }
+      return true;
     });
+    impacts.forEach(c => {
+      // Ripples at impact point
+      for (let i = 0; i < 2; i++) {
+        rippleEffects.push({
+          x: c.x, y: c.y,
+          radius: 4 + i * 5,
+          speed: 1.8 + i * 1.2,
+          hue: c.hue + i * 18,
+          life: 1,
+          decay: 0.025 + i * 0.01
+        });
+      }
+      // Mini particle burst
+      for (let i = 0; i < 14; i++) {
+        const ang = Math.random() * Math.PI * 2;
+        const sp = 0.8 + Math.random() * 2.6;
+        mouseTrailParticles.push({
+          x: c.x, y: c.y,
+          vx: Math.cos(ang) * sp,
+          vy: Math.sin(ang) * sp,
+          size: 1.2 + Math.random() * 2.2,
+          hue: c.hue + (Math.random() - 0.5) * 50,
+          life: 1,
+          decay: 0.02 + Math.random() * 0.025
+        });
+      }
+      // Small screen shake on direct comet hit
+      const targetNode = galaxyNodes.find(n => n.project.name === c.name);
+      if (targetNode) {
+        const d = Math.hypot(targetNode.x - c.x, targetNode.y - c.y);
+        if (d < targetNode.radius * 3) {
+          triggerShake(1.2, 120);
+        }
+      }
+    });
+  }
+}
 
-    const data = await res.json();
-    if (!data.ok) {
-      appendTerminalLog('stderr', `Error launching script: ${data.error}`);
+function timelineUpdateBirthState() {
+  const cur = timelineCurrentDate().getTime();
+  let born = 0;
+  galaxyNodes.forEach(n => {
+    const b = TIMELINE.births.find(b => b.name === n.project.name);
+    if (b) {
+      n._born = b.birthEpoch <= cur;
+      if (n._born) born++;
+      n._birthProgress = Math.max(0, Math.min(1, (cur - b.birthEpoch) / (14 * 86400000)));
+    } else {
+      n._born = true;
+      n._birthProgress = 1;
+      born++;
+    }
+  });
+  TIMELINE.bornCount = born;
+}
+
+function timelineSpawnCrossedComets(prevProgress, curProgress) {
+  if (!TIMELINE.showComets) return;
+  if (prevProgress === curProgress) return;
+  const prevT = TIMELINE.earliestDate + (TIMELINE.presentDate - TIMELINE.earliestDate) * prevProgress;
+  const curT = TIMELINE.earliestDate + (TIMELINE.presentDate - TIMELINE.earliestDate) * curProgress;
+  const lo = Math.min(prevT, curT);
+  const hi = Math.max(prevT, curT);
+  const isForward = curProgress > prevProgress;
+  TIMELINE.comets.forEach(c => {
+    if (c.date >= lo && c.date <= hi) {
+      timelineSpawnCometForCommit(c, isForward);
+    }
+  });
+}
+
+function timelineSpawnCometForCommit(commit, forward) {
+  const targetNode = galaxyNodes.find(n => n.project.name === commit.name);
+  if (!targetNode) return;
+  const originAngle = Math.random() * Math.PI * 2;
+  const originDist = 180 + Math.random() * 120;
+  const ox = targetNode.x + Math.cos(originAngle) * originDist;
+  const oy = targetNode.y + Math.sin(originAngle) * originDist;
+  const dx = targetNode.x - ox;
+  const dy = targetNode.y - oy;
+  const len = Math.hypot(dx, dy) || 1;
+  const speed = 1.4 + Math.random() * 1.6;
+  TIMELINE.activeCometEffects.push({
+    x: ox, y: oy,
+    vx: (dx / len) * speed * (forward ? 1 : -1),
+    vy: (dy / len) * speed * (forward ? 1 : -1),
+    hue: commit.hue,
+    life: 1,
+    lifespan: 900 + Math.random() * 500,
+    size: 2.2 + Math.random() * 1.6,
+    trail: [],
+    trailMax: 16,
+    msg: commit.msg,
+    name: commit.name
+  });
+  TIMELINE.cometCount++;
+}
+
+function timelineSyncUI() {
+  const range = document.getElementById('timeline-range');
+  const trackFill = document.getElementById('timeline-track-fill');
+  const thumb = document.getElementById('timeline-thumb');
+  const badge = document.getElementById('timeline-badge');
+  const curDateEl = document.getElementById('timeline-current-date');
+  const presDateEl = document.getElementById('timeline-present-date');
+  const btnPlay = document.getElementById('btn-timeline-play');
+  const bornEl = document.getElementById('tl-stat-born');
+  const totalEl = document.getElementById('tl-stat-total');
+  const cometsEl = document.getElementById('tl-stat-comets');
+  const epochEl = document.getElementById('tl-stat-epoch');
+  const markersWrap = document.getElementById('timeline-markers');
+
+  if (range) range.value = String(Math.round(TIMELINE.progress * 1000));
+  if (trackFill) trackFill.style.width = (TIMELINE.progress * 100) + '%';
+  if (thumb) thumb.style.left = (TIMELINE.progress * 100) + '%';
+  if (badge) {
+    if (TIMELINE.progress >= 1) {
+      badge.textContent = 'NOW';
+      badge.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+    } else {
+      badge.textContent = '⏳';
+      badge.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)';
+    }
+  }
+  if (curDateEl) curDateEl.textContent = timelineFormatDate(timelineCurrentDate());
+  if (presDateEl) presDateEl.textContent = timelineFormatDate(new Date(TIMELINE.presentDate));
+  if (btnPlay) {
+    btnPlay.classList.toggle('playing', TIMELINE.playing);
+    btnPlay.innerHTML = TIMELINE.playing ? '⏸' : '▶';
+  }
+  if (bornEl) bornEl.textContent = TIMELINE.bornCount;
+  if (totalEl) totalEl.textContent = projectsData.length;
+  if (cometsEl) cometsEl.textContent = TIMELINE.cometCount;
+  if (epochEl) {
+    if (TIMELINE.progress >= 1) epochEl.textContent = 'Present';
+    else if (TIMELINE.progress <= 0) epochEl.textContent = 'Genesis';
+    else epochEl.textContent = timelineFormatDate(timelineCurrentDate(), true);
+  }
+  if (markersWrap) {
+    markersWrap.querySelectorAll('.timeline-marker').forEach(m => {
+      const t = parseFloat(m.dataset.progress);
+      m.classList.toggle('past', t <= TIMELINE.progress);
+      m.classList.toggle('future', t > TIMELINE.progress);
+    });
+  }
+}
+
+function timelineFormatDate(d, short) {
+  if (!d || isNaN(d.getTime())) return '—';
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  if (short) return `${y}.${m}.${day}`;
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${months[d.getMonth()]} ${day}, ${y}`;
+}
+
+function timelineRebuildMarkers() {
+  const wrap = document.getElementById('timeline-markers');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  const span = TIMELINE.presentDate - TIMELINE.earliestDate;
+  if (!span) return;
+  TIMELINE.births.forEach(b => {
+    const progress = (b.birthEpoch - TIMELINE.earliestDate) / span;
+    const el = document.createElement('div');
+    el.className = 'timeline-marker past';
+    el.style.left = (progress * 100) + '%';
+    el.style.setProperty('--marker-hue', `hsl(${b.hue}, 80%, 65%)`);
+    el.dataset.progress = String(progress);
+    el.dataset.projectName = b.name;
+    el.title = `${b.icon || '✨'} ${b.name} — Born ${timelineFormatDate(new Date(b.birthEpoch))} (click to jump)`;
+    el.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      // Scrub to ~3 days before birth so user sees the spawn animation
+      const preDays = 3 * 86400000;
+      const target = Math.max(0, (b.birthEpoch - preDays - TIMELINE.earliestDate) / span);
+      timelineSetProgress(target, { fromUser: true });
+      // Auto-play to animate through the birth
+      if (!TIMELINE.playing) {
+        TIMELINE.playing = true;
+        timelineSyncUI();
+      }
+      // Fly to the matching galaxy node if it exists
+      const node = galaxyNodes.find(n => n.project.name === b.name);
+      if (node) {
+        selectedNode = node;
+        // Zoom out a bit so we can see the comet field
+        flyToNode(node, 1.85, 700);
+      }
+      // Ensure galaxy view is active
+      if (btnViewGalaxy && btnViewGrid) {
+        btnViewGalaxy.classList.add('active');
+        btnViewGrid.classList.remove('active');
+        galaxyView.classList.remove('hidden');
+        gridView.classList.add('hidden');
+      }
+    });
+    wrap.appendChild(el);
+  });
+}
+
+function timelineRebuildTicks() {
+  const wrap = document.getElementById('timeline-ticks');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  const count = 5;
+  for (let i = 0; i < count; i++) {
+    const t = i / (count - 1);
+    const d = new Date(TIMELINE.earliestDate + (TIMELINE.presentDate - TIMELINE.earliestDate) * t);
+    const el = document.createElement('div');
+    el.className = 'timeline-tick';
+    el.textContent = timelineFormatDate(d, true);
+    wrap.appendChild(el);
+  }
+}
+
+function timelineTogglePanel() {
+  const panel = document.getElementById('cosmic-timeline');
+  if (!panel) return;
+  TIMELINE.open = !TIMELINE.open;
+  panel.classList.toggle('hidden', !TIMELINE.open);
+  if (TIMELINE.open && !TIMELINE.births.length) {
+    timelineInitFromProjects();
+  }
+}
+
+function timelineDrawComets(ctx2d) {
+  if (!TIMELINE.showComets || !TIMELINE.activeCometEffects.length) return;
+  TIMELINE.activeCometEffects.forEach(c => {
+    if (c.trail.length > 1) {
+      ctx2d.lineCap = 'round';
+      for (let i = 1; i < c.trail.length; i++) {
+        const alpha = (1 - i / c.trail.length) * c.life * 0.8;
+        const w = (c.size * (1 - i / c.trail.length)) * 0.8 + 0.5;
+        ctx2d.strokeStyle = `hsla(${c.hue}, 95%, 75%, ${alpha})`;
+        ctx2d.lineWidth = w;
+        ctx2d.beginPath();
+        ctx2d.moveTo(c.trail[i - 1].x, c.trail[i - 1].y);
+        ctx2d.lineTo(c.trail[i].x, c.trail[i].y);
+        ctx2d.stroke();
+      }
+    }
+    const glowGrad = ctx2d.createRadialGradient(c.x, c.y, 0, c.x, c.y, c.size * 4);
+    glowGrad.addColorStop(0, `hsla(${c.hue}, 95%, 80%, ${0.9 * c.life})`);
+    glowGrad.addColorStop(1, `hsla(${c.hue}, 95%, 70%, 0)`);
+    ctx2d.fillStyle = glowGrad;
+    ctx2d.beginPath();
+    ctx2d.arc(c.x, c.y, c.size * 4, 0, Math.PI * 2);
+    ctx2d.fill();
+    ctx2d.fillStyle = `hsl(${c.hue}, 100%, 92%)`;
+    ctx2d.beginPath();
+    ctx2d.arc(c.x, c.y, c.size, 0, Math.PI * 2);
+    ctx2d.fill();
+  });
+}
+
+function timelineAdjustNodeForPhase(n, drawState) {
+  if (!TIMELINE.enabled || TIMELINE.progress >= 1) return;
+  if (n._born === undefined) return;
+
+  if (!n._born) {
+    if (!TIMELINE.showProtostars) {
+      drawState.visible = false;
       return;
     }
+    drawState.coreLightnessAdd = -25;
+    drawState.alphaMult = 0.22;
+    drawState.radiusMult = 0.55;
+    drawState.labelAlpha = 0.2;
+    drawState.dim = true;
+    drawState.protostar = true;
+  } else if (n._birthProgress < 1) {
+    const p = n._birthProgress;
+    drawState.alphaMult = 0.25 + 0.75 * p;
+    drawState.radiusMult = 0.6 + 0.4 * p;
+    drawState.spawning = true;
+    drawState.birthP = p;
+  }
+}
 
-    currentPid = data.pid;
-    fetchStats();
+// ====================================================
+// ====== END COSMIC TIMELINE CORE
+// ====================================================
 
-    // Stream SSE logs
-    activeEventSource = new EventSource(`/api/logs/${currentPid}`);
+      dist: dist,
+      trail: []
 
-    activeEventSource.onmessage = (event) => {
-      try {
-        const log = JSON.parse(event.data);
-        appendTerminalLog(log.type, log.text);
+  // Frame timing
+  const now = performance.now();
+  const dt = Math.min(60, now - lastFrameT);
+  lastFrameT = now;
+  fpsAvg = fpsAvg * 0.92 + (1000 / Math.max(1, dt)) * 0.08;
+  if (hudFpsEl) hudFpsEl.textContent = String(Math.round(fpsAvg));
+  if (hudZoomEl) hudZoomEl.textContent = viewZoom.toFixed(2) + '×';
+  if (hudNodesEl) hudNodesEl.textContent = String(galaxyNodes.length);
 
-        if (log.text && log.text.includes('exited with code')) {
-          if (statusBadge) {
-            statusBadge.textContent = 'Stopped';
-            statusBadge.className = 'status-badge status-stopped';
-          }
-          fetchStats();
-        }
-      } catch (e) { }
+  updateShake(dt);
+
+  // Cosmic Timeline update (SCAFFOLD)
+  timelineUpdate(dt);
+
+  ctx.translate(W / 2 + viewX + screenShakeX, H / 2 + viewY + screenShakeY);
+  // Render 6 Domain Orbit Rings + Labels
+  Object.entries(DOMAIN_CONFIG).forEach(([cat, cfg]) => {
+    const cx = Math.cos(cfg.angle) * DOMAIN_RADIUS;
+    const cy = Math.sin(cfg.angle) * DOMAIN_RADIUS;
+    // Outer cluster halo
+    const haloGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 160);
+    haloGrad.addColorStop(0, `hsla(${cfg.hue}, 80%, 65%, 0.06)`);
+    haloGrad.addColorStop(1, `hsla(${cfg.hue}, 80%, 65%, 0)`);
+    ctx.fillStyle = haloGrad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 160, 0, Math.PI * 2);
+    ctx.fill();
+    // Domain orbit ring (dashed)
+    ctx.strokeStyle = `hsla(${cfg.hue}, 70%, 65%, 0.09)`;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 10]);
+    ctx.beginPath();
+    ctx.arc(0, 0, DOMAIN_RADIUS, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // Cluster center dot + label
+    ctx.fillStyle = `hsla(${cfg.hue}, 80%, 70%, 0.55)`;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = `hsla(${cfg.hue}, 70%, 80%, 0.85)`;
+    ctx.font = '600 10px "Inter", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`${cfg.icon} ${cat}`, cx, cy - 155);
+  });
+
+  if (searchHighlightTime > 0) searchHighlightTime -= 1/60;
+    const matchesSearch = (() => {
+      if (!searchQuery) return false;
+      const q = searchQuery.toLowerCase();
+      const p = node.project;
+      return (p.name && p.name.toLowerCase().includes(q)) ||
+             (p.description && p.description.toLowerCase().includes(q)) ||
+             (p.category && p.category.toLowerCase().includes(q));
+    })();
+    const searchBoost = matchesSearch ? (0.5 + 0.5 * Math.sin(searchHighlightTime * 6)) : 0;
+    // ===== COSMIC TIMELINE: phase state computation =====
+    const phase = {
+      visible: true,
+      alphaMult: 1,
+      radiusMult: 1,
+      coreLightnessAdd: 0,
+      glowAlphaMult: 1,
+      labelAlpha: 1,
+      spawning: false,
+      birthPulse: 0,
+      dim: false,
+      protostar: false
     };
-
-    activeEventSource.onerror = () => {
-      if (statusBadge) {
-        statusBadge.textContent = 'Disconnected';
-        statusBadge.className = 'status-badge status-stopped';
+    timelineAdjustNodeForPhase(node, phase);
+    if (!phase.visible) return;
+    // One-shot spawn effect: first frame when birthProgress crosses 0.5
+    if (phase.spawning && phase.birthP !== undefined && !node._spawnFired && phase.birthP > 0.5) {
+      node._spawnFired = true;
+      // Birth ripples
+      for (let i = 0; i < 3; i++) {
+        rippleEffects.push({
+          x: node.x, y: node.y,
+          radius: node.radius * (0.5 + i * 0.4),
+          speed: 2 + i * 0.9,
+          hue: node.hue + i * 12,
+          life: 1,
+          decay: 0.012 + i * 0.006
+        });
       }
-    };
+      // Particle puff
+      for (let i = 0; i < 24; i++) {
+        const ang = (i / 24) * Math.PI * 2 + Math.random() * 0.25;
+        const sp = 0.9 + Math.random() * 3.2;
+        mouseTrailParticles.push({
+          x: node.x, y: node.y,
+          vx: Math.cos(ang) * sp,
+          vy: Math.sin(ang) * sp,
+          size: 1.5 + Math.random() * 3,
+          hue: node.hue + (Math.random() - 0.5) * 40,
+          life: 1,
+          decay: 0.012 + Math.random() * 0.02
+        });
+      }
+    }
+    if (!phase.spawning) node._spawnFired = false;
+    // =====================================================
 
-  } catch (err) {
-    appendTerminalLog('stderr', `Connection failed: ${err.message}`);
-  }
-}
+    const rayAlpha = (emphasised ? 0.3 : (matchesSearch ? 0.22 : 0.08)) * phase.alphaMult * (phase.dim ? 0.3 : 1);
+    ctx.strokeStyle = `hsla(${node.hue}, 70%, 60%, ${rayAlpha})`;
+    ctx.lineWidth = (emphasised ? 1.5 : (matchesSearch ? 1.2 : 1)) * phase.radiusMult;
+    const effRadius = node.radius * phase.radiusMult;
 
-function appendTerminalLog(type, text) {
-  if (!terminalLogs) return;
-  const line = document.createElement('div');
-  line.className = `log-${type || 'stdout'}`;
-  line.textContent = text;
-  terminalLogs.appendChild(line);
-  terminalLogs.scrollTop = terminalLogs.scrollHeight;
-}
+    // Protostar ring (flickering dust around unborn project)
+    if (phase.protostar) {
+      const flick = 0.6 + 0.4 * Math.sin(performance.now() * 0.006 + node.hue * 0.13);
+      ctx.strokeStyle = `hsla(${node.hue}, 70%, 50%, ${0.35 * phase.alphaMult * flick})`;
+      ctx.lineWidth = 1.2;
+      ctx.setLineDash([3, 5]);
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, effRadius * 1.8, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // Inner dust halo
+      const dustGrad = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, effRadius * 2.5);
+      dustGrad.addColorStop(0, `hsla(${node.hue}, 60%, 55%, ${0.2 * phase.alphaMult * flick})`);
+      dustGrad.addColorStop(1, `hsla(${node.hue}, 60%, 55%, 0)`);
+      ctx.fillStyle = dustGrad;
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, effRadius * 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
-async function stopCurrentProcess() {
-  if (!currentPid) return;
-  try {
-    await fetch('/api/stop-process', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pid: currentPid })
+    // Spawning corona (expanding pulse)
+    if (phase.spawning && phase.birthP !== undefined) {
+      const pulse = 0.5 + 0.5 * Math.sin(performance.now() * 0.012);
+      const coronaR = effRadius * (2.2 + phase.birthP * 1.4 + pulse * 0.25);
+      const coronaGrad = ctx.createRadialGradient(node.x, node.y, effRadius * 0.6, node.x, node.y, coronaR);
+      coronaGrad.addColorStop(0, `hsla(${node.hue}, 100%, 75%, ${0.5 * phase.alphaMult * (1 - phase.birthP)})`);
+      coronaGrad.addColorStop(1, `hsla(${node.hue}, 100%, 75%, 0)`);
+      ctx.fillStyle = coronaGrad;
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, coronaR, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+      ctx.strokeStyle = `hsla(${node.hue}, 90%, 80%, ${0.85 * phase.alphaMult})`;
+      ctx.arc(node.x, node.y, effRadius * 2.2, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    // Search match pulsing ring
+    if (matchesSearch) {
+      ctx.strokeStyle = `hsla(160, 90%, 75%, ${(0.4 + searchBoost * 0.5) * phase.alphaMult})`;
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([2, 4]);
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, effRadius * (2.6 + searchBoost * 1.3), 0, Math.PI * 2);
+    const glowMultBase = isSelected ? 4.5 : (isHovered ? 4 : (matchesSearch ? 3.4 : 2.5));
+    const glowMult = glowMultBase * phase.radiusMult * (phase.protostar ? 0.5 : 1);
+    const glowAlphaBase = isSelected ? 0.8 : (isHovered ? 0.7 : (matchesSearch ? 0.45 + searchBoost * 0.25 : 0.25));
+    const glowAlpha = glowAlphaBase * phase.alphaMult * phase.glowAlphaMult * (phase.dim ? 0.4 : 1);
+    const glowGrad = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, effRadius * glowMult);
+    ctx.arc(node.x, node.y, effRadius * glowMult, 0, Math.PI * 2);
+    const baseLightness = isSelected ? 95 : (isHovered ? 90 : (matchesSearch ? 85 : 65));
+    const coreLightnessVal = Math.max(20, Math.min(98, baseLightness + phase.coreLightnessAdd));
+    const coreLightness = coreLightnessVal + '%';
+    const coreSizeBase = isSelected ? node.radius * 1.55 : (isHovered ? node.radius * 1.4 : (matchesSearch ? node.radius * 1.22 : node.radius));
+    const coreSize = coreSizeBase * phase.radiusMult * (phase.protostar ? 0.55 : 1);
+    ctx.fillStyle = `hsl(${node.hue}, ${phase.protostar ? 50 : 80}%, ${coreLightness})`;
+    // Protostar dot cross
+    if (phase.protostar) {
+      ctx.strokeStyle = `hsla(${node.hue}, 80%, 70%, ${0.6 * phase.alphaMult})`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(node.x - coreSize * 1.3, node.y);
+      ctx.lineTo(node.x + coreSize * 1.3, node.y);
+      ctx.moveTo(node.x, node.y - coreSize * 1.3);
+      ctx.lineTo(node.x, node.y + coreSize * 1.3);
+      ctx.stroke();
+    }
+    // Star Label (hide for protostars dimmed)
+    const labelAlphaBase = isSelected || isHovered ? 1 : (matchesSearch ? 0.95 : 0.75);
+    const labelAlpha = labelAlphaBase * phase.labelAlpha * phase.alphaMult * (phase.dim || phase.protostar ? 0.35 : 1);
+    const labelColor = isSelected || isHovered ? `rgba(255,255,255,${labelAlpha})` : `rgba(255, 255, 255, ${labelAlpha})`;
+    ctx.fillStyle = labelColor;
+    ctx.font = `${(emphasised || matchesSearch) ? 'bold 12px' : '10px'} "Inter", sans-serif`;
+    ctx.fillText(node.project.name, node.x, node.y + effRadius + 14);
+  // Cosmic Timeline: draw commit comets (SCAFFOLD)
+  timelineDrawComets(ctx);
+
+  // Draw minimap
+  drawMinimap();
+
+  // Keyboard Shortcuts (Ctrl+K focus search, Ctrl+T timeline, Escape close modal)
+    } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 't') {
+      e.preventDefault();
+      timelineTogglePanel();
+      hideContextMenu();
+  // ====== COSMIC TIMELINE EVENT LISTENERS (SCAFFOLD)  ======
+  const btnTimelineToggle = document.getElementById('btn-timeline-toggle');
+  if (btnTimelineToggle) btnTimelineToggle.addEventListener('click', timelineTogglePanel);
+
+  const timelineRange = document.getElementById('timeline-range');
+  if (timelineRange) {
+    timelineRange.addEventListener('input', (e) => {
+      timelineSetProgress(parseInt(e.target.value, 10) / 1000, { fromUser: true });
     });
-    appendTerminalLog('system', '🛑 Process stop signal sent');
-    fetchStats();
-  } catch (err) {
-    appendTerminalLog('stderr', `Stop error: ${err.message}`);
-  }
-}
-
-function closeTerminal() {
-  if (activeEventSource) {
-    activeEventSource.close();
-    activeEventSource = null;
-  }
-  if (terminalModal) terminalModal.classList.add('hidden');
-}
-
-  fetchStats();
-  setInterval(fetchStats, 5000);
-  // Inspector Modal Controls
-  // Live App Viewer Controls
-  const btnViewerClose = document.getElementById('btn-viewer-close');
-  if (btnViewerClose) btnViewerClose.onclick = closeLiveApp;
-
-  // Terminal Modal Controls
-  const btnTerminalClose = document.getElementById('btn-terminal-close');
-  if (btnTerminalClose) btnTerminalClose.onclick = closeTerminal;
-  const btnTerminalStop = document.getElementById('btn-terminal-stop');
-  if (btnTerminalStop) btnTerminalStop.onclick = stopCurrentProcess;
-  const btnTerminalClear = document.getElementById('btn-terminal-clear');
-  if (btnTerminalClear) {
-    btnTerminalClear.onclick = () => {
-      if (terminalLogs) terminalLogs.innerHTML = '';
-    };
   }
 
-        if (hoveredNode.project.hasHtml) {
-          launchLiveApp(hoveredNode.project);
-        } else {
-          openInspector(hoveredNode.project);
+  const btnRewind = document.getElementById('btn-timeline-rewind');
+  if (btnRewind) btnRewind.addEventListener('click', timelineRewind);
+  const btnPlay = document.getElementById('btn-timeline-play');
+  if (btnPlay) btnPlay.addEventListener('click', timelineTogglePlay);
+  const btnFfwd = document.getElementById('btn-timeline-fastforward');
+  if (btnFfwd) btnFfwd.addEventListener('click', timelineFastForward);
+
+  document.querySelectorAll('.speed-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const s = parseFloat(btn.dataset.speed);
+      if (!isNaN(s)) timelineSetSpeed(s);
+    });
+  });
+
+  const tlCometsToggle = document.getElementById('tl-toggle-comets');
+  if (tlCometsToggle) {
+    tlCometsToggle.addEventListener('change', () => {
+      TIMELINE.showComets = tlCometsToggle.checked;
+    });
+  }
+  const tlProtoToggle = document.getElementById('tl-toggle-protostars');
+  if (tlProtoToggle) {
+    tlProtoToggle.addEventListener('change', () => {
+      TIMELINE.showProtostars = tlProtoToggle.checked;
+    });
+  }
+  // =======================================================
+
+      if (searchQuery) searchHighlightTime = 3;
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (!galaxyNodes.length) return;
+        const q = searchQuery.toLowerCase().trim();
+        if (!q) return;
+        let best = null; let bestMatch = -1;
+        galaxyNodes.forEach(n => {
+          const p = n.project;
+          const name = (p.name || '').toLowerCase();
+          const desc = (p.description || '').toLowerCase();
+          const cat = (p.category || '').toLowerCase();
+          let score = -1;
+          if (name === q) score = 100;
+          else if (name.startsWith(q)) score = 80;
+          else if (name.includes(q)) score = 60;
+          else if (cat.includes(q)) score = 40;
+          else if (desc.includes(q)) score = 20;
+          if (score > bestMatch) { bestMatch = score; best = n; }
+        });
+        if (best) {
+          if (btnViewGalaxy && btnViewGrid) {
+            btnViewGalaxy.classList.add('active');
+            btnViewGrid.classList.remove('active');
+            galaxyView.classList.remove('hidden');
+            gridView.classList.add('hidden');
+          }
+          searchHighlightTime = 5;
+          selectedNode = best;
+          flyToNode(best, 2.1, 900);
         }
+      }
+    });
+    let lastClickTime = 0;
+    let dblClickThreshold = 280;
+        isTweeningCamera = false;
+    canvas.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      if (hoveredNode) {
+        selectedNode = hoveredNode;
+        showContextMenu(hoveredNode, e.clientX, e.clientY);
+      } else {
+        hideContextMenu();
+      }
+    });
+
+      if (e.button !== 0) return;
+      hideContextMenu();
+        const now = performance.now();
+        const isDbl = now - lastClickTime < dblClickThreshold;
+        lastClickTime = now;
+        if (isDbl) {
+          flyToNode(hoveredNode, 2.0, 850);
+          if (hoveredNode.project.hasHtml) {
+            launchLiveApp(hoveredNode.project);
+          } else {
+            openInspector(hoveredNode.project);
+          }
+        const now = performance.now();
+        const isDbl = now - lastClickTime < dblClickThreshold;
+        lastClickTime = now;
+        if (isDbl) {
+          resetView(700);
+        } else {
+          isDragging = true;
+          dragStartX = e.clientX;
+          dragStartY = e.clientY;
+        }
+      isTweeningCamera = false;
+  // Minimap interactions
+  if (minimapCanvas) {
+    minimapCanvas.addEventListener('click', minimapClickToWorld);
+  }
+  if (minimapResetBtn) {
+    minimapResetBtn.addEventListener('click', () => resetView(700));
+  }
+
+  // Context menu item clicks
+  if (ctxMenu) {
+    ctxMenu.addEventListener('click', (e) => {
+      const btn = e.target.closest('.ctx-item');
+      if (btn && btn.dataset.action) handleContextAction(btn.dataset.action);
+    });
+  }
+
+  // Hide context menu when clicking outside or scrolling
+  window.addEventListener('mousedown', (e) => {
+    if (!ctxMenu) return;
+    if (ctxMenu.classList.contains('hidden')) return;
+    if (!ctxMenu.contains(e.target) && e.target !== canvas) hideContextMenu();
+  });
+  window.addEventListener('scroll', hideContextMenu, true);
+  window.addEventListener('blur', hideContextMenu);
 
 ++ b/alif-universe/index.html
-      <div class="stat-pill">
-        <span class="stat-icon">▶️</span>
-        <span class="stat-label">Processes</span>
-        <span id="stat-processes" class="stat-val text-amber">0 Active</span>
-      </div>
-          <span>Click star: Inspect / Launch | Scroll: Zoom | Drag: Pan</span>
-            <span class="section-title">PACKAGE SCRIPTS (Click tag to execute)</span>
-          <button id="btn-modal-launch-action" class="btn primary">🚀 Launch Live Project</button>
-
-    <!-- Live App Viewer Modal (Iframe Embed) -->
-    <div id="app-viewer-modal" class="modal hidden">
-      <div class="modal-backdrop"></div>
-      <div class="modal-card modal-card-fullscreen">
-        <div class="modal-header viewer-header">
-          <div class="modal-title-group">
-            <span id="viewer-icon" class="modal-icon">🌐</span>
-            <div>
-              <h2 id="viewer-name">Live Project Launcher</h2>
-              <span id="viewer-path" class="modal-category-badge">/apps/...</span>
-            </div>
-          </div>
-          <div class="viewer-actions">
-            <button id="btn-viewer-reload" class="viewer-btn" title="Reload App">🔄 Reload</button>
-            <button id="btn-viewer-external" class="viewer-btn" title="Open Direct">↗️ Open Direct Window</button>
-            <button id="btn-viewer-close" class="close-btn">✕</button>
-          </div>
-        </div>
-        <div class="modal-body viewer-body">
-          <iframe id="app-iframe" src="about:blank" frameborder="0"></iframe>
-        </div>
-      </div>
+    <!-- Right-Click Context Menu -->
+    <div id="galaxy-ctx-menu" class="galaxy-ctx-menu hidden">
+      <div class="ctx-title" id="ctx-title">Project</div>
+      <div class="ctx-divider"></div>
+      <button class="ctx-item" data-action="launch"><span class="ctx-icon">🚀</span>Launch App</button>
+      <button class="ctx-item" data-action="inspect"><span class="ctx-icon">⚙️</span>Inspect Details</button>
+      <button class="ctx-item" data-action="newwin"><span class="ctx-icon">🔗</span>Open in New Tab</button>
+      <button class="ctx-item" data-action="fly"><span class="ctx-icon">🎯</span>Fly To &amp; Focus</button>
+      <button class="ctx-item" data-action="grid"><span class="ctx-icon">🗂️</span>Reveal in Grid View</button>
+      <div class="ctx-divider"></div>
+      <button class="ctx-item ctx-item-danger" data-action="deselect"><span class="ctx-icon">✖️</span>Deselect</button>
     </div>
 
-    <!-- Terminal Console Modal -->
-    <div id="terminal-modal" class="modal hidden">
-      <div class="modal-backdrop"></div>
-      <div class="modal-card modal-card-terminal">
-        <div class="modal-header terminal-header">
-          <div class="modal-title-group">
-            <span class="modal-icon">💻</span>
-            <div>
-              <h2 id="terminal-title">Project Terminal</h2>
-              <span id="terminal-status" class="status-badge status-running">Running</span>
+        <!-- Mini-map / Radar -->
+        <div class="minimap-wrap" id="minimapWrap">
+          <div class="minimap-title">🌌 Radar</div>
+          <canvas id="minimap-canvas" width="180" height="180"></canvas>
+          <button class="minimap-reset" id="minimapReset" title="Reset view">⟲ Reset View</button>
+        </div>
+        <!-- Bottom-left HUD -->
+        <div class="galaxy-hud" id="galaxyHud">
+          <div class="hud-line"><span class="hud-label">FPS</span><span class="hud-value" id="hudFps">60</span></div>
+          <div class="hud-line"><span class="hud-label">Zoom</span><span class="hud-value" id="hudZoom">1.00×</span></div>
+          <div class="hud-line"><span class="hud-label">Nodes</span><span class="hud-value" id="hudNodes">0</span></div>
+          <div class="hud-line hud-keyboard" id="hudKeyboard" title="Arrow keys navigate · Enter launch · F fly-to · Esc deselect"></div>
+        </div>
+
+        <!-- ========== COSMIC TIMELINE (SCAFFOLD) ========== -->
+        <!-- Timeline Toggle Button (always visible) -->
+        <button id="btn-timeline-toggle" class="timeline-toggle" title="Toggle Cosmic Timeline (Ctrl+T)">
+          <span class="timeline-toggle-icon">⏳</span>
+          <span class="timeline-toggle-label">Cosmic Timeline</span>
+          <span class="timeline-toggle-badge" id="timeline-badge">NOW</span>
+        </button>
+
+        <!-- Cosmic Timeline Panel (collapsible) -->
+        <div id="cosmic-timeline" class="cosmic-timeline hidden">
+          <div class="timeline-header">
+            <div class="timeline-title-row">
+              <span class="timeline-icon">🌟</span>
+              <div>
+                <div class="timeline-title">COSMIC TIMELINE</div>
+                <div class="timeline-subtitle">Stellar Evolution · Project Births · Commit Comets</div>
+              </div>
+            </div>
+            <div class="timeline-date-display">
+              <span class="date-label">Stardate</span>
+              <span class="date-value" id="timeline-current-date">—</span>
+              <span class="date-sep">→</span>
+              <span class="date-label">Present</span>
+              <span class="date-value" id="timeline-present-date">—</span>
             </div>
           </div>
-          <div class="terminal-actions">
-            <button id="btn-terminal-stop" class="btn danger-btn">⏹️ Stop Process</button>
-            <button id="btn-terminal-clear" class="btn secondary">🧹 Clear</button>
-            <button id="btn-terminal-close" class="close-btn">✕</button>
+
+          <div class="timeline-slider-area">
+            <!-- Slider Track with Project Birth Markers -->
+            <div class="timeline-track-wrap">
+              <div class="timeline-track" id="timeline-track">
+                <div class="timeline-track-fill" id="timeline-track-fill"></div>
+                <div class="timeline-markers" id="timeline-markers"></div>
+                <div class="timeline-thumb" id="timeline-thumb">
+                  <div class="timeline-thumb-ring"></div>
+                  <div class="timeline-thumb-core"></div>
+                </div>
+              </div>
+              <input type="range" id="timeline-range" class="timeline-range" min="0" max="1000" value="1000" step="1">
+            </div>
+
+            <!-- Date Labels (ticks) -->
+            <div class="timeline-ticks" id="timeline-ticks"></div>
+          </div>
+
+          <div class="timeline-controls">
+            <div class="timeline-playback">
+              <button id="btn-timeline-rewind" class="tl-btn" title="Rewind (skip to earliest)">⏮</button>
+              <button id="btn-timeline-play" class="tl-btn tl-btn-primary" title="Play / Pause">▶</button>
+              <button id="btn-timeline-fastforward" class="tl-btn" title="Fast Forward (skip to present)">⏭</button>
+            </div>
+
+            <div class="timeline-speed-group">
+              <span class="speed-label">Speed</span>
+              <div class="speed-btns">
+                <button class="speed-btn" data-speed="0.5">0.5×</button>
+                <button class="speed-btn active" data-speed="1">1×</button>
+                <button class="speed-btn" data-speed="2">2×</button>
+                <button class="speed-btn" data-speed="5">5×</button>
+              </div>
+            </div>
+
+            <div class="timeline-stats">
+              <div class="tl-stat">
+                <span class="tl-stat-icon">⭐</span>
+                <span class="tl-stat-label">Born</span>
+                <span class="tl-stat-val" id="tl-stat-born">0</span>
+                <span class="tl-stat-sep">/</span>
+                <span class="tl-stat-val-dim" id="tl-stat-total">0</span>
+              </div>
+              <div class="tl-stat">
+                <span class="tl-stat-icon">☄️</span>
+                <span class="tl-stat-label">Comets</span>
+                <span class="tl-stat-val" id="tl-stat-comets">0</span>
+              </div>
+              <div class="tl-stat">
+                <span class="tl-stat-icon">💫</span>
+                <span class="tl-stat-label">Epoch</span>
+                <span class="tl-stat-val" id="tl-stat-epoch">Present</span>
+              </div>
+            </div>
+
+            <div class="timeline-toggle-group">
+              <label class="tl-toggle">
+                <input type="checkbox" id="tl-toggle-comets" checked>
+                <span class="tl-toggle-track"></span>
+                <span class="tl-toggle-knob"></span>
+                <span class="tl-toggle-label">☄️ Comets</span>
+              </label>
+              <label class="tl-toggle">
+                <input type="checkbox" id="tl-toggle-protostars" checked>
+                <span class="tl-toggle-track"></span>
+                <span class="tl-toggle-knob"></span>
+                <span class="tl-toggle-label">✨ Protostars</span>
+              </label>
+            </div>
           </div>
         </div>
-        <div class="modal-body terminal-body">
-          <pre id="terminal-logs" class="terminal-logs"></pre>
-        </div>
-      </div>
-    </div>
+
+          <span>Hover: Preview | Click: Launch/Inspect | Dbl-click: Fly-to | R-click: Menu | Arrows: Navigate | Scroll: Zoom | Drag: Pan | Ctrl+T: Timeline</span>
 ++ b/alif-universe/server.js
-import { spawn } from 'child_process';
-// Track active child processes
-const activeProcesses = new Map();
-
-// Helper to find entry HTML file in a project folder
-function findEntryHtml(dirPath) {
-  const candidates = [
-    'index.html',
-    'web/index.html',
-    'public/index.html',
-    'dist/index.html',
-    'src/index.html',
-    'web-demo/index.html',
-    'frontend/index.html',
-    'templates/index.html',
-    'apps/web/index.html'
-  ];
-
-  for (const candidate of candidates) {
-    if (fs.existsSync(path.join(dirPath, candidate))) {
-      return candidate;
+    // ==== COSMIC TIMELINE: birth date & commits (scaffold mock) ====
+    // Try to use real folder creation time; fall back to deterministic pseudo-random
+    let birthTimeMs = 0;
+    try {
+      const st = fs.statSync(dirPath);
+      birthTimeMs = st.birthtimeMs || st.ctimeMs || st.mtimeMs;
+    } catch (e) {}
+    const NOW = Date.now();
+    const TWO_YEARS = 1000 * 60 * 60 * 24 * 365 * 2;
+    if (!birthTimeMs || birthTimeMs < NOW - TWO_YEARS || birthTimeMs > NOW) {
+      // Deterministic hash offset based on project name
+      const hash = item.name.split('').reduce((a, c) => (a * 31 + c.charCodeAt(0)) | 0, 7);
+      const offset = TWO_YEARS * 0.1 + TWO_YEARS * 0.8 * (Math.abs(hash % 1000) / 1000);
+      birthTimeMs = NOW - offset;
     }
-  }
-
-  // Recursive shallow search if not in standard candidates
-  try {
-    const items = fs.readdirSync(dirPath, { withFileTypes: true });
-    for (const item of items) {
-      if (item.isDirectory() && !item.name.startsWith('.') && item.name !== 'node_modules') {
-        const subIndex = path.join(item.name, 'index.html');
-        if (fs.existsSync(path.join(dirPath, subIndex))) {
-          return subIndex;
-        }
-      }
+    // Deterministic commits between birthTimeMs and now
+    const commitHash = item.name.split('').reduce((a, c) => (a * 131 + c.charCodeAt(0)) | 0, 17);
+    const nCommits = 3 + (Math.abs(commitHash) % 22);
+    const commitMsgs = [
+      'Initial scaffolding', 'Bug fixes & polish', 'New feature added',
+      'Refactor internals', 'UI/UX improvements', 'Performance optimization',
+      'Documentation update', 'Dependency upgrade'
+    ];
+    const commits = [];
+    for (let i = 0; i < nCommits; i++) {
+      const t = (i + 1) / (nCommits + 1);
+      const jitter = 0.15 * (Math.abs(((commitHash * (i + 5)) % 1000) / 1000) - 0.5);
+      const commitT = Math.max(0, Math.min(1, t + jitter));
+      const commitDate = birthTimeMs + (NOW - birthTimeMs) * commitT;
+      commits.push({
+        date: Math.round(commitDate),
+        msg: commitMsgs[Math.abs((commitHash + i * 7)) % commitMsgs.length],
+        hue: meta.hue
+      });
     }
-  } catch (e) { }
+    commits.sort((a, b) => a.date - b.date);
 
-  return null;
-}
-
-    const entryHtml = findEntryHtml(dirPath);
-    const hasHtml = entryHtml !== null;
-      entryHtml: entryHtml,
-// Serve Original Subprojects Static Assets Dynamic Route
-app.use('/apps/:projectName', (req, res, next) => {
-  const projectName = decodeURIComponent(req.params.projectName);
-  const targetDir = path.resolve(ROOT_DIR, projectName);
-
-  if (!targetDir.startsWith(ROOT_DIR)) {
-    return res.status(403).send('Access Denied');
-  }
-
-  if (!fs.existsSync(targetDir)) {
-    return res.status(404).send('Project directory not found');
-  }
-
-  express.static(targetDir, { dotfiles: 'ignore' })(req, res, next);
-});
-
-    let runningCount = 0;
-    activeProcesses.forEach(p => {
-      if (p.running) runningCount++;
-    });
-
-      activeProcesses: runningCount,
-// Process Management APIs
-app.post('/api/run-script', (req, res) => {
-  const { projectName, scriptName } = req.body;
-  if (!projectName || !scriptName) {
-    return res.status(400).json({ ok: false, error: 'Missing projectName or scriptName' });
-  }
-
-  const projectDir = path.resolve(ROOT_DIR, projectName);
-  if (!fs.existsSync(projectDir)) {
-    return res.status(404).json({ ok: false, error: 'Project directory not found' });
-  }
-
-  const pid = Date.now().toString() + '_' + Math.floor(Math.random() * 1000);
-
-  const proc = spawn('npm', ['run', scriptName], {
-    cwd: projectDir,
-    shell: true
-  });
-
-  const procInfo = {
-    pid,
-    projectName,
-    scriptName,
-    startTime: new Date().toISOString(),
-    process: proc,
-    running: true,
-    logs: [],
-    listeners: new Set()
-  };
-
-  function appendLog(type, text) {
-    const logEntry = { type, time: new Date().toLocaleTimeString(), text };
-    procInfo.logs.push(logEntry);
-    if (procInfo.logs.length > 500) procInfo.logs.shift();
-
-    for (const listener of procInfo.listeners) {
-      listener(logEntry);
-    }
-  }
-
-  appendLog('system', `🚀 Launching script "npm run ${scriptName}" in /${projectName}...`);
-
-  proc.stdout.on('data', (data) => {
-    appendLog('stdout', data.toString());
-  });
-
-  proc.stderr.on('data', (data) => {
-    appendLog('stderr', data.toString());
-  });
-
-  proc.on('close', (code) => {
-    procInfo.running = false;
-    procInfo.exitCode = code;
-    appendLog('system', `🏁 Process exited with code ${code}`);
-  });
-
-  proc.on('error', (err) => {
-    procInfo.running = false;
-    appendLog('stderr', `❌ Process error: ${err.message}`);
-  });
-
-  activeProcesses.set(pid, procInfo);
-  res.json({ ok: true, pid, projectName, scriptName });
-});
-
-app.post('/api/stop-process', (req, res) => {
-  const { pid } = req.body;
-  const procInfo = activeProcesses.get(pid);
-  if (!procInfo) {
-    return res.status(404).json({ ok: false, error: 'Process not found' });
-  }
-
-  try {
-    if (procInfo.process && procInfo.running) {
-      procInfo.process.kill('SIGTERM');
-      procInfo.running = false;
-    }
-    res.json({ ok: true, message: 'Process stopped' });
-  } catch (err) {
-    res.status(500).json({ ok: false, error: err.message });
-  }
-});
-
-app.get('/api/processes', (req, res) => {
-  const list = [];
-  activeProcesses.forEach((p, pid) => {
-    list.push({
-      pid,
-      projectName: p.projectName,
-      scriptName: p.scriptName,
-      startTime: p.startTime,
-      running: p.running,
-      exitCode: p.exitCode
-    });
-  });
-  res.json({ ok: true, processes: list });
-});
-
-app.get('/api/logs/:pid', (req, res) => {
-  const { pid } = req.params;
-  const procInfo = activeProcesses.get(pid);
-
-  if (!procInfo) {
-    return res.status(404).json({ ok: false, error: 'Process not found' });
-  }
-
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-
-  // Send existing logs immediately
-  procInfo.logs.forEach(log => {
-    res.write(`data: ${JSON.stringify(log)}\n\n`);
-  });
-
-  const listener = (logEntry) => {
-    res.write(`data: ${JSON.stringify(logEntry)}\n\n`);
-  };
-
-  procInfo.listeners.add(listener);
-
-  req.on('close', () => {
-    procInfo.listeners.delete(listener);
-  });
-});
-
-
+      scripts: pkgJson.scripts || {},
+      birthDate: Math.round(birthTimeMs),
+      commits: commits
 ++ b/alif-universe/style.css
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.script-tag:hover {
-  background: rgba(168, 85, 247, 0.35);
-  border-color: #a855f7;
-  color: #ffffff;
-  box-shadow: 0 0 10px rgba(168, 85, 247, 0.4);
-  gap: 10px;
-  transition: all 0.2s ease;
-}
-
-.btn.primary {
-  background: linear-gradient(135deg, #6366f1, #a855f7);
-  color: #ffffff;
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
-}
-
-.btn.primary:hover {
-  background: linear-gradient(135deg, #4f46e5, #9333ea);
-  transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.6);
-
-.btn.secondary:hover {
-  background: rgba(255, 255, 255, 0.15);
-}
-
-.btn.danger-btn {
-  background: rgba(239, 68, 68, 0.2);
-  border: 1px solid rgba(239, 68, 68, 0.4);
-  color: #fca5a5;
-}
-
-.btn.danger-btn:hover {
-  background: rgba(239, 68, 68, 0.4);
-  color: #ffffff;
-}
-
-/* --- Fullscreen App Viewer Modal --- */
-.modal-card-fullscreen {
-  width: 95vw;
-  height: 90vh;
-  max-width: 1400px;
+/* ====== MINIMAP / RADAR ====== */
+.minimap-wrap {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 20;
+  background: rgba(10, 12, 28, 0.85);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(129, 140, 248, 0.28);
+  border-radius: 14px;
+  padding: 10px 10px 8px;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.55), 0 0 18px rgba(129, 140, 248, 0.15);
   display: flex;
   flex-direction: column;
-  padding: 0;
-  overflow: hidden;
-  border-radius: 16px;
-  background: #080a14;
+  gap: 8px;
+  align-items: center;
 }
 
-.viewer-header {
-  padding: 14px 20px;
-  background: rgba(16, 18, 34, 0.95);
-  border-bottom: 1px solid var(--border);
+.minimap-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: #c4b5fd;
 }
 
-.viewer-actions {
+#minimap-canvas {
+  width: 180px;
+  height: 180px;
+  border-radius: 10px;
+  background: radial-gradient(circle at center, rgba(129, 140, 248, 0.08) 0%, rgba(0, 0, 0, 0.45) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  display: block;
+  cursor: crosshair;
+}
+
+.minimap-reset {
+  padding: 4px 10px;
+  background: rgba(129, 140, 248, 0.12);
+  border: 1px solid rgba(129, 140, 248, 0.3);
+  color: #c7d2fe;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.minimap-reset:hover {
+  background: rgba(129, 140, 248, 0.28);
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(129, 140, 248, 0.4);
+}
+
+@media (max-width: 700px) {
+  .minimap-wrap { display: none; }
+}
+
+/* ====== RIGHT-CLICK CONTEXT MENU ====== */
+.galaxy-ctx-menu {
+  position: fixed;
+  z-index: 9000;
+  min-width: 210px;
+  background: linear-gradient(160deg, rgba(20, 24, 52, 0.97), rgba(12, 14, 32, 0.97));
+  border: 1px solid rgba(129, 140, 248, 0.35);
+  border-radius: 12px;
+  padding: 6px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.75), 0 0 22px rgba(129, 140, 248, 0.22);
+  backdrop-filter: blur(14px);
+  font-family: var(--font-main);
+  color: var(--text-main);
+  animation: ctxIn 120ms ease-out;
+}
+
+@keyframes ctxIn {
+  from { opacity: 0; transform: scale(0.94) translateY(-3px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.galaxy-ctx-menu.hidden { display: none; }
+
+.ctx-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #ffffff;
+  padding: 6px 10px 8px;
+  border-radius: 8px;
+  background: rgba(129, 140, 248, 0.1);
+  margin-bottom: 2px;
+  letter-spacing: 0.3px;
+  word-break: break-word;
+}
+
+.ctx-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.06);
+  margin: 3px 6px;
+}
+
+.ctx-item {
   display: flex;
   align-items: center;
   gap: 10px;
-}
-
-.viewer-btn {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--border);
-  color: var(--text-main);
-  padding: 6px 12px;
-  border-radius: 8px;
-  font-size: 11px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.viewer-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: var(--accent);
-}
-
-.viewer-body {
-  flex: 1;
   width: 100%;
-  height: 100%;
-  background: #000;
-  overflow: hidden;
-}
-
-#app-iframe {
-  width: 100%;
-  height: 100%;
+  background: none;
   border: none;
-  background: #ffffff;
+  color: #cbd5e1;
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-main);
+  transition: all 0.15s;
+}
+.ctx-item:hover {
+  background: rgba(129, 140, 248, 0.18);
+  color: #ffffff;
 }
 
-/* --- Terminal Console Modal --- */
-.modal-card-terminal {
-  width: 750px;
-  max-width: 92vw;
-  height: 520px;
-  display: flex;
-  flex-direction: column;
-  padding: 0;
-  background: #05060b;
-  border: 1px solid rgba(129, 140, 248, 0.3);
+.ctx-icon {
+  font-size: 13px;
+  width: 16px;
+  text-align: center;
+}
+
+.ctx-item-danger:hover {
+  background: rgba(239, 68, 68, 0.18);
+  color: #fecaca;
+}
+
+/* ====== GALAXY HUD ====== */
+.galaxy-hud {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  z-index: 20;
+  background: rgba(10, 12, 28, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(129, 140, 248, 0.22);
   border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9);
+  padding: 8px 11px 10px;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 10.5px;
+  color: #c7d2fe;
+  min-width: 108px;
+  line-height: 1.7;
+  user-select: none;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5);
 }
 
-.terminal-header {
-  padding: 12px 18px;
-  background: #0e1120;
-  border-bottom: 1px solid var(--border);
+.hud-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
 }
 
-.terminal-actions {
+.hud-label {
+  color: #8b93bd;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  font-size: 9.5px;
+  font-weight: 600;
+}
+
+.hud-value {
+  color: #e0e7ff;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.hud-keyboard {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  justify-content: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.hud-keyboard::before {
+  content: "⌨ Keys";
+  color: #c084fc;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  font-size: 9px;
+  margin-right: 2px;
+}
+
+.kbd {
+  display: inline-block;
+  padding: 1px 5px;
+  background: rgba(129, 140, 248, 0.12);
+  border: 1px solid rgba(129, 140, 248, 0.35);
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  color: #e0e7ff;
+}
+
+@media (max-width: 700px) {
+  .galaxy-hud { display: none; }
+}
+
+/* ===================================================== */
+/* ====== COSMIC TIMELINE — STYLES (SCAFFOLD)  ======== */
+/* ===================================================== */
+
+/* --- Timeline Toggle Button (floating) --- */
+.timeline-toggle {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 18px 8px 14px;
+  background: linear-gradient(135deg, rgba(30, 27, 75, 0.92), rgba(20, 18, 50, 0.92));
+  border: 1px solid rgba(168, 85, 247, 0.45);
+  border-radius: 999px;
+  color: #e9d5ff;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--font-main);
+  cursor: pointer;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55), 0 0 20px rgba(168, 85, 247, 0.18);
+  transition: all 0.25s ease;
+}
+.timeline-toggle:hover {
+  transform: translateX(-50%) translateY(-2px);
+  border-color: rgba(168, 85, 247, 0.75);
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.65), 0 0 28px rgba(168, 85, 247, 0.3);
+}
+.timeline-toggle-icon {
+  font-size: 16px;
+}
+.timeline-toggle-badge {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  letter-spacing: 0.5px;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+}
+
+/* --- Main Timeline Panel --- */
+.cosmic-timeline {
+  position: absolute;
+  bottom: 56px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 24;
+  width: calc(100% - 64px);
+  max-width: 1100px;
+  background: linear-gradient(170deg, rgba(14, 16, 40, 0.96), rgba(20, 22, 52, 0.96));
+  border: 1px solid rgba(129, 140, 248, 0.3);
+  border-radius: 18px;
+  backdrop-filter: blur(22px);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7), 0 0 40px rgba(129, 140, 248, 0.12);
+  padding: 16px 20px 18px;
+  animation: slideUpTimeline 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes slideUpTimeline {
+  from { opacity: 0; transform: translateX(-50%) translateY(18px) scale(0.97); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0)    scale(1);    }
+}
+
+/* Timeline header */
+.timeline-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.timeline-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.timeline-icon {
+  font-size: 24px;
+  filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.5));
+}
+.timeline-title {
+  font-family: var(--font-heading);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b, #d97706);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.timeline-subtitle {
+  font-size: 10px;
+  color: #94a3b8;
+  margin-top: 1px;
+  letter-spacing: 0.3px;
+}
+
+.timeline-date-display {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-.terminal-body {
-  flex: 1;
-  padding: 16px;
-  overflow-y: auto;
-  background: #040509;
-}
-
-.terminal-logs {
-  font-family: var(--font-code);
-  font-size: 12px;
-  line-height: 1.6;
-  color: #38bdf8;
-  white-space: pre-wrap;
-  word-break: break-all;
-}
-
-.log-stdout { color: #e2e8f0; }
-.log-stderr { color: #f87171; }
-.log-system { color: #a78bfa; font-weight: bold; }
-
-.status-badge {
-  font-size: 10px;
-  padding: 2px 8px;
+  font-size: 11px;
+  padding: 6px 14px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 10px;
+}
+.timeline-date-display .date-label {
+  color: #64748b;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 9px;
+  letter-spacing: 0.7px;
+}
+.timeline-date-display .date-value {
+  color: #e2e8f0;
+  font-family: var(--font-code);
   font-weight: 600;
 }
-
-.status-running {
-  background: rgba(16, 185, 129, 0.2);
-  color: #34d399;
-  border: 1px solid rgba(16, 185, 129, 0.4);
+.timeline-date-display .date-value#timeline-current-date {
+  color: #fbbf24;
+  text-shadow: 0 0 8px rgba(251, 191, 36, 0.4);
+}
+.timeline-date-display .date-sep {
+  color: #475569;
 }
 
-.status-stopped {
-  background: rgba(239, 68, 68, 0.2);
-  color: #fca5a5;
-  border: 1px solid rgba(239, 68, 68, 0.4);
+/* --- Slider Area --- */
+.timeline-slider-area {
+  margin-bottom: 16px;
 }
 
-/* Card Launch Button */
-.card-launch-btn {
+.timeline-track-wrap {
+  position: relative;
+  padding: 14px 0 4px;
+}
+
+.timeline-track {
+  position: relative;
+  height: 14px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.85), rgba(15, 23, 42, 0.85));
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.55);
+  overflow: visible;
+}
+.timeline-track-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg,
+    #3730a3 0%,
+    #6366f1 25%,
+    #8b5cf6 50%,
+    #d946ef 75%,
+    #f59e0b 100%
+  );
+  opacity: 0.85;
+  box-shadow: 0 0 16px rgba(139, 92, 246, 0.35);
+  transition: width 80ms linear;
+}
+
+/* Birth markers on track */
+.timeline-markers {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.timeline-marker {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #fff, var(--marker-hue, #a855f7));
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 0 10px var(--marker-hue, rgba(168, 85, 247, 0.6));
+  cursor: help;
+  transition: transform 0.2s;
+  pointer-events: auto;
+}
+.timeline-marker:hover {
+  transform: translate(-50%, -50%) scale(1.9);
+  z-index: 3;
+}
+.timeline-marker.past {
+  opacity: 1;
+}
+.timeline-marker.future {
+  opacity: 0.3;
+  filter: grayscale(0.5);
+}
+
+/* Custom thumb */
+.timeline-thumb {
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  transform: translate(-50%, -50%);
+  width: 22px;
+  height: 22px;
+  pointer-events: none;
+  z-index: 5;
+}
+.timeline-thumb-ring {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid #fbbf24;
+  box-shadow: 0 0 18px rgba(251, 191, 36, 0.6);
+  animation: thumbPulse 1.6s ease-in-out infinite;
+}
+@keyframes thumbPulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.12); }
+}
+.timeline-thumb-core {
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #fef3c7, #f59e0b);
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.8), inset 0 -1px 3px rgba(120, 53, 15, 0.4);
+}
+
+/* Hidden real range input (handles interactions) */
+.timeline-range {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: ew-resize;
+  z-index: 10;
+}
+
+/* Date ticks */
+.timeline-ticks {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 4px 0;
+  font-size: 10px;
+  color: #64748b;
+  font-family: var(--font-code);
+}
+.timeline-tick {
+  position: relative;
+  text-align: center;
+  flex: 1;
+}
+.timeline-tick:first-child { text-align: left; }
+.timeline-tick:last-child  { text-align: right; }
+
+/* --- Controls Row --- */
+.timeline-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* Playback buttons */
+.timeline-playback {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+}
+.tl-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  border: none;
+  background: rgba(129, 140, 248, 0.08);
+  color: #e0e7ff;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tl-btn:hover {
+  background: rgba(129, 140, 248, 0.2);
+  color: #fff;
+  transform: translateY(-1px);
+}
+.tl-btn:active { transform: translateY(0) scale(0.95); }
+.tl-btn-primary {
+  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.4);
+}
+.tl-btn-primary:hover {
+  background: linear-gradient(135deg, #a78bfa, #818cf8);
+  box-shadow: 0 6px 18px rgba(139, 92, 246, 0.55);
+}
+.tl-btn-primary.playing {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);
+}
+
+/* Speed group */
+.timeline-speed-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.speed-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: #64748b;
+  font-weight: 700;
+}
+.speed-btns {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+}
+.speed-btn {
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all 0.18s;
+  font-family: var(--font-code);
+}
+.speed-btn:hover {
+  color: #e0e7ff;
   background: rgba(129, 140, 248, 0.15);
-  border: 1px solid rgba(129, 140, 248, 0.3);
-  color: #a5b4fc;
-  padding: 3px 8px;
-  border-radius: 6px;
+}
+.speed-btn.active {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.5);
+}
+
+/* Stats row */
+.timeline-stats {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.tl-stat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+}
+.tl-stat-icon { font-size: 14px; }
+.tl-stat-label {
+  color: #64748b;
   font-size: 10px;
   font-weight: 600;
-  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.tl-stat-val {
+  font-weight: 700;
+  color: #fbbf24;
+  font-family: var(--font-code);
+}
+.tl-stat-val-dim { color: #475569; font-family: var(--font-code); }
+.tl-stat-sep { color: #334155; }
+
+/* Toggles */
+.timeline-toggle-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.tl-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+.tl-toggle input { display: none; }
+.tl-toggle-track {
+  position: relative;
+  width: 30px;
+  height: 16px;
+  border-radius: 999px;
+  background: rgba(71, 85, 105, 0.5);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  transition: all 0.2s;
+  isolation: isolate;
+}
+.tl-toggle-track::after {
+  content: "";
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #64748b;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1;
+}
+.tl-toggle input:checked ~ .tl-toggle-track {
+  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  border-color: rgba(139, 92, 246, 0.6);
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.35);
+}
+.tl-toggle input:checked ~ .tl-toggle-track::after {
+  left: 15px;
+  background: #fff;
+}
+.tl-toggle-knob { display: none; }
+.tl-toggle-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #cbd5e1;
 }
 
-.card-launch-btn:hover {
-  background: var(--accent);
-  color: #ffffff;
+/* --- Responsive Timeline --- */
+@media (max-width: 900px) {
+  .cosmic-timeline {
+    width: calc(100% - 32px);
+    padding: 12px 14px 14px;
+  }
+  .timeline-header { flex-direction: column; align-items: flex-start; }
+  .timeline-stats { display: none; }
+}
+@media (max-width: 600px) {
+  .timeline-toggle-group { display: none; }
+  .timeline-speed-group { display: none; }
+  .cosmic-timeline { bottom: 52px; }
 }
 

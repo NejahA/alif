@@ -1,14 +1,222 @@
- It appears you've shared a Node.js Express API and a portion of a CSS file[4D[K
-file for a web application. This application seems to manage and display in[2D[K
-information about running processes, as well as their logs, with a visually[8D[K
-visually appealing design.
+ Here is the provided CSS code for a timeline UI component. It includes sty[3D[K
+styling for the main timeline container, controls row, playback buttons, sp[2D[K
+speed group, stats row, toggles, and responsive adjustments for different s[1D[K
+screen sizes.
 
-The Express API contains endpoints for retrieving a list of active processe[8D[K
-processes and fetching logs for a specific process. It also handles setting[7D[K
-setting up listeners for real-time log updates when a client requests logs [K
-for a specific process.
+The timeline consists of a playback button, speed control, stats, and toggl[5D[K
+toggles. The playback button has two states: idle and playing. The speed co[2D[K
+control includes multiple speed buttons to change the playback speed. The s[1D[K
+stats row shows various information such as current time, duration, and pro[3D[K
+progress. The toggles allow users to enable or disable different features.
 
-The CSS file styles the various elements on the web page, such as buttons, [K
-cards, and the terminal console. It includes custom styles for hover and ac[2D[K
-active states, ensuring a smooth and visually pleasing user experience.
+The responsive design adjusts the layout based on the screen size, hiding t[1D[K
+the stats row and toggles on smaller screens.
+
+```css
+/* Timeline Main Container */
+.cosmic-timeline {
+  position: relative;
+  width: calc(100% - 32px);
+  height: 56px;
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+}
+
+/* --- Timeline Controls Row --- */
+.timeline-controls {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+/* --- Playback Buttons --- */
+.timeline-playback {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+}
+.tl-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  border: none;
+  background: rgba(129, 140, 248, 0.08);
+  color: #e0e7ff;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tl-btn:hover {
+  background: rgba(129, 140, 248, 0.2);
+  color: #fff;
+  transform: translateY(-1px);
+}
+.tl-btn:active { transform: translateY(0) scale(0.95); }
+.tl-btn-primary {
+  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.4);
+}
+.tl-btn-primary:hover {
+  background: linear-gradient(135deg, #a78bfa, #818cf8);
+  box-shadow: 0 6px 18px rgba(139, 92, 246, 0.55);
+}
+.tl-btn-primary.playing {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);
+}
+
+/* --- Speed Group --- */
+.timeline-speed-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.speed-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: #64748b;
+  font-weight: 700;
+}
+.speed-btns {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+}
+.speed-btn {
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all 0.18s;
+  font-family: var(--font-code);
+}
+.speed-btn:hover {
+  color: #e0e7ff;
+  background: rgba(129, 140, 248, 0.15);
+}
+.speed-btn.active {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.5);
+}
+
+/* --- Stats Row --- */
+.timeline-stats {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.tl-stat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+}
+.tl-stat-icon { font-size: 14px; }
+.tl-stat-label {
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.tl-stat-val {
+  font-weight: 700;
+  color: #fbbf24;
+  font-family: var(--font-code);
+}
+.tl-stat-val-dim { color: #475569; font-family: var(--font-code); }
+.tl-stat-sep { color: #334155; }
+
+/* --- Toggles --- */
+.timeline-toggle-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.tl-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+.tl-toggle input { display: none; }
+.tl-toggle-track {
+  position: relative;
+  width: 30px;
+  height: 16px;
+  border-radius: 999px;
+  background: rgba(71, 85, 105, 0.5);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  transition: all 0.2s;
+  isolation: isolate;
+}
+.tl-toggle-track::after {
+  content: "";
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #64748b;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1;
+}
+.tl-toggle input:checked ~ .tl-toggle-track {
+  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  border-color: rgba(139, 92, 246, 0.4);
+}
+.tl-toggle input:checked ~ .tl-toggle-track::after {
+  transform: translateX(12px);
+}
+.tl-toggle-icon {
+  width: 16px;
+  height: 16px;
+}
+.tl-toggle-icon-checked {
+  transform: rotate(90deg);
+}
+.tl-toggle-label {
+  margin-left: 6px;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .timeline-stats {
+    display: none;
+  }
+  .timeline-toggle-group {
+    display: none;
+  }
+}
+```
+
+You can use this code as a starting point for your timeline UI component an[2D[K
+and modify it according to your needs.
 

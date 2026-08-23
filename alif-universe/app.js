@@ -1264,7 +1264,7 @@ function initGalaxyNodes() {
       baseY: y,
       radius: 8 + Math.min(12, p.fileCount * 0.4),
       hue: p.hue,
-      orbitSpeed: 0.0003 + Math.random() * 0.0004,
+      orbitSpeed: -(0.0003 + Math.random() * 0.0004),
       angle: Math.atan2(y, x),
       dist: dist,
       trail: []
