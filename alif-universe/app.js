@@ -51,6 +51,202 @@ let supernovaEffects = [];
 let lastFrameT = performance.now();
 let fpsAvg = 60;
 
+// ====== DYNAMIC FAVICON (true mirror of current page viewport) ======
+const FAVICON = {
+  size: 64,
+  canvas: null,
+  ctx: null,
+  linkEl: null,
+  lastUpdate: 0,
+  throttleMs: 50,
+  enabled: true
+};
+function faviconInit() {
+  FAVICON.canvas = document.createElement('canvas');
+  FAVICON.canvas.width = FAVICON.size;
+  FAVICON.canvas.height = FAVICON.size;
+  FAVICON.ctx = FAVICON.canvas.getContext('2d');
+  FAVICON.linkEl = document.getElementById('favicon-link');
+}
+function faviconUpdate() {
+  if (!FAVICON.enabled || !FAVICON.ctx || !FAVICON.linkEl) return;
+  const now = performance.now();
+  if (now - FAVICON.lastUpdate < FAVICON.throttleMs) return;
+  FAVICON.lastUpdate = now;
+  const S = FAVICON.size;
+  const fctx = FAVICON.ctx;
+  fctx.clearRect(0, 0, S, S);
+  const bgGrad = fctx.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2);
+  bgGrad.addColorStop(0, '#0a0b18');
+  bgGrad.addColorStop(1, '#05060d');
+  fctx.fillStyle = bgGrad;
+  fctx.fillRect(0, 0, S, S);
+  const k = Math.max(S / W, S / H);
+  const favTx = S / 2 + (viewX + screenShakeX) * k;
+  const favTy = S / 2 + (viewY + screenShakeY) * k;
+  const favZoom = viewZoom * k;
+  fctx.save();
+  fctx.translate(favTx, favTy);
+  fctx.scale(favZoom, favZoom);
+  const viewLeftW = -(W / 2 + viewX) / viewZoom;
+  const viewRightW = (W / 2 - viewX) / viewZoom;
+  const viewTopW = -(H / 2 + viewY) / viewZoom;
+  const viewBottomW = (H / 2 - viewY) / viewZoom;
+  const pad = 60 / viewZoom;
+  const visMinX = viewLeftW - pad, visMaxX = viewRightW + pad;
+  const visMinY = viewTopW - pad, visMaxY = viewBottomW + pad;
+  starParticles.forEach(star => {
+    if (star.x < visMinX || star.x > visMaxX || star.y < visMinY || star.y > visMaxY) return;
+    fctx.fillStyle = `rgba(255, 255, 255, ${Math.max(0.05, star.alpha * 0.7)})`;
+    fctx.beginPath();
+    fctx.arc(star.x, star.y, Math.max(0.4 / k, star.size * 0.6), 0, Math.PI * 2);
+    fctx.fill();
+  });
+  Object.values(DOMAIN_CONFIG).forEach(cfg => {
+    const dx = Math.cos(cfg.angle) * DOMAIN_RADIUS;
+    const dy = Math.sin(cfg.angle) * DOMAIN_RADIUS;
+    if (dx < visMinX - 160 || dx > visMaxX + 160 || dy < visMinY - 160 || dy > visMaxY + 160) return;
+    fctx.strokeStyle = `hsla(${cfg.hue}, 70%, 60%, 0.14)`;
+    fctx.lineWidth = 1 / favZoom;
+    fctx.setLineDash([3 / favZoom, 10 / favZoom]);
+    fctx.beginPath();
+    fctx.arc(0, 0, DOMAIN_RADIUS, 0, Math.PI * 2);
+    fctx.stroke();
+    fctx.setLineDash([]);
+    const halo = fctx.createRadialGradient(dx, dy, 0, dx, dy, 160);
+    halo.addColorStop(0, `hsla(${cfg.hue}, 80%, 65%, 0.08)`);
+    halo.addColorStop(1, `hsla(${cfg.hue}, 80%, 65%, 0)`);
+    fctx.fillStyle = halo;
+    fctx.beginPath();
+    fctx.arc(dx, dy, 160, 0, Math.PI * 2);
+    fctx.fill();
+  });
+  const coreInView = 0 > visMinX - 120 && 0 < visMaxX + 120 && 0 > visMinY - 120 && 0 < visMaxY + 120;
+  if (coreInView) {
+    const coreR = 90;
+    const coreGrad = fctx.createRadialGradient(0, 0, 0, 0, 0, coreR);
+    coreGrad.addColorStop(0, 'rgba(168, 85, 247, 0.9)');
+    coreGrad.addColorStop(0.5, 'rgba(99, 102, 241, 0.35)');
+    coreGrad.addColorStop(1, 'rgba(99, 102, 241, 0)');
+    fctx.fillStyle = coreGrad;
+    fctx.beginPath();
+    fctx.arc(0, 0, coreR, 0, Math.PI * 2);
+    fctx.fill();
+    fctx.fillStyle = '#e9d5ff';
+    fctx.beginPath();
+    fctx.arc(0, 0, Math.max(2 / favZoom, 14), 0, Math.PI * 2);
+    fctx.fill();
+  }
+  galaxyNodes.forEach(node => {
+    const phase = {
+      visible: true, alphaMult: 1, radiusMult: 1, coreLightnessAdd: 0,
+      glowAlphaMult: 1, labelAlpha: 1, spawning: false, birthPulse: 0,
+      dim: false, protostar: false
+    };
+    timelineAdjustNodeForPhase(node, phase);
+    if (!phase.visible) return;
+    const rEff = node.radius * phase.radiusMult;
+    const cullPad = rEff * 6;
+    if (node.x < visMinX - cullPad || node.x > visMaxX + cullPad ||
+        node.y < visMinY - cullPad || node.y > visMaxY + cullPad) return;
+    const rayAlpha = 0.08 * phase.alphaMult * (phase.dim ? 0.3 : 1);
+    if (rayAlpha > 0.01) {
+      fctx.strokeStyle = `hsla(${node.hue}, 70%, 60%, ${rayAlpha})`;
+      fctx.lineWidth = (1 * phase.radiusMult) / favZoom;
+      fctx.beginPath();
+      fctx.moveTo(0, 0);
+      fctx.lineTo(node.x, node.y);
+      fctx.stroke();
+    }
+    if (phase.protostar) {
+      const flick = 0.6 + 0.4 * Math.sin(now * 0.006 + node.hue * 0.13);
+      fctx.strokeStyle = `hsla(${node.hue}, 70%, 50%, ${0.35 * phase.alphaMult * flick})`;
+      fctx.lineWidth = 1.2 / favZoom;
+      fctx.setLineDash([3 / favZoom, 5 / favZoom]);
+      fctx.beginPath();
+      fctx.arc(node.x, node.y, effRadiusSafe(rEff * 1.8), 0, Math.PI * 2);
+      fctx.stroke();
+      fctx.setLineDash([]);
+      const dustGrad = fctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, effRadiusSafe(rEff * 2.5));
+      dustGrad.addColorStop(0, `hsla(${node.hue}, 60%, 55%, ${0.2 * phase.alphaMult * flick})`);
+      dustGrad.addColorStop(1, `hsla(${node.hue}, 60%, 55%, 0)`);
+      fctx.fillStyle = dustGrad;
+      fctx.beginPath();
+      fctx.arc(node.x, node.y, effRadiusSafe(rEff * 2.5), 0, Math.PI * 2);
+      fctx.fill();
+    }
+    if (phase.spawning && phase.birthP !== undefined) {
+      const pulse = 0.5 + 0.5 * Math.sin(now * 0.012);
+      const coronaR = effRadiusSafe(rEff * (2.2 + phase.birthP * 1.4 + pulse * 0.25));
+      const coronaGrad = fctx.createRadialGradient(node.x, node.y, effRadiusSafe(rEff * 0.6), node.x, node.y, coronaR);
+      coronaGrad.addColorStop(0, `hsla(${node.hue}, 100%, 75%, ${0.5 * phase.alphaMult * (1 - phase.birthP)})`);
+      coronaGrad.addColorStop(1, `hsla(${node.hue}, 100%, 75%, 0)`);
+      fctx.fillStyle = coronaGrad;
+      fctx.beginPath();
+      fctx.arc(node.x, node.y, coronaR, 0, Math.PI * 2);
+      fctx.fill();
+    }
+    const glowMult = 3 * phase.radiusMult * (phase.protostar ? 0.5 : 1);
+    const glowAlpha = 0.28 * phase.alphaMult * phase.glowAlphaMult * (phase.dim ? 0.4 : 1);
+    const glowOutR = effRadiusSafe(rEff * glowMult);
+    const glowG = fctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, glowOutR);
+    glowG.addColorStop(0, `hsla(${node.hue}, 85%, 70%, ${glowAlpha})`);
+    glowG.addColorStop(1, `hsla(${node.hue}, 85%, 70%, 0)`);
+    fctx.fillStyle = glowG;
+    fctx.beginPath();
+    fctx.arc(node.x, node.y, glowOutR, 0, Math.PI * 2);
+    fctx.fill();
+    const coreL = Math.max(25, Math.min(97, 65 + phase.coreLightnessAdd));
+    const coreSize = Math.max(0.8 / favZoom, rEff * (phase.protostar ? 0.55 : 1));
+    fctx.fillStyle = `hsl(${node.hue}, ${phase.protostar ? 50 : 80}%, ${coreL}%)`;
+    fctx.beginPath();
+    fctx.arc(node.x, node.y, coreSize, 0, Math.PI * 2);
+    fctx.fill();
+  });
+  if (TIMELINE.showComets) {
+    TIMELINE.activeCometEffects.forEach(c => {
+      if (c.x < visMinX - 80 || c.x > visMaxX + 80 || c.y < visMinY - 80 || c.y > visMaxY + 80) return;
+      if (c.trail.length > 1) {
+        fctx.lineCap = 'round';
+        for (let i = 1; i < c.trail.length; i++) {
+          const alpha = (1 - i / c.trail.length) * c.life * 0.8;
+          const w = (c.size * (1 - i / c.trail.length)) * 0.7;
+          fctx.strokeStyle = `hsla(${c.hue}, 95%, 75%, ${alpha})`;
+          fctx.lineWidth = Math.max(0.5 / favZoom, w);
+          fctx.beginPath();
+          fctx.moveTo(c.trail[i - 1].x, c.trail[i - 1].y);
+          fctx.lineTo(c.trail[i].x, c.trail[i].y);
+          fctx.stroke();
+        }
+      }
+      const cg = fctx.createRadialGradient(c.x, c.y, 0, c.x, c.y, c.size * 4);
+      cg.addColorStop(0, `hsla(${c.hue}, 95%, 80%, ${0.85 * c.life})`);
+      cg.addColorStop(1, `hsla(${c.hue}, 95%, 70%, 0)`);
+      fctx.fillStyle = cg;
+      fctx.beginPath();
+      fctx.arc(c.x, c.y, c.size * 4, 0, Math.PI * 2);
+      fctx.fill();
+    });
+  }
+  rippleEffects.forEach(r => {
+    const alpha = Math.max(0, r.life);
+    if (alpha <= 0.02) return;
+    if (r.x < visMinX - r.radius || r.x > visMaxX + r.radius ||
+        r.y < visMinY - r.radius || r.y > visMaxY + r.radius) return;
+    fctx.strokeStyle = `hsla(${r.hue}, 90%, 75%, ${alpha * 0.75})`;
+    fctx.lineWidth = Math.max(0.4 / favZoom, 2 * alpha + 0.4);
+    fctx.beginPath();
+    fctx.arc(r.x, r.y, r.radius, 0, Math.PI * 2);
+    fctx.stroke();
+  });
+  fctx.restore();
+  try {
+    FAVICON.linkEl.href = FAVICON.canvas.toDataURL('image/png');
+  } catch (e) { }
+}
+function effRadiusSafe(r) { return r > 0 ? r : 0.01; }
+// =====================================================
+
 // ====== COSMIC TIMELINE — STATE (SCAFFOLD)  ======
 const TIMELINE = {
   enabled: true,
@@ -76,7 +272,30 @@ const TIMELINE = {
 
   // Stats tracks
   bornCount: 0,
-  cometCount: 0
+  cometCount: 0,
+
+  // Per-node activity streak data (draws streak trails around active nodes)
+  streaksPerNode: new Map()
+};
+// ================================================
+
+// ====== GALAXY CAMERA TOUR + NEW FEATURES STATE ====
+const TOUR = {
+  active: false,
+  t: 0,
+  baseZoom: 1,
+  driftAngle: 0,
+  driftRadius: 30,
+  breathAmplitude: 0.12,
+  breathSpeed: 0.00065,
+  orbitSpeed: 0.00018,
+  startedAt: 0
+};
+const ACTIVITY_STREAK = {
+  enabled: true,
+  maxTrails: 12,
+  minOpacity: 0.15,
+  fadePerFrame: 0.012
 };
 // ================================================
 const hudFpsEl = document.getElementById('hudFps');
@@ -912,7 +1131,194 @@ function timelineAdjustNodeForPhase(n, drawState) {
 }
 
 // ====================================================
-// ====== END COSMIC TIMELINE CORE
+// ====== GALAXY CAMERA TOUR (Ctrl+G)
+// ====================================================
+function tourToggle() {
+  TOUR.active = !TOUR.active;
+  if (TOUR.active) {
+    TOUR.t = 0;
+    TOUR.startedAt = performance.now();
+    TOUR.driftAngle = Math.atan2(-viewY / viewZoom, -viewX / viewZoom) || 0;
+    TOUR.baseZoom = viewZoom;
+  }
+  isTweeningCamera = false;
+  const hudTourEl = document.getElementById('hudTour');
+  if (hudTourEl) hudTourEl.classList.toggle('tour-on', TOUR.active);
+  // Button state
+  document.querySelectorAll('.tour-btn, .btn-galaxy-tour').forEach(b => {
+    b.classList.toggle('active', TOUR.active);
+    if (b.querySelector('.tour-icon')) {
+      b.querySelector('.tour-icon').innerHTML = TOUR.active ? '🛰️' : '🪐';
+    }
+  });
+}
+
+function tourUpdate(dt) {
+  if (!TOUR.active) return;
+  if (isTweeningCamera) return;
+  TOUR.t += dt;
+  // 360° drift around the origin at driftRadius
+  TOUR.driftAngle += TOUR.orbitSpeed * dt;
+  const cosA = Math.cos(TOUR.driftAngle);
+  const sinA = Math.sin(TOUR.driftAngle);
+  // Zoom breathing: sin wave around baseZoom
+  const breath = TOUR.breathAmplitude * Math.sin(TOUR.t * TOUR.breathSpeed);
+  const zoom = TOUR.baseZoom * (1 + breath);
+  // Camera position: centered on origin, orbit offset perpendicular to angle
+  const camX = cosA * TOUR.driftRadius;
+  const camY = sinA * TOUR.driftRadius;
+  viewZoom = zoom;
+  viewX = -camX * zoom;
+  viewY = -camY * zoom;
+  targetViewX = viewX; targetViewY = viewY; targetViewZoom = viewZoom;
+}
+
+// ====================================================
+// ====== ACTIVITY STREAK TRAILS (per-node comet wake)
+// ====================================================
+function streakHit(node, hue) {
+  if (!ACTIVITY_STREAK.enabled) return;
+  if (!node) return;
+  let list = TIMELINE.streaksPerNode.get(node);
+  if (!list) { list = []; TIMELINE.streaksPerNode.set(node, list); }
+  list.push({
+    x: node.x,
+    y: node.y,
+    hue: hue || node.hue,
+    life: 1,
+    radius: node.radius * (0.8 + Math.random() * 0.6)
+  });
+  if (list.length > ACTIVITY_STREAK.maxTrails) list.splice(0, list.length - ACTIVITY_STREAK.maxTrails);
+}
+
+function streakUpdateAndDraw(ctx2d, nodes) {
+  if (!ACTIVITY_STREAK.enabled) return;
+  // Register trails whenever a comet is active nearby — fire once per drawn frame
+  TIMELINE.activeCometEffects.forEach(c => {
+    let closest = null, bestD = Infinity;
+    nodes.forEach(n => {
+      if (!n._born) return;
+      const d = Math.hypot(n.x - c.x, n.y - c.y);
+      if (d < bestD && d < n.radius * 4) { bestD = d; closest = n; }
+    });
+    if (closest) streakHit(closest, c.hue);
+  });
+  // Draw & fade
+  TIMELINE.streaksPerNode.forEach((list, node) => {
+    if (!node._born && !TIMELINE.showProtostars) return;
+    for (let i = 0; i < list.length; i++) {
+      const s = list[i];
+      s.life -= ACTIVITY_STREAK.fadePerFrame;
+      if (s.life <= 0) continue;
+      const alpha = Math.max(ACTIVITY_STREAK.minOpacity, s.life) * (i / list.length) * 0.8;
+      const r = s.radius * (0.4 + 0.6 * (i / list.length));
+      ctx2d.strokeStyle = `hsla(${s.hue}, 95%, 72%, ${alpha})`;
+      ctx2d.lineWidth = 1.4 * (i / list.length) + 0.5;
+      ctx2d.beginPath();
+      ctx2d.arc(node.x, node.y, r, 0, Math.PI * 2);
+      ctx2d.stroke();
+    }
+    TIMELINE.streaksPerNode.set(node, list.filter(s => s.life > 0));
+  });
+}
+
+// ====================================================
+// ====== GALAXY SNAPSHOT (download PNG of canvas)
+// ====================================================
+function galaxySnapshot() {
+  if (!canvas) return;
+  // Compose an overlay banner at the bottom so the PNG carries metadata
+  const meta = {
+    zoom: viewZoom.toFixed(2) + '×',
+    selected: selectedNode ? selectedNode.project.name : '(none)',
+    date: timelineFormatDate(timelineCurrentDate()),
+    present: timelineFormatDate(new Date(TIMELINE.presentDate)),
+    epoch: TIMELINE.progress >= 1 ? 'Present' : (TIMELINE.progress <= 0 ? 'Genesis' : (Math.round(TIMELINE.progress * 100) + '% of timeline')),
+    stars: galaxyNodes.length,
+    tour: TOUR.active ? 'Tour ON' : 'Tour OFF',
+    ts: new Date().toISOString()
+  };
+  // Composite to offscreen canvas so snapshot includes banner + metadata text
+  const pad = 56;
+  const off = document.createElement('canvas');
+  off.width = canvas.width;
+  off.height = canvas.height + pad;
+  const octx = off.getContext('2d');
+  // Starry background strip so banner doesn't look white
+  const bgGrad = octx.createLinearGradient(0, canvas.height, 0, off.height);
+  bgGrad.addColorStop(0, 'rgba(8, 9, 18, 0)');
+  bgGrad.addColorStop(0.25, 'rgba(8, 9, 18, 0.85)');
+  bgGrad.addColorStop(1, '#080912');
+  octx.fillStyle = '#080912';
+  octx.fillRect(0, 0, off.width, off.height);
+  octx.drawImage(canvas, 0, 0);
+  octx.fillStyle = bgGrad;
+  octx.fillRect(0, canvas.height - 28, off.width, pad + 28);
+
+  // Brand
+  octx.fillStyle = '#c4b5fd';
+  octx.font = '800 16px "Outfit", sans-serif';
+  octx.textAlign = 'left';
+  octx.textBaseline = 'alphabetic';
+  octx.fillText('🌌 ALIVERSE · Galaxy Snapshot', 20, canvas.height + 24);
+
+  // Meta pills
+  const pills = [
+    `⭐ ${meta.stars} stars`,
+    `🔭 ${meta.zoom}`,
+    `📅 ${meta.date}`,
+    `💫 ${meta.epoch}`,
+    meta.selected !== '(none)' ? `✨ ${meta.selected}` : null,
+    meta.tour
+  ].filter(Boolean);
+  octx.font = '600 10px "Inter", sans-serif';
+  let x = off.width - 20;
+  pills.reverse().forEach(txt => {
+    octx.font = '600 10px "Inter", sans-serif';
+    const w = octx.measureText(txt).width + 18;
+    const rx = x - w;
+    const ry = canvas.height + 12;
+    octx.fillStyle = 'rgba(129, 140, 248, 0.18)';
+    octx.strokeStyle = 'rgba(129, 140, 248, 0.45)';
+    octx.lineWidth = 1;
+    octx.beginPath();
+    octx.roundRect ? octx.roundRect(rx, ry, w, 26, 8) : (() => { octx.rect(rx, ry, w, 26); })();
+    octx.fill();
+    octx.stroke();
+    octx.fillStyle = '#e0e7ff';
+    octx.textAlign = 'left';
+    octx.textBaseline = 'middle';
+    octx.fillText(txt, rx + 9, ry + 13);
+    x = rx - 8;
+  });
+
+  // Footer ISO timestamp
+  octx.fillStyle = '#475569';
+  octx.font = '9px "Fira Code", monospace';
+  octx.textAlign = 'left';
+  octx.textBaseline = 'alphabetic';
+  octx.fillText(meta.ts, 20, canvas.height + 44);
+
+  // Download
+  try {
+    const url = off.toDataURL('image/png');
+    const a = document.createElement('a');
+    a.href = url;
+    const ts = meta.ts.replace(/[:.]/g, '-');
+    a.download = `aliverse-galaxy-${ts}.png`;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => a.remove(), 100);
+    // Toast flash feedback
+    triggerShake(1.5, 140);
+  } catch (e) {
+    console.warn('Snapshot failed:', e);
+    alert('Snapshot failed. Canvas may be tainted.');
+  }
+}
+
+// ====================================================
+// ====== END COSMIC TIMELINE / TOURS / SNAPSHOTS
 // ====================================================
 
 // Update Category Count Badges
@@ -1619,6 +2025,8 @@ function drawGalaxy() {
     }
   }
 
+  faviconUpdate();
+
   requestAnimationFrame(drawGalaxy);
 }
 
@@ -1630,25 +2038,93 @@ function escapeHTML(str) {
 document.addEventListener('DOMContentLoaded', () => {
   resizeCanvas();
   initStarParticles();
+  faviconInit();
   window.addEventListener('resize', resizeCanvas);
 
   fetchProjects();
   fetchStats();
   setInterval(fetchStats, 5000);
 
-  // Keyboard Shortcuts (Ctrl+K focus search, Ctrl+T timeline, Escape close modal)
+  // Keyboard Shortcuts (Ctrl+K search, Ctrl+T timeline, Ctrl+G tour, Ctrl+Shift+S snapshot,
+  // Space timeline play, Arrows: timeline scrub if open / node navigation otherwise,
+  // Enter: launch selected, F: fly-to selected, Esc: dismiss)
   window.addEventListener('keydown', (e) => {
+    const inField = e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable);
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
       e.preventDefault();
       if (searchInput) searchInput.focus();
     } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 't') {
       e.preventDefault();
       timelineTogglePanel();
+    } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'g') {
+      e.preventDefault();
+      tourToggle();
+    } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key.toLowerCase() === 's')) {
+      e.preventDefault();
+      galaxySnapshot();
     } else if (e.key === 'Escape') {
       hideContextMenu();
       closeInspector();
       closeLiveApp();
       closeTerminal();
+    } else if (!inField && e.key === ' ') {
+      if (TIMELINE.open || TIMELINE.playing || TIMELINE.progress < 1) {
+        e.preventDefault();
+        timelineTogglePlay();
+      }
+    } else if (!inField && (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+      if (TIMELINE.open && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+        e.preventDefault();
+        const delta = (e.key === 'ArrowLeft' ? -0.01 : 0.01) * (e.shiftKey ? 5 : 1);
+        timelineSetProgress(Math.max(0, Math.min(1, TIMELINE.progress + delta)), { fromUser: true });
+      } else if (btnViewGalaxy && btnViewGrid) {
+        e.preventDefault();
+        if (!btnViewGalaxy.classList.contains('active')) {
+          btnViewGalaxy.classList.add('active');
+          btnViewGrid.classList.remove('active');
+          galaxyView.classList.remove('hidden');
+          gridView.classList.add('hidden');
+        }
+        const dir = e.key === 'ArrowLeft' ? 'left'
+                 : e.key === 'ArrowRight' ? 'right'
+                 : e.key === 'ArrowUp' ? 'up' : 'down';
+        const n = selectNearestNode(dir);
+        if (n) {
+          const isFar = viewZoom < 1.25 || Math.hypot(
+            -n.x * viewZoom - viewX,
+            -n.y * viewZoom - viewY
+          ) > Math.min(W, H) * 0.35;
+          if (isFar) flyToNode(n, 1.7, 550);
+        }
+      }
+    } else if (!inField && (e.key === 'Enter' || e.key === 'f' || e.key === 'F')) {
+      if (btnViewGalaxy && btnViewGrid && !btnViewGalaxy.classList.contains('active')) {
+        btnViewGalaxy.classList.add('active');
+        btnViewGrid.classList.remove('active');
+        galaxyView.classList.remove('hidden');
+        gridView.classList.add('hidden');
+      }
+      if (!selectedNode && galaxyNodes.length) {
+        selectNearestNode('any');
+      }
+      if (selectedNode) {
+        e.preventDefault();
+        if (e.key === 'f' || e.key === 'F') {
+          flyToNode(selectedNode, 2.0, 850);
+        } else {
+          for (let i = 0; i < 2; i++) {
+            rippleEffects.push({
+              x: selectedNode.x, y: selectedNode.y,
+              radius: selectedNode.radius * 1.2,
+              speed: 2.2 + i * 1.2,
+              hue: selectedNode.hue + (i * 15),
+              life: 1, decay: 0.022 + i * 0.008
+            });
+          }
+          if (selectedNode.project.hasHtml) launchLiveApp(selectedNode.project);
+          else openInspector(selectedNode.project);
+        }
+      }
     }
   });
 

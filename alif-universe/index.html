@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ALIVERSE — Master Ecosystem Hub</title>
+  <link id="favicon-link" rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAGklEQVR42mNk+M9QI0aMYARqQQBNAK4FAAU0AAAB1w0AAAAASUVORK5CYII=">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
@@ -32,6 +33,16 @@
       </div>
 
       <div class="header-actions">
+        <div class="header-actions-buttons">
+          <button id="btn-galaxy-tour" class="action-btn tour-btn" title="Galaxy Camera Tour (Ctrl+G)">
+            <span class="tour-icon">🪐</span>
+            <span class="action-label">Tour</span>
+          </button>
+          <button id="btn-galaxy-snapshot" class="action-btn" title="Save Galaxy Snapshot PNG (Ctrl+Shift+S)">
+            <span>📸</span>
+            <span class="action-label">Snapshot</span>
+          </button>
+        </div>
         <div class="view-toggle">
           <button id="btn-view-galaxy" class="toggle-btn active">🌌 Galaxy Map</button>
           <button id="btn-view-grid" class="toggle-btn">🗂️ Grid Codex</button>
@@ -111,7 +122,8 @@
           <div class="hud-line"><span class="hud-label">FPS</span><span class="hud-value" id="hudFps">60</span></div>
           <div class="hud-line"><span class="hud-label">Zoom</span><span class="hud-value" id="hudZoom">1.00×</span></div>
           <div class="hud-line"><span class="hud-label">Nodes</span><span class="hud-value" id="hudNodes">0</span></div>
-          <div class="hud-line hud-keyboard" id="hudKeyboard" title="Arrow keys navigate · Enter launch · F fly-to · Esc deselect"></div>
+          <div class="hud-line" id="hudTour"><span class="hud-label">TOUR</span><span class="hud-value" id="hudTourVal">OFF</span></div>
+          <div class="hud-line hud-keyboard" id="hudKeyboard" title="Arrow keys navigate · Enter launch · F fly-to · Esc deselect · Ctrl+G Tour · Ctrl+Shift+S Snapshot · Space: Play/Pause Timeline"></div>
         </div>
 
         <!-- ========== COSMIC TIMELINE (SCAFFOLD) ========== -->

@@ -1,4 +1,6 @@
 ++ b/alif-universe/app.js
+      orbitSpeed: -(0.0003 + Math.random() * 0.0004),
+++ b/changes.txt
 const minimapCanvas = document.getElementById('minimap-canvas');
 const minimapCtx = minimapCanvas ? minimapCanvas.getContext('2d') : null;
 const minimapResetBtn = document.getElementById('minimapReset');
@@ -73,8 +75,6 @@ function flyToNode(node, zoom = 1.9, durationMs = 900) {
     else isTweeningCamera = false;
   }
   requestAnimationFrame(step);
-}
-
 function resetView(durationMs = 700) {
   const sx = viewX, sy = viewY, sz = viewZoom;
   const tx = 0, ty = 0, tz = 1;
@@ -92,7 +92,6 @@ function resetView(durationMs = 700) {
   }
   requestAnimationFrame(step);
 }
-
 function drawMinimap() {
   if (!minimapCtx || !minimapCanvas) return;
   const mW = minimapCanvas.width, mH = minimapCanvas.height;
@@ -116,7 +115,6 @@ function drawMinimap() {
     x: offX + (wx - minX) * scale,
     y: offY + (wy - minY) * scale
   });
-
   // Domain rings (6 centers)
   Object.values(DOMAIN_CONFIG).forEach(cfg => {
     const cx = Math.cos(cfg.angle) * DOMAIN_RADIUS;
@@ -131,7 +129,6 @@ function drawMinimap() {
     minimapCtx.arc(p.x, p.y, 3, 0, Math.PI * 2);
     minimapCtx.fill();
   });
-
   // Core
   const core = toMap(0, 0);
   minimapCtx.fillStyle = 'rgba(168, 85, 247, 0.9)';
@@ -147,7 +144,6 @@ function drawMinimap() {
     minimapCtx.arc(p.x, p.y, n === hoveredNode || n === selectedNode ? 3.2 : 1.8, 0, Math.PI * 2);
     minimapCtx.fill();
   });
-
   // Viewport rectangle
   const viewLeftW = -(W / 2 + viewX) / viewZoom;
   const viewRightW = (W / 2 - viewX) / viewZoom;
@@ -189,15 +185,10 @@ function minimapClickToWorld(e) {
     targetViewX = viewX; targetViewY = viewY; targetViewZoom = viewZoom;
     if (t < 1) requestAnimationFrame(step);
     else isTweeningCamera = false;
-  }
   requestAnimationFrame(step);
-}
-
 function hideContextMenu() {
   if (ctxMenu) ctxMenu.classList.add('hidden');
   ctxMenuNode = null;
-}
-
 function showContextMenu(node, clientX, clientY) {
   if (!ctxMenu || !ctxTitle) return;
   ctxMenuNode = node;
@@ -209,7 +200,6 @@ function showContextMenu(node, clientX, clientY) {
   ctxMenu.style.top = top + 'px';
   ctxMenu.classList.remove('hidden');
 }
-
 function handleContextAction(action) {
   const node = ctxMenuNode;
   hideContextMenu();
@@ -255,16 +245,13 @@ function handleContextAction(action) {
     case 'deselect':
       selectedNode = null;
       break;
-  }
 }
-
 // ====== SCREEN SHAKE ======
 function triggerShake(intensity = 8, duration = 320) {
   screenShakeT = duration;
   screenShakeX = intensity;
   screenShakeY = intensity;
 }
-
 function updateShake(dt) {
   if (screenShakeT > 0) {
     screenShakeT -= dt;
@@ -278,9 +265,7 @@ function updateShake(dt) {
       const iy = screenShakeY * f;
       screenShakeX = ix; screenShakeY = iy;
     }
-  }
 }
-
 // ====== SUPERNOVA ======
 function spawnSupernova(node) {
   const count = 60;
@@ -301,7 +286,6 @@ function spawnSupernova(node) {
       hue: hue + (Math.random() - 0.5) * 70,
       life: 1,
       decay: 0.008 + Math.random() * 0.02
-    });
   }
   // Ripples
   for (let i = 0; i < 3; i++) {
@@ -315,7 +299,6 @@ function spawnSupernova(node) {
     });
   }
 }
-
 // ====== CATEGORY FLY-TO ======
 function flyToCategory(categoryName) {
   if (!galaxyNodes.length) return;
@@ -362,7 +345,6 @@ function flyToCategory(categoryName) {
   requestAnimationFrame(step);
   triggerShake(3, 260);
 }
-
 // ====== KEYBOARD NAVIGATION ======
 function selectNearestNode(direction) {
   if (!galaxyNodes.length) return null;
@@ -441,24 +423,19 @@ function timelineInitFromProjects() {
       commits
     };
   }).sort((a, b) => a.birthEpoch - b.birthEpoch);
-
   // Clamp earliest date to min birth - 30 days
   const minBirth = TIMELINE.births.length ? TIMELINE.births[0].birthEpoch : fallbackEarliest;
   TIMELINE.earliestDate = minBirth - 30 * 86400000;
-
   TIMELINE.comets = TIMELINE.births.flatMap(b =>
     b.commits.map(c => ({ ...c, name: b.name, hue: b.hue }))
   ).sort((a, b) => a.date - b.date);
-
   timelineResetToPresent();
   timelineRebuildMarkers();
   timelineRebuildTicks();
 }
-
 function timelineCurrentDate() {
   return new Date(TIMELINE.earliestDate + (TIMELINE.presentDate - TIMELINE.earliestDate) * TIMELINE.progress);
 }
-
 function timelineSetProgress(p, { fromUser = false } = {}) {
   const prev = TIMELINE.progress;
   TIMELINE.progress = Math.max(0, Math.min(1, p));
@@ -467,28 +444,20 @@ function timelineSetProgress(p, { fromUser = false } = {}) {
     timelineUpdateBirthState();
     timelineSpawnCrossedComets(prev, TIMELINE.progress);
     timelineSyncUI();
-  }
-}
-
 function timelineResetToPresent() {
   TIMELINE.progress = 1;
   TIMELINE.playing = false;
   timelineUpdateBirthState();
   timelineSyncUI();
-}
-
 function timelineRewind() {
   timelineSetProgress(0, { fromUser: true });
   TIMELINE.playing = false;
   timelineSyncUI();
-}
-
 function timelineFastForward() {
   timelineSetProgress(1, { fromUser: true });
   TIMELINE.playing = false;
   timelineSyncUI();
 }
-
 function timelineTogglePlay() {
   if (TIMELINE.progress >= 1 && !TIMELINE.playing) {
     timelineSetProgress(0, { fromUser: true });
@@ -496,14 +465,12 @@ function timelineTogglePlay() {
   TIMELINE.playing = !TIMELINE.playing;
   timelineSyncUI();
 }
-
 function timelineSetSpeed(speed) {
   TIMELINE.playbackSpeed = speed;
   document.querySelectorAll('.speed-btn').forEach(b => {
     b.classList.toggle('active', parseFloat(b.dataset.speed) === speed);
   });
 }
-
 function timelineUpdate(dt) {
   if (!TIMELINE.enabled) return;
 
@@ -519,9 +486,6 @@ function timelineUpdate(dt) {
       timelineSyncUI();
     } else {
       timelineSetProgress(next);
-    }
-  }
-
   if (TIMELINE.activeCometEffects.length) {
     const impacts = [];
     TIMELINE.activeCometEffects = TIMELINE.activeCometEffects.filter(c => {
@@ -568,8 +532,6 @@ function timelineUpdate(dt) {
         const d = Math.hypot(targetNode.x - c.x, targetNode.y - c.y);
         if (d < targetNode.radius * 3) {
           triggerShake(1.2, 120);
-        }
-      }
     });
   }
 }
@@ -587,11 +549,9 @@ function timelineUpdateBirthState() {
       n._born = true;
       n._birthProgress = 1;
       born++;
-    }
   });
   TIMELINE.bornCount = born;
 }
-
 function timelineSpawnCrossedComets(prevProgress, curProgress) {
   if (!TIMELINE.showComets) return;
   if (prevProgress === curProgress) return;
@@ -605,8 +565,6 @@ function timelineSpawnCrossedComets(prevProgress, curProgress) {
       timelineSpawnCometForCommit(c, isForward);
     }
   });
-}
-
 function timelineSpawnCometForCommit(commit, forward) {
   const targetNode = galaxyNodes.find(n => n.project.name === commit.name);
   if (!targetNode) return;
@@ -633,7 +591,6 @@ function timelineSpawnCometForCommit(commit, forward) {
   });
   TIMELINE.cometCount++;
 }
-
 function timelineSyncUI() {
   const range = document.getElementById('timeline-range');
   const trackFill = document.getElementById('timeline-track-fill');
@@ -659,7 +616,6 @@ function timelineSyncUI() {
       badge.textContent = '⏳';
       badge.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)';
     }
-  }
   if (curDateEl) curDateEl.textContent = timelineFormatDate(timelineCurrentDate());
   if (presDateEl) presDateEl.textContent = timelineFormatDate(new Date(TIMELINE.presentDate));
   if (btnPlay) {
@@ -673,7 +629,6 @@ function timelineSyncUI() {
     if (TIMELINE.progress >= 1) epochEl.textContent = 'Present';
     else if (TIMELINE.progress <= 0) epochEl.textContent = 'Genesis';
     else epochEl.textContent = timelineFormatDate(timelineCurrentDate(), true);
-  }
   if (markersWrap) {
     markersWrap.querySelectorAll('.timeline-marker').forEach(m => {
       const t = parseFloat(m.dataset.progress);
@@ -682,7 +637,6 @@ function timelineSyncUI() {
     });
   }
 }
-
 function timelineFormatDate(d, short) {
   if (!d || isNaN(d.getTime())) return '—';
   const y = d.getFullYear();
@@ -692,7 +646,6 @@ function timelineFormatDate(d, short) {
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   return `${months[d.getMonth()]} ${day}, ${y}`;
 }
-
 function timelineRebuildMarkers() {
   const wrap = document.getElementById('timeline-markers');
   if (!wrap) return;
@@ -733,11 +686,9 @@ function timelineRebuildMarkers() {
         galaxyView.classList.remove('hidden');
         gridView.classList.add('hidden');
       }
-    });
     wrap.appendChild(el);
   });
 }
-
 function timelineRebuildTicks() {
   const wrap = document.getElementById('timeline-ticks');
   if (!wrap) return;
@@ -750,9 +701,7 @@ function timelineRebuildTicks() {
     el.className = 'timeline-tick';
     el.textContent = timelineFormatDate(d, true);
     wrap.appendChild(el);
-  }
 }
-
 function timelineTogglePanel() {
   const panel = document.getElementById('cosmic-timeline');
   if (!panel) return;
@@ -760,9 +709,7 @@ function timelineTogglePanel() {
   panel.classList.toggle('hidden', !TIMELINE.open);
   if (TIMELINE.open && !TIMELINE.births.length) {
     timelineInitFromProjects();
-  }
 }
-
 function timelineDrawComets(ctx2d) {
   if (!TIMELINE.showComets || !TIMELINE.activeCometEffects.length) return;
   TIMELINE.activeCometEffects.forEach(c => {
@@ -790,9 +737,7 @@ function timelineDrawComets(ctx2d) {
     ctx2d.beginPath();
     ctx2d.arc(c.x, c.y, c.size, 0, Math.PI * 2);
     ctx2d.fill();
-  });
 }
-
 function timelineAdjustNodeForPhase(n, drawState) {
   if (!TIMELINE.enabled || TIMELINE.progress >= 1) return;
   if (n._born === undefined) return;
@@ -801,7 +746,6 @@ function timelineAdjustNodeForPhase(n, drawState) {
     if (!TIMELINE.showProtostars) {
       drawState.visible = false;
       return;
-    }
     drawState.coreLightnessAdd = -25;
     drawState.alphaMult = 0.22;
     drawState.radiusMult = 0.55;
@@ -814,9 +758,7 @@ function timelineAdjustNodeForPhase(n, drawState) {
     drawState.radiusMult = 0.6 + 0.4 * p;
     drawState.spawning = true;
     drawState.birthP = p;
-  }
 }
-
 // ====================================================
 // ====== END COSMIC TIMELINE CORE
 // ====================================================
@@ -869,8 +811,6 @@ function timelineAdjustNodeForPhase(n, drawState) {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(`${cfg.icon} ${cat}`, cx, cy - 155);
-  });
-
   if (searchHighlightTime > 0) searchHighlightTime -= 1/60;
     const matchesSearch = (() => {
       if (!searchQuery) return false;
@@ -952,7 +892,6 @@ function timelineAdjustNodeForPhase(n, drawState) {
       ctx.arc(node.x, node.y, effRadius * 2.5, 0, Math.PI * 2);
       ctx.fill();
     }
-
     // Spawning corona (expanding pulse)
     if (phase.spawning && phase.birthP !== undefined) {
       const pulse = 0.5 + 0.5 * Math.sin(performance.now() * 0.012);
@@ -965,7 +904,6 @@ function timelineAdjustNodeForPhase(n, drawState) {
       ctx.arc(node.x, node.y, coronaR, 0, Math.PI * 2);
       ctx.fill();
     }
-
       ctx.strokeStyle = `hsla(${node.hue}, 90%, 80%, ${0.85 * phase.alphaMult})`;
       ctx.arc(node.x, node.y, effRadius * 2.2, 0, Math.PI * 2);
       ctx.stroke();
@@ -1029,7 +967,6 @@ function timelineAdjustNodeForPhase(n, drawState) {
       timelineSetProgress(parseInt(e.target.value, 10) / 1000, { fromUser: true });
     });
   }
-
   const btnRewind = document.getElementById('btn-timeline-rewind');
   if (btnRewind) btnRewind.addEventListener('click', timelineRewind);
   const btnPlay = document.getElementById('btn-timeline-play');
@@ -1043,7 +980,6 @@ function timelineAdjustNodeForPhase(n, drawState) {
       if (!isNaN(s)) timelineSetSpeed(s);
     });
   });
-
   const tlCometsToggle = document.getElementById('tl-toggle-comets');
   if (tlCometsToggle) {
     tlCometsToggle.addEventListener('change', () => {
@@ -1055,7 +991,6 @@ function timelineAdjustNodeForPhase(n, drawState) {
     tlProtoToggle.addEventListener('change', () => {
       TIMELINE.showProtostars = tlProtoToggle.checked;
     });
-  }
   // =======================================================
 
       if (searchQuery) searchHighlightTime = 3;
@@ -1104,7 +1039,6 @@ function timelineAdjustNodeForPhase(n, drawState) {
         hideContextMenu();
       }
     });
-
       if (e.button !== 0) return;
       hideContextMenu();
         const now = performance.now();
@@ -1134,14 +1068,12 @@ function timelineAdjustNodeForPhase(n, drawState) {
   }
   if (minimapResetBtn) {
     minimapResetBtn.addEventListener('click', () => resetView(700));
-  }
 
   // Context menu item clicks
   if (ctxMenu) {
     ctxMenu.addEventListener('click', (e) => {
       const btn = e.target.closest('.ctx-item');
       if (btn && btn.dataset.action) handleContextAction(btn.dataset.action);
-    });
   }
 
   // Hide context menu when clicking outside or scrolling
@@ -1149,10 +1081,8 @@ function timelineAdjustNodeForPhase(n, drawState) {
     if (!ctxMenu) return;
     if (ctxMenu.classList.contains('hidden')) return;
     if (!ctxMenu.contains(e.target) && e.target !== canvas) hideContextMenu();
-  });
   window.addEventListener('scroll', hideContextMenu, true);
   window.addEventListener('blur', hideContextMenu);
-
 ++ b/alif-universe/index.html
     <!-- Right-Click Context Menu -->
     <div id="galaxy-ctx-menu" class="galaxy-ctx-menu hidden">
@@ -1166,7 +1096,6 @@ function timelineAdjustNodeForPhase(n, drawState) {
       <div class="ctx-divider"></div>
       <button class="ctx-item ctx-item-danger" data-action="deselect"><span class="ctx-icon">✖️</span>Deselect</button>
     </div>
-
         <!-- Mini-map / Radar -->
         <div class="minimap-wrap" id="minimapWrap">
           <div class="minimap-title">🌌 Radar</div>
@@ -1180,7 +1109,6 @@ function timelineAdjustNodeForPhase(n, drawState) {
           <div class="hud-line"><span class="hud-label">Nodes</span><span class="hud-value" id="hudNodes">0</span></div>
           <div class="hud-line hud-keyboard" id="hudKeyboard" title="Arrow keys navigate · Enter launch · F fly-to · Esc deselect"></div>
         </div>
-
         <!-- ========== COSMIC TIMELINE (SCAFFOLD) ========== -->
         <!-- Timeline Toggle Button (always visible) -->
         <button id="btn-timeline-toggle" class="timeline-toggle" title="Toggle Cosmic Timeline (Ctrl+T)">
@@ -1207,7 +1135,6 @@ function timelineAdjustNodeForPhase(n, drawState) {
               <span class="date-value" id="timeline-present-date">—</span>
             </div>
           </div>
-
           <div class="timeline-slider-area">
             <!-- Slider Track with Project Birth Markers -->
             <div class="timeline-track-wrap">
@@ -1221,18 +1148,15 @@ function timelineAdjustNodeForPhase(n, drawState) {
               </div>
               <input type="range" id="timeline-range" class="timeline-range" min="0" max="1000" value="1000" step="1">
             </div>
-
             <!-- Date Labels (ticks) -->
             <div class="timeline-ticks" id="timeline-ticks"></div>
           </div>
-
           <div class="timeline-controls">
             <div class="timeline-playback">
               <button id="btn-timeline-rewind" class="tl-btn" title="Rewind (skip to earliest)">⏮</button>
               <button id="btn-timeline-play" class="tl-btn tl-btn-primary" title="Play / Pause">▶</button>
               <button id="btn-timeline-fastforward" class="tl-btn" title="Fast Forward (skip to present)">⏭</button>
             </div>
-
             <div class="timeline-speed-group">
               <span class="speed-label">Speed</span>
               <div class="speed-btns">
@@ -1262,7 +1186,6 @@ function timelineAdjustNodeForPhase(n, drawState) {
                 <span class="tl-stat-val" id="tl-stat-epoch">Present</span>
               </div>
             </div>
-
             <div class="timeline-toggle-group">
               <label class="tl-toggle">
                 <input type="checkbox" id="tl-toggle-comets" checked>
@@ -1279,7 +1202,6 @@ function timelineAdjustNodeForPhase(n, drawState) {
             </div>
           </div>
         </div>
-
           <span>Hover: Preview | Click: Launch/Inspect | Dbl-click: Fly-to | R-click: Menu | Arrows: Navigate | Scroll: Zoom | Drag: Pan | Ctrl+T: Timeline</span>
 ++ b/alif-universe/server.js
     // ==== COSMIC TIMELINE: birth date & commits (scaffold mock) ====
@@ -1322,7 +1244,6 @@ function timelineAdjustNodeForPhase(n, drawState) {
       scripts: pkgJson.scripts || {},
       birthDate: Math.round(birthTimeMs),
       commits: commits
-++ b/alif-universe/style.css
 /* ====== MINIMAP / RADAR ====== */
 .minimap-wrap {
   position: absolute;
@@ -1339,8 +1260,6 @@ function timelineAdjustNodeForPhase(n, drawState) {
   flex-direction: column;
   gap: 8px;
   align-items: center;
-}
-
 .minimap-title {
   font-size: 10px;
   font-weight: 700;
@@ -1357,8 +1276,6 @@ function timelineAdjustNodeForPhase(n, drawState) {
   border: 1px solid rgba(255, 255, 255, 0.06);
   display: block;
   cursor: crosshair;
-}
-
 .minimap-reset {
   padding: 4px 10px;
   background: rgba(129, 140, 248, 0.12);
@@ -1372,14 +1289,10 @@ function timelineAdjustNodeForPhase(n, drawState) {
 }
 .minimap-reset:hover {
   background: rgba(129, 140, 248, 0.28);
-  color: #ffffff;
   box-shadow: 0 0 10px rgba(129, 140, 248, 0.4);
-}
-
 @media (max-width: 700px) {
   .minimap-wrap { display: none; }
 }
-
 /* ====== RIGHT-CLICK CONTEXT MENU ====== */
 .galaxy-ctx-menu {
   position: fixed;
@@ -1394,27 +1307,20 @@ function timelineAdjustNodeForPhase(n, drawState) {
   font-family: var(--font-main);
   color: var(--text-main);
   animation: ctxIn 120ms ease-out;
-}
-
 @keyframes ctxIn {
   from { opacity: 0; transform: scale(0.94) translateY(-3px); }
   to { opacity: 1; transform: scale(1) translateY(0); }
-}
-
 .galaxy-ctx-menu.hidden { display: none; }
 
 .ctx-title {
   font-size: 11px;
   font-weight: 700;
-  color: #ffffff;
   padding: 6px 10px 8px;
   border-radius: 8px;
   background: rgba(129, 140, 248, 0.1);
   margin-bottom: 2px;
   letter-spacing: 0.3px;
   word-break: break-word;
-}
-
 .ctx-divider {
   height: 1px;
   background: rgba(255, 255, 255, 0.06);
@@ -1422,7 +1328,6 @@ function timelineAdjustNodeForPhase(n, drawState) {
 }
 
 .ctx-item {
-  display: flex;
   align-items: center;
   gap: 10px;
   width: 100%;
@@ -1446,13 +1351,9 @@ function timelineAdjustNodeForPhase(n, drawState) {
   font-size: 13px;
   width: 16px;
   text-align: center;
-}
-
 .ctx-item-danger:hover {
   background: rgba(239, 68, 68, 0.18);
   color: #fecaca;
-}
-
 /* ====== GALAXY HUD ====== */
 .galaxy-hud {
   position: absolute;
@@ -1474,25 +1375,17 @@ function timelineAdjustNodeForPhase(n, drawState) {
 }
 
 .hud-line {
-  display: flex;
   justify-content: space-between;
-  gap: 10px;
-}
-
 .hud-label {
   color: #8b93bd;
   letter-spacing: 0.6px;
   text-transform: uppercase;
   font-size: 9.5px;
   font-weight: 600;
-}
-
 .hud-value {
   color: #e0e7ff;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-}
-
 .hud-keyboard {
   margin-top: 6px;
   padding-top: 6px;
@@ -1501,8 +1394,6 @@ function timelineAdjustNodeForPhase(n, drawState) {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
-}
-
 .hud-keyboard::before {
   content: "⌨ Keys";
   color: #c084fc;
@@ -1510,8 +1401,6 @@ function timelineAdjustNodeForPhase(n, drawState) {
   letter-spacing: 0.6px;
   font-size: 9px;
   margin-right: 2px;
-}
-
 .kbd {
   display: inline-block;
   padding: 1px 5px;
@@ -1538,7 +1427,6 @@ function timelineAdjustNodeForPhase(n, drawState) {
   left: 50%;
   transform: translateX(-50%);
   z-index: 25;
-  display: flex;
   align-items: center;
   gap: 10px;
   padding: 8px 18px 8px 14px;
@@ -1583,7 +1471,6 @@ function timelineAdjustNodeForPhase(n, drawState) {
   width: calc(100% - 64px);
   max-width: 1100px;
   background: linear-gradient(170deg, rgba(14, 16, 40, 0.96), rgba(20, 22, 52, 0.96));
-  border: 1px solid rgba(129, 140, 248, 0.3);
   border-radius: 18px;
   backdrop-filter: blur(22px);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7), 0 0 40px rgba(129, 140, 248, 0.12);
@@ -1593,8 +1480,6 @@ function timelineAdjustNodeForPhase(n, drawState) {
 @keyframes slideUpTimeline {
   from { opacity: 0; transform: translateX(-50%) translateY(18px) scale(0.97); }
   to   { opacity: 1; transform: translateX(-50%) translateY(0)    scale(1);    }
-}
-
 /* Timeline header */
 .timeline-header {
   display: flex;
@@ -1628,12 +1513,7 @@ function timelineAdjustNodeForPhase(n, drawState) {
   color: #94a3b8;
   margin-top: 1px;
   letter-spacing: 0.3px;
-}
-
 .timeline-date-display {
-  display: flex;
-  align-items: center;
-  gap: 8px;
   font-size: 11px;
   padding: 6px 14px;
   background: rgba(0, 0, 0, 0.35);
@@ -1658,13 +1538,9 @@ function timelineAdjustNodeForPhase(n, drawState) {
 }
 .timeline-date-display .date-sep {
   color: #475569;
-}
-
 /* --- Slider Area --- */
 .timeline-slider-area {
   margin-bottom: 16px;
-}
-
 .timeline-track-wrap {
   position: relative;
   padding: 14px 0 4px;
@@ -1696,8 +1572,6 @@ function timelineAdjustNodeForPhase(n, drawState) {
   opacity: 0.85;
   box-shadow: 0 0 16px rgba(139, 92, 246, 0.35);
   transition: width 80ms linear;
-}
-
 /* Birth markers on track */
 .timeline-markers {
   position: absolute;
@@ -1729,7 +1603,6 @@ function timelineAdjustNodeForPhase(n, drawState) {
   opacity: 0.3;
   filter: grayscale(0.5);
 }
-
 /* Custom thumb */
 .timeline-thumb {
   position: absolute;
@@ -1777,10 +1650,8 @@ function timelineAdjustNodeForPhase(n, drawState) {
   display: flex;
   justify-content: space-between;
   padding: 4px 4px 0;
-  font-size: 10px;
   color: #64748b;
   font-family: var(--font-code);
-}
 .timeline-tick {
   position: relative;
   text-align: center;
@@ -1788,7 +1659,6 @@ function timelineAdjustNodeForPhase(n, drawState) {
 }
 .timeline-tick:first-child { text-align: left; }
 .timeline-tick:last-child  { text-align: right; }
-
 /* --- Controls Row --- */
 .timeline-controls {
   display: flex;
@@ -1796,8 +1666,6 @@ function timelineAdjustNodeForPhase(n, drawState) {
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
-}
-
 /* Playback buttons */
 .timeline-playback {
   display: flex;
@@ -1840,8 +1708,6 @@ function timelineAdjustNodeForPhase(n, drawState) {
 .tl-btn-primary.playing {
   background: linear-gradient(135deg, #f59e0b, #d97706);
   box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);
-}
-
 /* Speed group */
 .timeline-speed-group {
   display: flex;
@@ -1877,7 +1743,6 @@ function timelineAdjustNodeForPhase(n, drawState) {
 }
 .speed-btn:hover {
   color: #e0e7ff;
-  background: rgba(129, 140, 248, 0.15);
 }
 .speed-btn.active {
   background: linear-gradient(135deg, #6366f1, #8b5cf6);
@@ -1900,8 +1765,6 @@ function timelineAdjustNodeForPhase(n, drawState) {
 .tl-stat-icon { font-size: 14px; }
 .tl-stat-label {
   color: #64748b;
-  font-size: 10px;
-  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -1909,10 +1772,8 @@ function timelineAdjustNodeForPhase(n, drawState) {
   font-weight: 700;
   color: #fbbf24;
   font-family: var(--font-code);
-}
 .tl-stat-val-dim { color: #475569; font-family: var(--font-code); }
 .tl-stat-sep { color: #334155; }
-
 /* Toggles */
 .timeline-toggle-group {
   display: flex;
@@ -1978,5 +1839,225 @@ function timelineAdjustNodeForPhase(n, drawState) {
   .timeline-toggle-group { display: none; }
   .timeline-speed-group { display: none; }
   .cosmic-timeline { bottom: 52px; }
+++ b/commit_message.txt
+ Here is the provided CSS code for a timeline UI component. It includes sty[3D[K
+styling for the main timeline container, controls row, playback buttons, sp[2D[K
+speed group, stats row, toggles, and responsive adjustments for different s[1D[K
+screen sizes.
+
+The timeline consists of a playback button, speed control, stats, and toggl[5D[K
+toggles. The playback button has two states: idle and playing. The speed co[2D[K
+control includes multiple speed buttons to change the playback speed. The s[1D[K
+stats row shows various information such as current time, duration, and pro[3D[K
+progress. The toggles allow users to enable or disable different features.
+
+The responsive design adjusts the layout based on the screen size, hiding t[1D[K
+the stats row and toggles on smaller screens.
+
+```css
+/* Timeline Main Container */
+.cosmic-timeline {
+  position: relative;
+  width: calc(100% - 32px);
+  height: 56px;
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
 }
 
+/* --- Timeline Controls Row --- */
+.timeline-controls {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+/* --- Playback Buttons --- */
+.timeline-playback {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+}
+.tl-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  border: none;
+  background: rgba(129, 140, 248, 0.08);
+  color: #e0e7ff;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tl-btn:hover {
+  background: rgba(129, 140, 248, 0.2);
+  color: #fff;
+  transform: translateY(-1px);
+}
+.tl-btn:active { transform: translateY(0) scale(0.95); }
+.tl-btn-primary {
+  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.4);
+}
+.tl-btn-primary:hover {
+  background: linear-gradient(135deg, #a78bfa, #818cf8);
+  box-shadow: 0 6px 18px rgba(139, 92, 246, 0.55);
+}
+.tl-btn-primary.playing {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);
+}
+
+/* --- Speed Group --- */
+.timeline-speed-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.speed-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: #64748b;
+  font-weight: 700;
+}
+.speed-btns {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+}
+.speed-btn {
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all 0.18s;
+  font-family: var(--font-code);
+}
+.speed-btn:hover {
+  color: #e0e7ff;
+  background: rgba(129, 140, 248, 0.15);
+}
+.speed-btn.active {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.5);
+}
+
+/* --- Stats Row --- */
+.timeline-stats {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.tl-stat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+}
+.tl-stat-icon { font-size: 14px; }
+.tl-stat-label {
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.tl-stat-val {
+  font-weight: 700;
+  color: #fbbf24;
+  font-family: var(--font-code);
+}
+.tl-stat-val-dim { color: #475569; font-family: var(--font-code); }
+.tl-stat-sep { color: #334155; }
+
+/* --- Toggles --- */
+.timeline-toggle-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.tl-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+.tl-toggle input { display: none; }
+.tl-toggle-track {
+  position: relative;
+  width: 30px;
+  height: 16px;
+  border-radius: 999px;
+  background: rgba(71, 85, 105, 0.5);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  transition: all 0.2s;
+  isolation: isolate;
+}
+.tl-toggle-track::after {
+  content: "";
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #64748b;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1;
+}
+.tl-toggle input:checked ~ .tl-toggle-track {
+  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  border-color: rgba(139, 92, 246, 0.4);
+}
+.tl-toggle input:checked ~ .tl-toggle-track::after {
+  transform: translateX(12px);
+}
+.tl-toggle-icon {
+  width: 16px;
+  height: 16px;
+}
+.tl-toggle-icon-checked {
+  transform: rotate(90deg);
+}
+.tl-toggle-label {
+  margin-left: 6px;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .timeline-stats {
+    display: none;
+  }
+  .timeline-toggle-group {
+    display: none;
+  }
+}
+```
+
+You can use this code as a starting point for your timeline UI component an[2D[K
+and modify it according to your needs.
