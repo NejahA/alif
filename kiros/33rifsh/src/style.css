@@ -289,3 +289,218 @@ input#search:focus {
   .article-header h1 { font-size: 2.5rem; }
   .container { padding: 1rem; }
 }
+/* Header Controls */
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
+  margin-bottom: 2rem;
+}
+
+.header-left {
+  text-align: left;
+}
+
+.header-controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.icon-btn {
+  background: var(--panel-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.3s;
+  backdrop-filter: blur(10px);
+}
+
+.icon-btn:hover {
+  background: var(--accent-color);
+  color: #000;
+  transform: scale(1.1);
+}
+
+.icon-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Search Suggestions */
+.search-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--panel-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 0 0 20px 20px;
+  backdrop-filter: blur(10px);
+  z-index: 1000;
+  max-height: 300px;
+  overflow-y: auto;
+  margin-top: -1px;
+  border-top: none;
+}
+
+.suggestion-item {
+  padding: 1rem 1.5rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.suggestion-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.suggestion-item strong {
+  color: var(--accent-color);
+}
+
+/* View Headers */
+.view-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.view-header h2 {
+  font-family: var(--font-serif);
+  font-size: 2.5rem;
+  color: var(--text-primary);
+}
+
+/* Favorites & History Cards */
+.favorite-btn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid var(--glass-border);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.3s;
+  z-index: 10;
+}
+
+.favorite-btn:hover {
+  transform: scale(1.1);
+}
+
+.favorite-btn.favorited {
+  color: #ff4757;
+  border-color: #ff4757;
+  background: rgba(255, 71, 87, 0.1);
+}
+
+.favorite-btn.favorited:hover {
+  color: #ff6b81;
+  border-color: #ff6b81;
+}
+
+/* Article Actions */
+.article-actions {
+  display: flex;
+  gap: 1rem;
+  margin: 2rem 0;
+  justify-content: center;
+}
+
+.action-btn {
+  padding: 0.8rem 1.5rem;
+  background: var(--panel-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 30px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+}
+
+.action-btn:hover {
+  background: var(--accent-color);
+  color: #000;
+  transform: translateY(-2px);
+}
+
+.action-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Light Theme */
+body.light-theme {
+  --bg-color: #f8f9fa;
+  --panel-bg: rgba(255, 255, 255, 0.9);
+  --text-primary: #212529;
+  --text-secondary: #6c757d;
+  --glass-border: rgba(0, 0, 0, 0.1);
+  --accent-glow: rgba(212, 175, 55, 0.2);
+}
+
+body.light-theme .card {
+  background-color: #fff !important;
+  color: #212529 !important;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+body.light-theme input#search {
+  background: var(--panel-bg);
+  color: var(--text-primary);
+  border-color: var(--glass-border);
+}
+
+body.light-theme .icon-btn {
+  background: var(--panel-bg);
+  border-color: var(--glass-border);
+  color: var(--text-secondary);
+}
+
+body.light-theme .icon-btn:hover {
+  background: var(--accent-color);
+  color: #000;
+}
+
+/* Empty States */
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--text-secondary);
+  grid-column: 1 / -1;
+}
+
+.empty-state svg {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.empty-state h3 {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}

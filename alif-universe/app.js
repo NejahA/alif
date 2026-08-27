@@ -468,6 +468,22 @@ function showContextMenu(node, clientX, clientY) {
   if (!ctxMenu || !ctxTitle) return;
   ctxMenuNode = node;
   ctxTitle.textContent = `${node.project.icon || '✨'} ${node.project.name}`;
+  
+  // Dynamic button label for launch/start
+  const launchBtn = ctxMenu.querySelector('[data-action="launch"]');
+  if (launchBtn) {
+    if (node.project.hasHtml) {
+      launchBtn.innerHTML = '<span class="ctx-icon">🚀</span>Launch Web App';
+    } else {
+      const serverScript = Object.keys(node.project.scripts || {}).find(k => ['dev', 'start', 'server', 'backend', 'dev:full'].includes(k.toLowerCase())) || Object.keys(node.project.scripts || {})[0];
+      if (serverScript) {
+        launchBtn.innerHTML = `<span class="ctx-icon">⚡</span>Start Server (${serverScript})`;
+      } else {
+        launchBtn.innerHTML = '<span class="ctx-icon">⚙️</span>Inspect Details';
+      }
+    }
+  }
+
   const menuW = 230, menuH = 280;
   const left = Math.min(window.innerWidth - menuW, clientX + 6);
   const top = Math.min(window.innerHeight - menuH, clientY + 6);
@@ -484,7 +500,13 @@ function handleContextAction(action) {
   switch (action) {
     case 'launch':
       selectedNode = node;
-      if (p.hasHtml) launchLiveApp(p); else openInspector(p);
+      if (p.hasHtml) {
+        launchLiveApp(p);
+      } else {
+        const serverScript = Object.keys(p.scripts || {}).find(k => ['dev', 'start', 'server', 'backend', 'dev:full'].includes(k.toLowerCase())) || Object.keys(p.scripts || {})[0];
+        if (serverScript) runProjectScript(p, serverScript);
+        else openInspector(p);
+      }
       break;
     case 'inspect':
       selectedNode = node;
@@ -1043,8 +1065,8 @@ function timelineRebuildMarkers() {
       if (btnViewGalaxy && btnViewGrid) {
         btnViewGalaxy.classList.add('active');
         btnViewGrid.classList.remove('active');
-        galaxyView.classList.remove('hidden');
-        gridView.classList.add('hidden');
+        if (galaxyView) galaxyView.classList.remove('hidden');
+        if (gridView) gridView.classList.add('hidden');
       }
     });
     wrap.appendChild(el);
@@ -1388,6 +1410,8 @@ function renderGrid() {
     card.className = 'project-card';
     
     const stackBadges = (p.techStack || []).map(t => `<span class="tech-badge">${escapeHTML(t)}</span>`).join(' ');
+    
+    const serverScript = Object.keys(p.scripts || {}).find(k => ['dev', 'start', 'server', 'backend', 'dev:full'].includes(k.toLowerCase())) || Object.keys(p.scripts || {})[0];
 
     card.innerHTML = `
       <div>
@@ -1406,7 +1430,7 @@ function renderGrid() {
         </div>
         <div class="card-bottom">
           <span style="font-size: 10px; color: var(--text-dim);">${p.fileCount} files</span>
-          ${p.hasHtml ? `<button class="card-launch-btn btn-card-launch">🚀 Launch</button>` : `<button class="card-launch-btn btn-card-inspect">⚙️ Inspect</button>`}
+          ${p.hasHtml ? `<button class="card-launch-btn btn-card-launch">🚀 Launch</button>` : (serverScript ? `<button class="card-launch-btn btn-card-start">⚡ Start</button>` : `<button class="card-launch-btn btn-card-inspect">⚙️ Inspect</button>`)}
         </div>
       </div>
     `;
@@ -1416,6 +1440,14 @@ function renderGrid() {
       launchBtn.onclick = (e) => {
         e.stopPropagation();
         launchLiveApp(p);
+      };
+    }
+
+    const startBtn = card.querySelector('.btn-card-start');
+    if (startBtn) {
+      startBtn.onclick = (e) => {
+        e.stopPropagation();
+        runProjectScript(p, serverScript);
       };
     }
 
@@ -1494,6 +1526,11 @@ function openInspector(p) {
 
 function closeInspector() {
   if (inspectorModal) inspectorModal.classList.add('hidden');
+  // Return focus to canvas for keyboard nav
+  if (canvas) {
+    canvas.setAttribute('tabindex', '-1');
+    setTimeout(() => canvas.focus({ preventScroll: true }), 10);
+  }
 }
 
 // --- Live App Launcher (Iframe Embed) ---
@@ -1508,6 +1545,14 @@ function launchLiveApp(p, overrideUrl = null) {
 
   appIframe.src = appUrl;
   appViewerModal.classList.remove('hidden');
+
+  // Try to keep focus on parent window so keyboard shortcuts work
+  // (User can still click into iframe; we can't block that but ESC from parent works via capture)
+  const modalCard = appViewerModal.querySelector('.modal-card');
+  if (modalCard) {
+    modalCard.setAttribute('tabindex', '-1');
+    setTimeout(() => modalCard.focus({ preventScroll: true }), 50);
+  }
 
   // Reload action
   const btnReload = document.getElementById('btn-viewer-reload');
@@ -1530,6 +1575,11 @@ function closeLiveApp() {
   if (!appViewerModal || !appIframe) return;
   appIframe.src = 'about:blank';
   appViewerModal.classList.add('hidden');
+  // Return focus to galaxy canvas area so keyboard nav works immediately
+  if (canvas) {
+    canvas.setAttribute('tabindex', '-1');
+    setTimeout(() => canvas.focus({ preventScroll: true }), 10);
+  }
 }
 
 // --- Live Script Execution & Terminal Console ---
@@ -1640,6 +1690,11 @@ function closeTerminal() {
     activeEventSource = null;
   }
   if (terminalModal) terminalModal.classList.add('hidden');
+  // Return focus to canvas for keyboard nav
+  if (canvas) {
+    canvas.setAttribute('tabindex', '-1');
+    setTimeout(() => canvas.focus({ preventScroll: true }), 10);
+  }
 }
 
 // --- Galaxy Canvas Engine ---
@@ -2041,6 +2096,12 @@ document.addEventListener('DOMContentLoaded', () => {
   faviconInit();
   window.addEventListener('resize', resizeCanvas);
 
+  // Initialize canvas to be focusable so keyboard events reliably reach it
+  if (canvas) {
+    canvas.setAttribute('tabindex', '0');
+    canvas.setAttribute('aria-label', 'ALIVERSE Galaxy Map — use arrow keys to navigate stars');
+  }
+
   fetchProjects();
   fetchStats();
   setInterval(fetchStats, 5000);
@@ -2049,41 +2110,97 @@ document.addEventListener('DOMContentLoaded', () => {
   // Space timeline play, Arrows: timeline scrub if open / node navigation otherwise,
   // Enter: launch selected, F: fly-to selected, Esc: dismiss)
   window.addEventListener('keydown', (e) => {
-    const inField = e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable);
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+    // Skip if user is typing in a form field (unless it's a global shortcut like Esc or Ctrl combos)
+    const inField = e.target && (
+      e.target.tagName === 'INPUT' ||
+      e.target.tagName === 'TEXTAREA' ||
+      e.target.tagName === 'SELECT' ||
+      e.target.isContentEditable
+    );
+
+    // ---- Global shortcuts that ALWAYS work (even in fields / inside modals) ----
+    if (e.key === 'Escape') {
       e.preventDefault();
-      if (searchInput) searchInput.focus();
-    } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 't') {
-      e.preventDefault();
-      timelineTogglePanel();
-    } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'g') {
-      e.preventDefault();
-      tourToggle();
-    } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key.toLowerCase() === 's')) {
-      e.preventDefault();
-      galaxySnapshot();
-    } else if (e.key === 'Escape') {
+      // Stop propagation so iframes don't swallow it
+      e.stopPropagation ? e.stopPropagation() : (e.cancelBubble = true);
       hideContextMenu();
       closeInspector();
       closeLiveApp();
       closeTerminal();
-    } else if (!inField && e.key === ' ') {
+      tourExit(); // Added to ensure tour also closes
+      return;
+    }
+
+    // View Switching Shortcuts
+    if (!inField) {
+      if (e.key === '1' || e.key.toLowerCase() === 'g') {
+        if (btnViewGalaxy) btnViewGalaxy.click();
+        return;
+      }
+      if (e.key === '2' || e.key.toLowerCase() === 'c') {
+        if (btnViewGrid) btnViewGrid.click();
+        return;
+      }
+      if (e.key === '3' || e.key.toLowerCase() === 't') {
+        timelineTogglePanel();
+        return;
+      }
+    }
+
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      if (searchInput) {
+        searchInput.focus();
+        searchInput.select();
+      }
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 't') {
+      e.preventDefault();
+      timelineTogglePanel();
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'g') {
+      e.preventDefault();
+      tourToggle();
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key.toLowerCase() === 's')) {
+      e.preventDefault();
+      galaxySnapshot();
+      return;
+    }
+
+    // ---- Field-gated shortcuts ----
+    if (inField) return;  // All shortcuts below are disabled while typing
+
+    if (e.key === ' ') {
       if (TIMELINE.open || TIMELINE.playing || TIMELINE.progress < 1) {
         e.preventDefault();
         timelineTogglePlay();
       }
-    } else if (!inField && (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
-      if (TIMELINE.open && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+      return;
+    }
+
+    // Arrow keys
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      // Timeline scrub with Left/Right (works whenever timeline is visible OR playing)
+      const timelineIsActive = TIMELINE.open || TIMELINE.playing || TIMELINE.progress < 1;
+      const useForTimeline = timelineIsActive && (e.key === 'ArrowLeft' || e.key === 'ArrowRight');
+
+      if (useForTimeline) {
         e.preventDefault();
         const delta = (e.key === 'ArrowLeft' ? -0.01 : 0.01) * (e.shiftKey ? 5 : 1);
         timelineSetProgress(Math.max(0, Math.min(1, TIMELINE.progress + delta)), { fromUser: true });
-      } else if (btnViewGalaxy && btnViewGrid) {
+      } else {
+        // Galaxy node navigation
         e.preventDefault();
-        if (!btnViewGalaxy.classList.contains('active')) {
+        // Ensure we're in galaxy view
+        if (btnViewGalaxy && btnViewGrid && !btnViewGalaxy.classList.contains('active')) {
           btnViewGalaxy.classList.add('active');
           btnViewGrid.classList.remove('active');
-          galaxyView.classList.remove('hidden');
-          gridView.classList.add('hidden');
+          if (galaxyView) galaxyView.classList.remove('hidden');
+          if (gridView) gridView.classList.add('hidden');
         }
         const dir = e.key === 'ArrowLeft' ? 'left'
                  : e.key === 'ArrowRight' ? 'right'
@@ -2097,12 +2214,16 @@ document.addEventListener('DOMContentLoaded', () => {
           if (isFar) flyToNode(n, 1.7, 550);
         }
       }
-    } else if (!inField && (e.key === 'Enter' || e.key === 'f' || e.key === 'F')) {
+      return;
+    }
+
+    // Enter (launch/inspect) or F (fly-to) on selected node
+    if (e.key === 'Enter' || e.key === 'f' || e.key === 'F') {
       if (btnViewGalaxy && btnViewGrid && !btnViewGalaxy.classList.contains('active')) {
         btnViewGalaxy.classList.add('active');
         btnViewGrid.classList.remove('active');
-        galaxyView.classList.remove('hidden');
-        gridView.classList.add('hidden');
+        if (galaxyView) galaxyView.classList.remove('hidden');
+        if (gridView) gridView.classList.add('hidden');
       }
       if (!selectedNode && galaxyNodes.length) {
         selectNearestNode('any');
@@ -2125,8 +2246,9 @@ document.addEventListener('DOMContentLoaded', () => {
           else openInspector(selectedNode.project);
         }
       }
+      return;
     }
-  });
+  }, { capture: true });  // Use capture phase so we fire BEFORE iframe/embedded content swallows the event
 
   // ====== COSMIC TIMELINE EVENT LISTENERS (SCAFFOLD)  ======
   const btnTimelineToggle = document.getElementById('btn-timeline-toggle');
@@ -2199,8 +2321,8 @@ document.addEventListener('DOMContentLoaded', () => {
           if (btnViewGalaxy && btnViewGrid) {
             btnViewGalaxy.classList.add('active');
             btnViewGrid.classList.remove('active');
-            galaxyView.classList.remove('hidden');
-            gridView.classList.add('hidden');
+            if (galaxyView) galaxyView.classList.remove('hidden');
+            if (gridView) gridView.classList.add('hidden');
           }
           searchHighlightTime = 5;
           selectedNode = best;
@@ -2234,15 +2356,15 @@ document.addEventListener('DOMContentLoaded', () => {
     btnViewGalaxy.onclick = () => {
       btnViewGalaxy.classList.add('active');
       btnViewGrid.classList.remove('active');
-      galaxyView.classList.remove('hidden');
-      gridView.classList.add('hidden');
+      if (galaxyView) galaxyView.classList.remove('hidden');
+      if (gridView) gridView.classList.add('hidden');
     };
 
     btnViewGrid.onclick = () => {
       btnViewGrid.classList.add('active');
       btnViewGalaxy.classList.remove('active');
-      gridView.classList.remove('hidden');
-      galaxyView.classList.add('hidden');
+      if (gridView) gridView.classList.remove('hidden');
+      if (galaxyView) galaxyView.classList.add('hidden');
     };
   }
 
@@ -2251,10 +2373,26 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnCloseModal) btnCloseModal.onclick = closeInspector;
   const btnModalCloseAction = document.getElementById('btn-modal-close-action');
   if (btnModalCloseAction) btnModalCloseAction.onclick = closeInspector;
+  // Inspector: close on backdrop click
+  if (inspectorModal) {
+    const backdrop = inspectorModal.querySelector('.modal-backdrop');
+    if (backdrop) backdrop.addEventListener('click', closeInspector);
+    inspectorModal.addEventListener('click', (e) => {
+      if (e.target === inspectorModal) closeInspector();
+    });
+  }
 
   // Live App Viewer Controls
   const btnViewerClose = document.getElementById('btn-viewer-close');
   if (btnViewerClose) btnViewerClose.onclick = closeLiveApp;
+  // App viewer: close on backdrop click
+  if (appViewerModal) {
+    const backdrop = appViewerModal.querySelector('.modal-backdrop');
+    if (backdrop) backdrop.addEventListener('click', closeLiveApp);
+    appViewerModal.addEventListener('click', (e) => {
+      if (e.target === appViewerModal) closeLiveApp();
+    });
+  }
 
   // Terminal Modal Controls
   const btnTerminalClose = document.getElementById('btn-terminal-close');
@@ -2266,6 +2404,14 @@ document.addEventListener('DOMContentLoaded', () => {
     btnTerminalClear.onclick = () => {
       if (terminalLogs) terminalLogs.innerHTML = '';
     };
+  }
+  // Terminal: close on backdrop click
+  if (terminalModal) {
+    const backdrop = terminalModal.querySelector('.modal-backdrop');
+    if (backdrop) backdrop.addEventListener('click', closeTerminal);
+    terminalModal.addEventListener('click', (e) => {
+      if (e.target === terminalModal) closeTerminal();
+    });
   }
 
   // Mouse pan/zoom on Galaxy View

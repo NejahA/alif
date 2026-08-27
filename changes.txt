@@ -1,4 +1,4 @@
-++ b/alif-universe/app.js
+++ b/changes.txt
 // ====== DYNAMIC FAVICON (true mirror of current page viewport) ======
 const FAVICON = {
   size: 64,
@@ -8,7 +8,6 @@ const FAVICON = {
   lastUpdate: 0,
   throttleMs: 50,
   enabled: true
-};
 function faviconInit() {
   FAVICON.canvas = document.createElement('canvas');
   FAVICON.canvas.width = FAVICON.size;
@@ -36,10 +35,6 @@ function faviconUpdate() {
   fctx.save();
   fctx.translate(favTx, favTy);
   fctx.scale(favZoom, favZoom);
-  const viewLeftW = -(W / 2 + viewX) / viewZoom;
-  const viewRightW = (W / 2 - viewX) / viewZoom;
-  const viewTopW = -(H / 2 + viewY) / viewZoom;
-  const viewBottomW = (H / 2 - viewY) / viewZoom;
   const pad = 60 / viewZoom;
   const visMinX = viewLeftW - pad, visMaxX = viewRightW + pad;
   const visMinY = viewTopW - pad, visMaxY = viewBottomW + pad;
@@ -49,7 +44,6 @@ function faviconUpdate() {
     fctx.beginPath();
     fctx.arc(star.x, star.y, Math.max(0.4 / k, star.size * 0.6), 0, Math.PI * 2);
     fctx.fill();
-  });
   Object.values(DOMAIN_CONFIG).forEach(cfg => {
     const dx = Math.cos(cfg.angle) * DOMAIN_RADIUS;
     const dy = Math.sin(cfg.angle) * DOMAIN_RADIUS;
@@ -84,7 +78,6 @@ function faviconUpdate() {
     fctx.beginPath();
     fctx.arc(0, 0, Math.max(2 / favZoom, 14), 0, Math.PI * 2);
     fctx.fill();
-  }
   galaxyNodes.forEach(node => {
     const phase = {
       visible: true, alphaMult: 1, radiusMult: 1, coreLightnessAdd: 0,
@@ -122,7 +115,6 @@ function faviconUpdate() {
       fctx.beginPath();
       fctx.arc(node.x, node.y, effRadiusSafe(rEff * 2.5), 0, Math.PI * 2);
       fctx.fill();
-    }
     if (phase.spawning && phase.birthP !== undefined) {
       const pulse = 0.5 + 0.5 * Math.sin(now * 0.012);
       const coronaR = effRadiusSafe(rEff * (2.2 + phase.birthP * 1.4 + pulse * 0.25));
@@ -150,7 +142,6 @@ function faviconUpdate() {
     fctx.beginPath();
     fctx.arc(node.x, node.y, coreSize, 0, Math.PI * 2);
     fctx.fill();
-  });
   if (TIMELINE.showComets) {
     TIMELINE.activeCometEffects.forEach(c => {
       if (c.x < visMinX - 80 || c.x > visMaxX + 80 || c.y < visMinY - 80 || c.y > visMaxY + 80) return;
@@ -174,8 +165,6 @@ function faviconUpdate() {
       fctx.beginPath();
       fctx.arc(c.x, c.y, c.size * 4, 0, Math.PI * 2);
       fctx.fill();
-    });
-  }
   rippleEffects.forEach(r => {
     const alpha = Math.max(0, r.life);
     if (alpha <= 0.02) return;
@@ -191,17 +180,13 @@ function faviconUpdate() {
   try {
     FAVICON.linkEl.href = FAVICON.canvas.toDataURL('image/png');
   } catch (e) { }
-}
 function effRadiusSafe(r) { return r > 0 ? r : 0.01; }
 // =====================================================
-
   cometCount: 0,
-
   // Per-node activity streak data (draws streak trails around active nodes)
   streaksPerNode: new Map()
 };
 // ================================================
-
 // ====== GALAXY CAMERA TOUR + NEW FEATURES STATE ====
 const TOUR = {
   active: false,
@@ -228,7 +213,6 @@ function tourToggle() {
     TOUR.startedAt = performance.now();
     TOUR.driftAngle = Math.atan2(-viewY / viewZoom, -viewX / viewZoom) || 0;
     TOUR.baseZoom = viewZoom;
-  }
   isTweeningCamera = false;
   const hudTourEl = document.getElementById('hudTour');
   if (hudTourEl) hudTourEl.classList.toggle('tour-on', TOUR.active);
@@ -238,9 +222,6 @@ function tourToggle() {
     if (b.querySelector('.tour-icon')) {
       b.querySelector('.tour-icon').innerHTML = TOUR.active ? '🛰️' : '🪐';
     }
-  });
-}
-
 function tourUpdate(dt) {
   if (!TOUR.active) return;
   if (isTweeningCamera) return;
@@ -259,8 +240,6 @@ function tourUpdate(dt) {
   viewX = -camX * zoom;
   viewY = -camY * zoom;
   targetViewX = viewX; targetViewY = viewY; targetViewZoom = viewZoom;
-}
-
 // ====================================================
 // ====== ACTIVITY STREAK TRAILS (per-node comet wake)
 // ====================================================
@@ -273,12 +252,8 @@ function streakHit(node, hue) {
     x: node.x,
     y: node.y,
     hue: hue || node.hue,
-    life: 1,
     radius: node.radius * (0.8 + Math.random() * 0.6)
-  });
   if (list.length > ACTIVITY_STREAK.maxTrails) list.splice(0, list.length - ACTIVITY_STREAK.maxTrails);
-}
-
 function streakUpdateAndDraw(ctx2d, nodes) {
   if (!ACTIVITY_STREAK.enabled) return;
   // Register trails whenever a comet is active nearby — fire once per drawn frame
@@ -288,9 +263,7 @@ function streakUpdateAndDraw(ctx2d, nodes) {
       if (!n._born) return;
       const d = Math.hypot(n.x - c.x, n.y - c.y);
       if (d < bestD && d < n.radius * 4) { bestD = d; closest = n; }
-    });
     if (closest) streakHit(closest, c.hue);
-  });
   // Draw & fade
   TIMELINE.streaksPerNode.forEach((list, node) => {
     if (!node._born && !TIMELINE.showProtostars) return;
@@ -305,14 +278,9 @@ function streakUpdateAndDraw(ctx2d, nodes) {
       ctx2d.beginPath();
       ctx2d.arc(node.x, node.y, r, 0, Math.PI * 2);
       ctx2d.stroke();
-    }
     TIMELINE.streaksPerNode.set(node, list.filter(s => s.life > 0));
   });
-}
-
-// ====================================================
 // ====== GALAXY SNAPSHOT (download PNG of canvas)
-// ====================================================
 function galaxySnapshot() {
   if (!canvas) return;
   // Compose an overlay banner at the bottom so the PNG carries metadata
@@ -378,7 +346,6 @@ function galaxySnapshot() {
     octx.textBaseline = 'middle';
     octx.fillText(txt, rx + 9, ry + 13);
     x = rx - 8;
-  });
 
   // Footer ISO timestamp
   octx.fillStyle = '#475569';
@@ -402,9 +369,7 @@ function galaxySnapshot() {
   } catch (e) {
     console.warn('Snapshot failed:', e);
     alert('Snapshot failed. Canvas may be tainted.');
-  }
 }
-
 // ====================================================
 // ====== END COSMIC TIMELINE / TOURS / SNAPSHOTS
   faviconUpdate();
@@ -422,7 +387,6 @@ function galaxySnapshot() {
       galaxySnapshot();
     } else if (!inField && e.key === ' ') {
       if (TIMELINE.open || TIMELINE.playing || TIMELINE.progress < 1) {
-        e.preventDefault();
         timelineTogglePlay();
       }
     } else if (!inField && (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
@@ -448,15 +412,12 @@ function galaxySnapshot() {
             -n.y * viewZoom - viewY
           ) > Math.min(W, H) * 0.35;
           if (isFar) flyToNode(n, 1.7, 550);
-        }
-      }
     } else if (!inField && (e.key === 'Enter' || e.key === 'f' || e.key === 'F')) {
       if (btnViewGalaxy && btnViewGrid && !btnViewGalaxy.classList.contains('active')) {
         btnViewGalaxy.classList.add('active');
         btnViewGrid.classList.remove('active');
         galaxyView.classList.remove('hidden');
         gridView.classList.add('hidden');
-      }
       if (!selectedNode && galaxyNodes.length) {
         selectNearestNode('any');
       }
@@ -464,7 +425,6 @@ function galaxySnapshot() {
         e.preventDefault();
         if (e.key === 'f' || e.key === 'F') {
           flyToNode(selectedNode, 2.0, 850);
-        } else {
           for (let i = 0; i < 2; i++) {
             rippleEffects.push({
               x: selectedNode.x, y: selectedNode.y,
@@ -476,9 +436,7 @@ function galaxySnapshot() {
           }
           if (selectedNode.project.hasHtml) launchLiveApp(selectedNode.project);
           else openInspector(selectedNode.project);
-        }
       }
-++ b/alif-universe/index.html
   <link id="favicon-link" rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAGklEQVR42mNk+M9QI0aMYARqQQBNAK4FAAU0AAAB1w0AAAAASUVORK5CYII=">
         <div class="header-actions-buttons">
           <button id="btn-galaxy-tour" class="action-btn tour-btn" title="Galaxy Camera Tour (Ctrl+G)">
@@ -489,232 +447,11 @@ function galaxySnapshot() {
             <span>📸</span>
             <span class="action-label">Snapshot</span>
           </button>
-        </div>
           <div class="hud-line" id="hudTour"><span class="hud-label">TOUR</span><span class="hud-value" id="hudTourVal">OFF</span></div>
           <div class="hud-line hud-keyboard" id="hudKeyboard" title="Arrow keys navigate · Enter launch · F fly-to · Esc deselect · Ctrl+G Tour · Ctrl+Shift+S Snapshot · Space: Play/Pause Timeline"></div>
 ++ b/changes.txt
       orbitSpeed: -(0.0003 + Math.random() * 0.0004),
 ++ b/changes.txt
-++ b/commit_message.txt
- Here is the provided CSS code for a timeline UI component. It includes sty[3D[K
-styling for the main timeline container, controls row, playback buttons, sp[2D[K
-speed group, stats row, toggles, and responsive adjustments for different s[1D[K
-screen sizes.
-
-The timeline consists of a playback button, speed control, stats, and toggl[5D[K
-toggles. The playback button has two states: idle and playing. The speed co[2D[K
-control includes multiple speed buttons to change the playback speed. The s[1D[K
-stats row shows various information such as current time, duration, and pro[3D[K
-progress. The toggles allow users to enable or disable different features.
-
-The responsive design adjusts the layout based on the screen size, hiding t[1D[K
-the stats row and toggles on smaller screens.
-
-```css
-/* Timeline Main Container */
-.cosmic-timeline {
-  position: relative;
-  width: calc(100% - 32px);
-  height: 56px;
-  display: flex;
-  align-items: center;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
-}
-
-/* --- Timeline Controls Row --- */
-.timeline-controls {
-  position: absolute;
-  bottom: 0;
-  width: 100%;
-  height: 56px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-/* --- Playback Buttons --- */
-.timeline-playback {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px;
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-}
-.tl-btn {
-  width: 34px;
-  height: 34px;
-  border-radius: 9px;
-  border: none;
-  background: rgba(129, 140, 248, 0.08);
-  color: #e0e7ff;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.18s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.tl-btn:hover {
-  background: rgba(129, 140, 248, 0.2);
-  color: #fff;
-  transform: translateY(-1px);
-}
-.tl-btn:active { transform: translateY(0) scale(0.95); }
-.tl-btn-primary {
-  background: linear-gradient(135deg, #8b5cf6, #6366f1);
-  color: #fff;
-  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.4);
-}
-.tl-btn-primary:hover {
-  background: linear-gradient(135deg, #a78bfa, #818cf8);
-  box-shadow: 0 6px 18px rgba(139, 92, 246, 0.55);
-}
-.tl-btn-primary.playing {
-  background: linear-gradient(135deg, #f59e0b, #d97706);
-  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);
-}
-
-/* --- Speed Group --- */
-.timeline-speed-group {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.speed-label {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.7px;
-  color: #64748b;
-  font-weight: 700;
-}
-.speed-btns {
-  display: flex;
-  gap: 3px;
-  padding: 3px;
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
-}
-.speed-btn {
-  padding: 4px 10px;
-  font-size: 11px;
-  font-weight: 600;
-  background: transparent;
-  border: none;
-  color: #94a3b8;
-  border-radius: 7px;
-  cursor: pointer;
-  transition: all 0.18s;
-  font-family: var(--font-code);
-}
-.speed-btn:hover {
-  color: #e0e7ff;
-  background: rgba(129, 140, 248, 0.15);
-}
-.speed-btn.active {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: #fff;
-  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.5);
-}
-
-/* --- Stats Row --- */
-.timeline-stats {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-}
-.tl-stat {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-}
-.tl-stat-icon { font-size: 14px; }
-.tl-stat-label {
-  color: #64748b;
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-.tl-stat-val {
-  font-weight: 700;
-  color: #fbbf24;
-  font-family: var(--font-code);
-}
-.tl-stat-val-dim { color: #475569; font-family: var(--font-code); }
-.tl-stat-sep { color: #334155; }
-
-/* --- Toggles --- */
-.timeline-toggle-group {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.tl-toggle {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  user-select: none;
-}
-.tl-toggle input { display: none; }
-.tl-toggle-track {
-  position: relative;
-  width: 30px;
-  height: 16px;
-  border-radius: 999px;
-  background: rgba(71, 85, 105, 0.5);
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  transition: all 0.2s;
-  isolation: isolate;
-}
-.tl-toggle-track::after {
-  content: "";
-  position: absolute;
-  top: 1px;
-  left: 1px;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: #64748b;
-  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 1;
-}
-.tl-toggle input:checked ~ .tl-toggle-track {
-  background: linear-gradient(135deg, #8b5cf6, #6366f1);
-  border-color: rgba(139, 92, 246, 0.4);
-}
-.tl-toggle input:checked ~ .tl-toggle-track::after {
-  transform: translateX(12px);
-}
-.tl-toggle-icon {
-  width: 16px;
-  height: 16px;
-}
-.tl-toggle-icon-checked {
-  transform: rotate(90deg);
-}
-.tl-toggle-label {
-  margin-left: 6px;
-}
-
-/* Responsive Adjustments */
-@media (max-width: 768px) {
-  .timeline-stats {
-    display: none;
-  }
-  .timeline-toggle-group {
-    display: none;
-  }
-```
-You can use this code as a starting point for your timeline UI component an[2D[K
-and modify it according to your needs.
 ++ b/commit_message.txt
  This CSS code defines the styles for a timeline UI component, including th[2D[K
 the background, controls row, playback buttons, speed group, stats row, and[3D[K
@@ -732,3 +469,35 @@ The code also includes some responsive adjustments, hiding the stats row an[2D
 and toggles on smaller screens to improve readability and usability. You ca[2D[K
 can further customize this code to fit your specific needs, such as changin[7D[K
 changing the colors, fonts, and sizes to match your brand and design.
+++ b/commit_message.txt
+ This CSS code defines the styles for a timeline UI component. It includes [K
+various elements such as the background, controls row, playback buttons, sp[2D[K
+speed group, stats row, and toggles.
+shadow. The controls row is positioned at the bottom of the timeline.
+
+Here's a breakdown of the different sections of the code:
+
+1. Playback buttons (`.tl-btn`): These buttons control playback of the time[4D[K
+timeline. They can be styled, hovered, and clicked to play, pause, and resu[4D[K
+resume the timeline.
+
+2. Speed group (`.timeline-speed-group`): This group allows you to adjust t[1D[K
+the playback speed of the timeline. It includes a label and buttons for dif[3D[K
+different speeds.
+
+3. Stats row (`.timeline-stats`): This row displays various statistics abou[4D[K
+about the timeline, such as the current time, duration, and progress.
+
+4. Toggles (`.timeline-toggle-group`): These toggles allow you to enable or[2D[K
+or disable certain features of the timeline. They include a checkbox, track[5D[K
+track, icon, and label.
+
+5. Responsive adjustments: The code includes some responsive adjustments, h[1D[K
+hiding the stats row and toggles on smaller screens to improve readability [K
+and usability.
+
+You can use this code as a starting point for your timeline UI component an[2D[K
+and modify it according to your needs.
+
+++ b/flutters/meads_recycler/android/app/src/main/AndroidManifest.xml
+        android:label="meads_recycler"
