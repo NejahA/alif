@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>313rifts — Beautifully Explained</title>
+  <meta name="description" content="A premium reader for Wikipedia articles, focusing on typography and beauty.">
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+</head>
+
+<body>
+  <div class="container">
+    <header id="main-header">
+      <div class="header-top">
+        <div class="header-left">
+          <h1 class="logo">313rifts</h1>
+          <p style="color: var(--text-secondary); margin-top: -1.5rem; font-style: italic;">Wiki. Evolved.</p>
+        </div>
+        <div class="header-controls">
+          <button id="theme-toggle" class="icon-btn" title="Toggle theme">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="5" />
+              <path
+                d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+            </svg>
+          </button>
+          <button id="favorites-btn" class="icon-btn" title="View favorites">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+            </svg>
+          </button>
+          <button id="history-btn" class="icon-btn" title="View history">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="search-container">
+        <input type="text" id="search" placeholder="Explore anything..." autocomplete="off">
+        <div class="shortcut-hint">Press Ctrl+K or / to search</div>
+        <div id="search-suggestions" class="search-suggestions hidden"></div>
+      </div>
+    </header>
+
+    <main id="app">
+      <!-- Landing View -->
+      <section id="landing-view">
+        <div class="results-grid" id="featured-results">
+          <!-- Featured / Search results will appear here -->
+        </div>
+      </section>
+
+      <!-- Article View -->
+      <section id="article-view" class="hidden">
+        <button class="back-btn" id="back-btn">← Back to Explore</button>
+        <div id="article-container">
+          <!-- Article content will be injected here -->
+        </div>
+      </section>
+
+      <!-- Favorites View -->
+      <section id="favorites-view" class="hidden">
+        <div class="view-header">
+          <button class="back-btn" id="back-from-favorites">← Back</button>
+          <h2>Your Favorites</h2>
+        </div>
+        <div id="favorites-grid" class="results-grid">
+          <!-- Favorites will appear here -->
+        </div>
+      </section>
+
+      <!-- History View -->
+      <section id="history-view" class="hidden">
+        <div class="view-header">
+          <button class="back-btn" id="back-from-history">← Back</button>
+          <h2>Recently Viewed</h2>
+        </div>
+        <div id="history-grid" class="results-grid">
+          <!-- History will appear here -->
+        </div>
+      </section>
+    </main>
+
+    <footer
+      style="padding: 4rem 1rem; text-align: center; color: var(--text-secondary); border-top: 1px solid var(--glass-border); margin-top: 4rem;">
+      <p>&copy; 2026 313rifts. Built with <span style="color: #d4af37;">♥</span> and Wikipedia API.</p>
+    </footer>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+
+</html>
