@@ -1,503 +1,3194 @@
-++ b/changes.txt
-// ====== DYNAMIC FAVICON (true mirror of current page viewport) ======
-const FAVICON = {
-  size: 64,
-  canvas: null,
-  ctx: null,
-  linkEl: null,
-  lastUpdate: 0,
-  throttleMs: 50,
-  enabled: true
-function faviconInit() {
-  FAVICON.canvas = document.createElement('canvas');
-  FAVICON.canvas.width = FAVICON.size;
-  FAVICON.canvas.height = FAVICON.size;
-  FAVICON.ctx = FAVICON.canvas.getContext('2d');
-  FAVICON.linkEl = document.getElementById('favicon-link');
+++ b/kiros/3133rifs/313rifts/lib/main.dart
+      title: '313rifts',
+++ b/kiros/3133rifs/313rifts/lib/screens/landing_screen.dart
+                    '313rifts',
+++ b/kiros/3133rifs/LICENSE
+MIT License
+
+Copyright (c) 2026 313rifts
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+++ b/kiros/3133rifs/dev-server.js
+
+
+
+
+  console.log(`313rifts server running at http://localhost:${PORT}`);
+++ b/kiros/3133rifs/electron/main.cjs
+    title: '313rifts',
+++ b/kiros/3133rifs/index.html
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>313rifts — Beautifully Explained</title>
+  <meta name="description" content="A premium reader for Wikipedia articles, focusing on typography and beauty.">
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+</head>
+
+<body>
+  <div class="container">
+    <header id="main-header">
+      <div class="header-top">
+        <div class="header-left">
+          <h1 class="logo">313rifts</h1>
+          <p style="color: var(--text-secondary); margin-top: -1.5rem; font-style: italic;">Wiki. Evolved.</p>
+        </div>
+        <div class="header-controls">
+          <button id="theme-toggle" class="icon-btn" title="Toggle theme">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="5" />
+              <path
+                d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+            </svg>
+          </button>
+          <button id="favorites-btn" class="icon-btn" title="View favorites">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+            </svg>
+          </button>
+          <button id="history-btn" class="icon-btn" title="View history">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="search-container">
+        <input type="text" id="search" placeholder="Explore anything..." autocomplete="off">
+        <div class="shortcut-hint">Press Ctrl+K or / to search</div>
+        <div id="search-suggestions" class="search-suggestions hidden"></div>
+      </div>
+    </header>
+
+    <main id="app">
+      <!-- Landing View -->
+      <section id="landing-view">
+        <div class="results-grid" id="featured-results">
+          <!-- Featured / Search results will appear here -->
+        </div>
+      </section>
+
+      <!-- Article View -->
+      <section id="article-view" class="hidden">
+        <button class="back-btn" id="back-btn">← Back to Explore</button>
+        <div id="article-container">
+          <!-- Article content will be injected here -->
+        </div>
+      </section>
+
+      <!-- Favorites View -->
+      <section id="favorites-view" class="hidden">
+        <div class="view-header">
+          <button class="back-btn" id="back-from-favorites">← Back</button>
+          <h2>Your Favorites</h2>
+        </div>
+        <div id="favorites-grid" class="results-grid">
+          <!-- Favorites will appear here -->
+        </div>
+      </section>
+
+      <!-- History View -->
+      <section id="history-view" class="hidden">
+        <div class="view-header">
+          <button class="back-btn" id="back-from-history">← Back</button>
+          <h2>Recently Viewed</h2>
+        </div>
+        <div id="history-grid" class="results-grid">
+          <!-- History will appear here -->
+        </div>
+      </section>
+    </main>
+
+    <footer
+      style="padding: 4rem 1rem; text-align: center; color: var(--text-secondary); border-top: 1px solid var(--glass-border); margin-top: 4rem;">
+      <p>&copy; 2026 313rifts. Built with <span style="color: #d4af37;">♥</span> and Wikipedia API.</p>
+    </footer>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+
+</html>
+++ b/kiros/3133rifs/package.json
+  "name": "313rifts",
+    "dist": "npm run build && electron-builder",
+    "prepare-icons": "node scripts/convert-icon.js",
+    "test": "echo \"No tests specified\""
+    "appId": "com.313rifts.app",
+    "productName": "313rifts",
 }
-function faviconUpdate() {
-  if (!FAVICON.enabled || !FAVICON.ctx || !FAVICON.linkEl) return;
-  const now = performance.now();
-  if (now - FAVICON.lastUpdate < FAVICON.throttleMs) return;
-  FAVICON.lastUpdate = now;
-  const S = FAVICON.size;
-  const fctx = FAVICON.ctx;
-  fctx.clearRect(0, 0, S, S);
-  const bgGrad = fctx.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2);
-  bgGrad.addColorStop(0, '#0a0b18');
-  bgGrad.addColorStop(1, '#05060d');
-  fctx.fillStyle = bgGrad;
-  fctx.fillRect(0, 0, S, S);
-  const k = Math.max(S / W, S / H);
-  const favTx = S / 2 + (viewX + screenShakeX) * k;
-  const favTy = S / 2 + (viewY + screenShakeY) * k;
-  const favZoom = viewZoom * k;
-  fctx.save();
-  fctx.translate(favTx, favTy);
-  fctx.scale(favZoom, favZoom);
-  const pad = 60 / viewZoom;
-  const visMinX = viewLeftW - pad, visMaxX = viewRightW + pad;
-  const visMinY = viewTopW - pad, visMaxY = viewBottomW + pad;
-  starParticles.forEach(star => {
-    if (star.x < visMinX || star.x > visMaxX || star.y < visMinY || star.y > visMaxY) return;
-    fctx.fillStyle = `rgba(255, 255, 255, ${Math.max(0.05, star.alpha * 0.7)})`;
-    fctx.beginPath();
-    fctx.arc(star.x, star.y, Math.max(0.4 / k, star.size * 0.6), 0, Math.PI * 2);
-    fctx.fill();
-  Object.values(DOMAIN_CONFIG).forEach(cfg => {
-    const dx = Math.cos(cfg.angle) * DOMAIN_RADIUS;
-    const dy = Math.sin(cfg.angle) * DOMAIN_RADIUS;
-    if (dx < visMinX - 160 || dx > visMaxX + 160 || dy < visMinY - 160 || dy > visMaxY + 160) return;
-    fctx.strokeStyle = `hsla(${cfg.hue}, 70%, 60%, 0.14)`;
-    fctx.lineWidth = 1 / favZoom;
-    fctx.setLineDash([3 / favZoom, 10 / favZoom]);
-    fctx.beginPath();
-    fctx.arc(0, 0, DOMAIN_RADIUS, 0, Math.PI * 2);
-    fctx.stroke();
-    fctx.setLineDash([]);
-    const halo = fctx.createRadialGradient(dx, dy, 0, dx, dy, 160);
-    halo.addColorStop(0, `hsla(${cfg.hue}, 80%, 65%, 0.08)`);
-    halo.addColorStop(1, `hsla(${cfg.hue}, 80%, 65%, 0)`);
-    fctx.fillStyle = halo;
-    fctx.beginPath();
-    fctx.arc(dx, dy, 160, 0, Math.PI * 2);
-    fctx.fill();
-  });
-  const coreInView = 0 > visMinX - 120 && 0 < visMaxX + 120 && 0 > visMinY - 120 && 0 < visMaxY + 120;
-  if (coreInView) {
-    const coreR = 90;
-    const coreGrad = fctx.createRadialGradient(0, 0, 0, 0, 0, coreR);
-    coreGrad.addColorStop(0, 'rgba(168, 85, 247, 0.9)');
-    coreGrad.addColorStop(0.5, 'rgba(99, 102, 241, 0.35)');
-    coreGrad.addColorStop(1, 'rgba(99, 102, 241, 0)');
-    fctx.fillStyle = coreGrad;
-    fctx.beginPath();
-    fctx.arc(0, 0, coreR, 0, Math.PI * 2);
-    fctx.fill();
-    fctx.fillStyle = '#e9d5ff';
-    fctx.beginPath();
-    fctx.arc(0, 0, Math.max(2 / favZoom, 14), 0, Math.PI * 2);
-    fctx.fill();
-  galaxyNodes.forEach(node => {
-    const phase = {
-      visible: true, alphaMult: 1, radiusMult: 1, coreLightnessAdd: 0,
-      glowAlphaMult: 1, labelAlpha: 1, spawning: false, birthPulse: 0,
-      dim: false, protostar: false
-    };
-    timelineAdjustNodeForPhase(node, phase);
-    if (!phase.visible) return;
-    const rEff = node.radius * phase.radiusMult;
-    const cullPad = rEff * 6;
-    if (node.x < visMinX - cullPad || node.x > visMaxX + cullPad ||
-        node.y < visMinY - cullPad || node.y > visMaxY + cullPad) return;
-    const rayAlpha = 0.08 * phase.alphaMult * (phase.dim ? 0.3 : 1);
-    if (rayAlpha > 0.01) {
-      fctx.strokeStyle = `hsla(${node.hue}, 70%, 60%, ${rayAlpha})`;
-      fctx.lineWidth = (1 * phase.radiusMult) / favZoom;
-      fctx.beginPath();
-      fctx.moveTo(0, 0);
-      fctx.lineTo(node.x, node.y);
-      fctx.stroke();
-    }
-    if (phase.protostar) {
-      const flick = 0.6 + 0.4 * Math.sin(now * 0.006 + node.hue * 0.13);
-      fctx.strokeStyle = `hsla(${node.hue}, 70%, 50%, ${0.35 * phase.alphaMult * flick})`;
-      fctx.lineWidth = 1.2 / favZoom;
-      fctx.setLineDash([3 / favZoom, 5 / favZoom]);
-      fctx.beginPath();
-      fctx.arc(node.x, node.y, effRadiusSafe(rEff * 1.8), 0, Math.PI * 2);
-      fctx.stroke();
-      fctx.setLineDash([]);
-      const dustGrad = fctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, effRadiusSafe(rEff * 2.5));
-      dustGrad.addColorStop(0, `hsla(${node.hue}, 60%, 55%, ${0.2 * phase.alphaMult * flick})`);
-      dustGrad.addColorStop(1, `hsla(${node.hue}, 60%, 55%, 0)`);
-      fctx.fillStyle = dustGrad;
-      fctx.beginPath();
-      fctx.arc(node.x, node.y, effRadiusSafe(rEff * 2.5), 0, Math.PI * 2);
-      fctx.fill();
-    if (phase.spawning && phase.birthP !== undefined) {
-      const pulse = 0.5 + 0.5 * Math.sin(now * 0.012);
-      const coronaR = effRadiusSafe(rEff * (2.2 + phase.birthP * 1.4 + pulse * 0.25));
-      const coronaGrad = fctx.createRadialGradient(node.x, node.y, effRadiusSafe(rEff * 0.6), node.x, node.y, coronaR);
-      coronaGrad.addColorStop(0, `hsla(${node.hue}, 100%, 75%, ${0.5 * phase.alphaMult * (1 - phase.birthP)})`);
-      coronaGrad.addColorStop(1, `hsla(${node.hue}, 100%, 75%, 0)`);
-      fctx.fillStyle = coronaGrad;
-      fctx.beginPath();
-      fctx.arc(node.x, node.y, coronaR, 0, Math.PI * 2);
-      fctx.fill();
-    }
-    const glowMult = 3 * phase.radiusMult * (phase.protostar ? 0.5 : 1);
-    const glowAlpha = 0.28 * phase.alphaMult * phase.glowAlphaMult * (phase.dim ? 0.4 : 1);
-    const glowOutR = effRadiusSafe(rEff * glowMult);
-    const glowG = fctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, glowOutR);
-    glowG.addColorStop(0, `hsla(${node.hue}, 85%, 70%, ${glowAlpha})`);
-    glowG.addColorStop(1, `hsla(${node.hue}, 85%, 70%, 0)`);
-    fctx.fillStyle = glowG;
-    fctx.beginPath();
-    fctx.arc(node.x, node.y, glowOutR, 0, Math.PI * 2);
-    fctx.fill();
-    const coreL = Math.max(25, Math.min(97, 65 + phase.coreLightnessAdd));
-    const coreSize = Math.max(0.8 / favZoom, rEff * (phase.protostar ? 0.55 : 1));
-    fctx.fillStyle = `hsl(${node.hue}, ${phase.protostar ? 50 : 80}%, ${coreL}%)`;
-    fctx.beginPath();
-    fctx.arc(node.x, node.y, coreSize, 0, Math.PI * 2);
-    fctx.fill();
-  if (TIMELINE.showComets) {
-    TIMELINE.activeCometEffects.forEach(c => {
-      if (c.x < visMinX - 80 || c.x > visMaxX + 80 || c.y < visMinY - 80 || c.y > visMaxY + 80) return;
-      if (c.trail.length > 1) {
-        fctx.lineCap = 'round';
-        for (let i = 1; i < c.trail.length; i++) {
-          const alpha = (1 - i / c.trail.length) * c.life * 0.8;
-          const w = (c.size * (1 - i / c.trail.length)) * 0.7;
-          fctx.strokeStyle = `hsla(${c.hue}, 95%, 75%, ${alpha})`;
-          fctx.lineWidth = Math.max(0.5 / favZoom, w);
-          fctx.beginPath();
-          fctx.moveTo(c.trail[i - 1].x, c.trail[i - 1].y);
-          fctx.lineTo(c.trail[i].x, c.trail[i].y);
-          fctx.stroke();
-        }
-      }
-      const cg = fctx.createRadialGradient(c.x, c.y, 0, c.x, c.y, c.size * 4);
-      cg.addColorStop(0, `hsla(${c.hue}, 95%, 80%, ${0.85 * c.life})`);
-      cg.addColorStop(1, `hsla(${c.hue}, 95%, 70%, 0)`);
-      fctx.fillStyle = cg;
-      fctx.beginPath();
-      fctx.arc(c.x, c.y, c.size * 4, 0, Math.PI * 2);
-      fctx.fill();
-  rippleEffects.forEach(r => {
-    const alpha = Math.max(0, r.life);
-    if (alpha <= 0.02) return;
-    if (r.x < visMinX - r.radius || r.x > visMaxX + r.radius ||
-        r.y < visMinY - r.radius || r.y > visMaxY + r.radius) return;
-    fctx.strokeStyle = `hsla(${r.hue}, 90%, 75%, ${alpha * 0.75})`;
-    fctx.lineWidth = Math.max(0.4 / favZoom, 2 * alpha + 0.4);
-    fctx.beginPath();
-    fctx.arc(r.x, r.y, r.radius, 0, Math.PI * 2);
-    fctx.stroke();
-  });
-  fctx.restore();
+++ b/kiros/3133rifs/scripts/convert-icon.js
+#!/usr/bin/env node
+
+/**
+ * Icon conversion script for 313rifts
+ * Converts SVG icon to PNG for Electron packaging
+ * 
+ * Requirements:
+ * - Install sharp: npm install sharp
+ * - Run: node scripts/convert-icon.js
+ */
+
+const fs = require('fs');
+const path = require('path');
+const sharp = require('sharp');
+
+async function convertIcon() {
+  const svgPath = path.join(__dirname, '../build/icon.svg');
+  const pngPath = path.join(__dirname, '../build/icon.png');
+
   try {
-    FAVICON.linkEl.href = FAVICON.canvas.toDataURL('image/png');
-  } catch (e) { }
-function effRadiusSafe(r) { return r > 0 ? r : 0.01; }
-// =====================================================
-  cometCount: 0,
-  // Per-node activity streak data (draws streak trails around active nodes)
-  streaksPerNode: new Map()
-};
-// ================================================
-// ====== GALAXY CAMERA TOUR + NEW FEATURES STATE ====
-const TOUR = {
-  active: false,
-  t: 0,
-  baseZoom: 1,
-  driftAngle: 0,
-  driftRadius: 30,
-  breathAmplitude: 0.12,
-  breathSpeed: 0.00065,
-  orbitSpeed: 0.00018,
-  startedAt: 0
-};
-const ACTIVITY_STREAK = {
-  enabled: true,
-  maxTrails: 12,
-  minOpacity: 0.15,
-  fadePerFrame: 0.012
-// ====== GALAXY CAMERA TOUR (Ctrl+G)
-// ====================================================
-function tourToggle() {
-  TOUR.active = !TOUR.active;
-  if (TOUR.active) {
-    TOUR.t = 0;
-    TOUR.startedAt = performance.now();
-    TOUR.driftAngle = Math.atan2(-viewY / viewZoom, -viewX / viewZoom) || 0;
-    TOUR.baseZoom = viewZoom;
-  isTweeningCamera = false;
-  const hudTourEl = document.getElementById('hudTour');
-  if (hudTourEl) hudTourEl.classList.toggle('tour-on', TOUR.active);
-  // Button state
-  document.querySelectorAll('.tour-btn, .btn-galaxy-tour').forEach(b => {
-    b.classList.toggle('active', TOUR.active);
-    if (b.querySelector('.tour-icon')) {
-      b.querySelector('.tour-icon').innerHTML = TOUR.active ? '🛰️' : '🪐';
+    // Read SVG content
+    const svgContent = fs.readFileSync(svgPath, 'utf-8');
+
+    // Convert to PNG with different sizes
+    const sizes = [16, 32, 64, 128, 256, 512];
+
+    for (const size of sizes) {
+      const outputPath = path.join(__dirname, `../build/icon-${size}x${size}.png`);
+      await sharp(Buffer.from(svgContent))
+        .resize(size, size)
+        .png()
+        .toFile(outputPath);
+      console.log(`✓ Created ${size}x${size} icon`);
     }
-function tourUpdate(dt) {
-  if (!TOUR.active) return;
-  if (isTweeningCamera) return;
-  TOUR.t += dt;
-  // 360° drift around the origin at driftRadius
-  TOUR.driftAngle += TOUR.orbitSpeed * dt;
-  const cosA = Math.cos(TOUR.driftAngle);
-  const sinA = Math.sin(TOUR.driftAngle);
-  // Zoom breathing: sin wave around baseZoom
-  const breath = TOUR.breathAmplitude * Math.sin(TOUR.t * TOUR.breathSpeed);
-  const zoom = TOUR.baseZoom * (1 + breath);
-  // Camera position: centered on origin, orbit offset perpendicular to angle
-  const camX = cosA * TOUR.driftRadius;
-  const camY = sinA * TOUR.driftRadius;
-  viewZoom = zoom;
-  viewX = -camX * zoom;
-  viewY = -camY * zoom;
-  targetViewX = viewX; targetViewY = viewY; targetViewZoom = viewZoom;
-// ====================================================
-// ====== ACTIVITY STREAK TRAILS (per-node comet wake)
-// ====================================================
-function streakHit(node, hue) {
-  if (!ACTIVITY_STREAK.enabled) return;
-  if (!node) return;
-  let list = TIMELINE.streaksPerNode.get(node);
-  if (!list) { list = []; TIMELINE.streaksPerNode.set(node, list); }
-  list.push({
-    x: node.x,
-    y: node.y,
-    hue: hue || node.hue,
-    radius: node.radius * (0.8 + Math.random() * 0.6)
-  if (list.length > ACTIVITY_STREAK.maxTrails) list.splice(0, list.length - ACTIVITY_STREAK.maxTrails);
-function streakUpdateAndDraw(ctx2d, nodes) {
-  if (!ACTIVITY_STREAK.enabled) return;
-  // Register trails whenever a comet is active nearby — fire once per drawn frame
-  TIMELINE.activeCometEffects.forEach(c => {
-    let closest = null, bestD = Infinity;
-    nodes.forEach(n => {
-      if (!n._born) return;
-      const d = Math.hypot(n.x - c.x, n.y - c.y);
-      if (d < bestD && d < n.radius * 4) { bestD = d; closest = n; }
-    if (closest) streakHit(closest, c.hue);
-  // Draw & fade
-  TIMELINE.streaksPerNode.forEach((list, node) => {
-    if (!node._born && !TIMELINE.showProtostars) return;
-    for (let i = 0; i < list.length; i++) {
-      const s = list[i];
-      s.life -= ACTIVITY_STREAK.fadePerFrame;
-      if (s.life <= 0) continue;
-      const alpha = Math.max(ACTIVITY_STREAK.minOpacity, s.life) * (i / list.length) * 0.8;
-      const r = s.radius * (0.4 + 0.6 * (i / list.length));
-      ctx2d.strokeStyle = `hsla(${s.hue}, 95%, 72%, ${alpha})`;
-      ctx2d.lineWidth = 1.4 * (i / list.length) + 0.5;
-      ctx2d.beginPath();
-      ctx2d.arc(node.x, node.y, r, 0, Math.PI * 2);
-      ctx2d.stroke();
-    TIMELINE.streaksPerNode.set(node, list.filter(s => s.life > 0));
-  });
-// ====== GALAXY SNAPSHOT (download PNG of canvas)
-function galaxySnapshot() {
-  if (!canvas) return;
-  // Compose an overlay banner at the bottom so the PNG carries metadata
-  const meta = {
-    zoom: viewZoom.toFixed(2) + '×',
-    selected: selectedNode ? selectedNode.project.name : '(none)',
-    date: timelineFormatDate(timelineCurrentDate()),
-    present: timelineFormatDate(new Date(TIMELINE.presentDate)),
-    epoch: TIMELINE.progress >= 1 ? 'Present' : (TIMELINE.progress <= 0 ? 'Genesis' : (Math.round(TIMELINE.progress * 100) + '% of timeline')),
-    stars: galaxyNodes.length,
-    tour: TOUR.active ? 'Tour ON' : 'Tour OFF',
-    ts: new Date().toISOString()
-  };
-  // Composite to offscreen canvas so snapshot includes banner + metadata text
-  const pad = 56;
-  const off = document.createElement('canvas');
-  off.width = canvas.width;
-  off.height = canvas.height + pad;
-  const octx = off.getContext('2d');
-  // Starry background strip so banner doesn't look white
-  const bgGrad = octx.createLinearGradient(0, canvas.height, 0, off.height);
-  bgGrad.addColorStop(0, 'rgba(8, 9, 18, 0)');
-  bgGrad.addColorStop(0.25, 'rgba(8, 9, 18, 0.85)');
-  bgGrad.addColorStop(1, '#080912');
-  octx.fillStyle = '#080912';
-  octx.fillRect(0, 0, off.width, off.height);
-  octx.drawImage(canvas, 0, 0);
-  octx.fillStyle = bgGrad;
-  octx.fillRect(0, canvas.height - 28, off.width, pad + 28);
 
-  // Brand
-  octx.fillStyle = '#c4b5fd';
-  octx.font = '800 16px "Outfit", sans-serif';
-  octx.textAlign = 'left';
-  octx.textBaseline = 'alphabetic';
-  octx.fillText('🌌 ALIVERSE · Galaxy Snapshot', 20, canvas.height + 24);
+    // Create main icon (256x256)
+    await sharp(Buffer.from(svgContent))
+      .resize(256, 256)
+      .png()
+      .toFile(pngPath);
 
-  // Meta pills
-  const pills = [
-    `⭐ ${meta.stars} stars`,
-    `🔭 ${meta.zoom}`,
-    `📅 ${meta.date}`,
-    `💫 ${meta.epoch}`,
-    meta.selected !== '(none)' ? `✨ ${meta.selected}` : null,
-    meta.tour
-  ].filter(Boolean);
-  octx.font = '600 10px "Inter", sans-serif';
-  let x = off.width - 20;
-  pills.reverse().forEach(txt => {
-    octx.font = '600 10px "Inter", sans-serif';
-    const w = octx.measureText(txt).width + 18;
-    const rx = x - w;
-    const ry = canvas.height + 12;
-    octx.fillStyle = 'rgba(129, 140, 248, 0.18)';
-    octx.strokeStyle = 'rgba(129, 140, 248, 0.45)';
-    octx.lineWidth = 1;
-    octx.beginPath();
-    octx.roundRect ? octx.roundRect(rx, ry, w, 26, 8) : (() => { octx.rect(rx, ry, w, 26); })();
-    octx.fill();
-    octx.stroke();
-    octx.fillStyle = '#e0e7ff';
-    octx.textAlign = 'left';
-    octx.textBaseline = 'middle';
-    octx.fillText(txt, rx + 9, ry + 13);
-    x = rx - 8;
+    console.log('✓ Icon conversion complete!');
+    console.log('✓ Main icon: build/icon.png');
+    console.log('✓ Multi-size icons: build/icon-*.png');
 
-  // Footer ISO timestamp
-  octx.fillStyle = '#475569';
-  octx.font = '9px "Fira Code", monospace';
-  octx.textAlign = 'left';
-  octx.textBaseline = 'alphabetic';
-  octx.fillText(meta.ts, 20, canvas.height + 44);
-
-  // Download
-  try {
-    const url = off.toDataURL('image/png');
-    const a = document.createElement('a');
-    a.href = url;
-    const ts = meta.ts.replace(/[:.]/g, '-');
-    a.download = `aliverse-galaxy-${ts}.png`;
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => a.remove(), 100);
-    // Toast flash feedback
-    triggerShake(1.5, 140);
-  } catch (e) {
-    console.warn('Snapshot failed:', e);
-    alert('Snapshot failed. Canvas may be tainted.');
+  } catch (error) {
+    console.error('Error converting icon:', error.message);
+    console.log('\nNote: If sharp is not installed, run: npm install sharp');
+  }
 }
-// ====================================================
-// ====== END COSMIC TIMELINE / TOURS / SNAPSHOTS
-  faviconUpdate();
 
-  faviconInit();
-  // Keyboard Shortcuts (Ctrl+K search, Ctrl+T timeline, Ctrl+G tour, Ctrl+Shift+S snapshot,
-  // Space timeline play, Arrows: timeline scrub if open / node navigation otherwise,
-  // Enter: launch selected, F: fly-to selected, Esc: dismiss)
-    const inField = e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable);
-    } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'g') {
+convertIcon();
+++ b/kiros/3133rifs/src/main.ts
+interface AppState {
+  currentQuery: string;
+  isLoading: boolean;
+  isOnline: boolean;
+  searchDebounceTimeout: number;
+}
+
+// App state
+const appState: AppState = {
+  currentQuery: '',
+  isLoading: false,
+  isOnline: navigator.onLine,
+  searchDebounceTimeout: 500
+};
+
+// DOM Elements
+// Create loading indicator
+const loadingIndicator = document.createElement('div');
+loadingIndicator.className = 'loading-indicator hidden';
+loadingIndicator.innerHTML = `
+  <div class="loading-spinner"></div>
+  <span>Loading...</span>
+`;
+
+let favorites: WikiSummary[] = JSON.parse(localStorage.getItem('313rifts-favorites') || '[]');
+let history: WikiSummary[] = JSON.parse(localStorage.getItem('313rifts-history') || '[]');
+document.addEventListener('DOMContentLoaded', init);
+  // Add loading indicator to body
+  document.body.appendChild(loadingIndicator);
+
+  // Set initial network status
+  updateNetworkStatus();
+
+  // Register service worker for offline support
+  registerServiceWorker();
+
+  setupKeyboardShortcuts();
+
+  // Setup network event listeners
+  window.addEventListener('online', () => {
+    appState.isOnline = true;
+    updateNetworkStatus();
+    showToast('Back online!', 'success');
+  });
+
+  window.addEventListener('offline', () => {
+    appState.isOnline = false;
+    updateNetworkStatus();
+    showToast('You are offline. Some features may be limited.', 'warning');
+  });
+}
+
+function updateNetworkStatus() {
+  appState.isOnline = navigator.onLine;
+  if (!appState.isOnline) {
+    showToast('You are offline. Some features may be limited.', 'warning');
+  }
+
+    setLoading(true);
+
+    // For random articles, we'll use action=query with list=random
+    const randomRes = await fetch(`${ACTION_API}?action=query&list=random&rnlimit=${count}&rnnamespace=0&format=json&origin=*`);
+
+    if (!randomRes.ok) {
+      throw new Error(`HTTP ${randomRes.status}`);
+    }
+
+    const randomData = await randomRes.json();
+    const titles = randomData.query.random.map((r: any) => r.title);
+
+    // Fetch extracts and images for these titles
+    const articles = await fetchDetailedSummaries(titles);
+    renderCards(articles);
+    showToast('Failed to load articles. Please check your connection.', 'error');
+    resultsGrid.innerHTML = `
+      <div class="error-state">
+        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <h3>Connection Error</h3>
+        <p>Unable to load articles. Please check your internet connection.</p>
+        <button class="retry-btn" onclick="location.reload()">Retry</button>
+      </div>
+    `;
+  } finally {
+    setLoading(false);
+
+
+
+
+
+
+
+
+
+
+
+  localStorage.setItem('313rifts-theme', isLight ? 'light' : 'dark');
+  const savedTheme = localStorage.getItem('313rifts-theme');
+  localStorage.setItem('313rifts-favorites', JSON.stringify(favorites));
+  favorites = JSON.parse(localStorage.getItem('313rifts-favorites') || '[]');
+
+
+
+
+  localStorage.setItem('313rifts-history', JSON.stringify(history));
+  history = JSON.parse(localStorage.getItem('313rifts-history') || '[]');
+
+
+
+
+
+
+      highlightedSuggestion =
+
+
+
+}
+
+// Utility Functions
+function setupKeyboardShortcuts() {
+  document.addEventListener('keydown', (e) => {
+    // Focus search on Ctrl+K or /
+    if ((e.ctrlKey && e.key === 'k') || e.key === '/') {
       e.preventDefault();
-      tourToggle();
-    } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key.toLowerCase() === 's')) {
+      searchInput.focus();
+      return;
+    }
+
+    // Escape key to clear search or go back
+    if (e.key === 'Escape') {
+      if (searchInput.value.trim()) {
+        searchInput.value = '';
+        fetchRandomArticles(6);
+      } else if (!landingView.classList.contains('hidden')) {
+        // Already on landing view
+      } else {
+        showLandingView();
+      }
+      return;
+    }
+
+    // Ctrl+D for dark/light theme toggle
+    if (e.ctrlKey && e.key === 'd') {
       e.preventDefault();
-      galaxySnapshot();
-    } else if (!inField && e.key === ' ') {
-      if (TIMELINE.open || TIMELINE.playing || TIMELINE.progress < 1) {
-        timelineTogglePlay();
-      }
-    } else if (!inField && (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
-      if (TIMELINE.open && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
-        e.preventDefault();
-        const delta = (e.key === 'ArrowLeft' ? -0.01 : 0.01) * (e.shiftKey ? 5 : 1);
-        timelineSetProgress(Math.max(0, Math.min(1, TIMELINE.progress + delta)), { fromUser: true });
-      } else if (btnViewGalaxy && btnViewGrid) {
-        e.preventDefault();
-        if (!btnViewGalaxy.classList.contains('active')) {
-          btnViewGalaxy.classList.add('active');
-          btnViewGrid.classList.remove('active');
-          galaxyView.classList.remove('hidden');
-          gridView.classList.add('hidden');
-        }
-        const dir = e.key === 'ArrowLeft' ? 'left'
-                 : e.key === 'ArrowRight' ? 'right'
-                 : e.key === 'ArrowUp' ? 'up' : 'down';
-        const n = selectNearestNode(dir);
-        if (n) {
-          const isFar = viewZoom < 1.25 || Math.hypot(
-            -n.x * viewZoom - viewX,
-            -n.y * viewZoom - viewY
-          ) > Math.min(W, H) * 0.35;
-          if (isFar) flyToNode(n, 1.7, 550);
-    } else if (!inField && (e.key === 'Enter' || e.key === 'f' || e.key === 'F')) {
-      if (btnViewGalaxy && btnViewGrid && !btnViewGalaxy.classList.contains('active')) {
-        btnViewGalaxy.classList.add('active');
-        btnViewGrid.classList.remove('active');
-        galaxyView.classList.remove('hidden');
-        gridView.classList.add('hidden');
-      if (!selectedNode && galaxyNodes.length) {
-        selectNearestNode('any');
-      }
-      if (selectedNode) {
-        e.preventDefault();
-        if (e.key === 'f' || e.key === 'F') {
-          flyToNode(selectedNode, 2.0, 850);
-          for (let i = 0; i < 2; i++) {
-            rippleEffects.push({
-              x: selectedNode.x, y: selectedNode.y,
-              radius: selectedNode.radius * 1.2,
-              speed: 2.2 + i * 1.2,
-              hue: selectedNode.hue + (i * 15),
-              life: 1, decay: 0.022 + i * 0.008
-            });
+      toggleTheme();
+      return;
+    }
+  });
+}
+
+function setLoading(isLoading: boolean) {
+  appState.isLoading = isLoading;
+  if (isLoading) {
+    loadingIndicator.classList.remove('hidden');
+  } else {
+    loadingIndicator.classList.add('hidden');
+  }
+}
+
+function showToast(message: string, type: 'success' | 'warning' | 'error' = 'success') {
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+
+  setTimeout(() => {
+    toast.classList.add('show');
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => {
+        document.body.removeChild(toast);
+      }, 300);
+    }, 3000);
+  }, 10);
+}
+
+async function registerServiceWorker() {
+  if ('serviceWorker' in navigator) {
+    try {
+      const registration = await navigator.serviceWorker.register('/src/sw.js', {
+        scope: '/'
+      });
+      console.log('ServiceWorker registered:', registration);
+    } catch (error) {
+      console.error('ServiceWorker registration failed:', error);
+    }
+  }
+++ b/kiros/3133rifs/src/style.css
+}
+/* Loading Indicator */
+.loading-indicator {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 17, 19, 0.8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  backdrop-filter: blur(10px);
+}
+
+.loading-indicator.hidden {
+  display: none;
+}
+
+.loading-spinner {
+  width: 60px;
+  height: 60px;
+  border: 4px solid transparent;
+  border-top: 4px solid var(--accent-color);
+  border-right: 4px solid var(--accent-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+.loading-indicator span {
+  color: var(--text-primary);
+  font-size: 1.2rem;
+  font-weight: 500;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Toast Notifications */
+.toast {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--panel-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 1rem 2rem;
+  color: var(--text-primary);
+  backdrop-filter: blur(10px);
+  z-index: 1000;
+  opacity: 0;
+  transition: all 0.3s ease;
+  max-width: 400px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.toast-success {
+  border-color: #4CAF50;
+  background: rgba(76, 175, 80, 0.1);
+}
+
+.toast-warning {
+  border-color: #FFC107;
+  background: rgba(255, 193, 7, 0.1);
+}
+
+.toast-error {
+  border-color: #F44336;
+  background: rgba(244, 67, 54, 0.1);
+}
+
+/* Error States */
+.error-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 3rem;
+  color: var(--text-secondary);
+}
+
+.error-state svg {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 1rem;
+  color: #F44336;
+}
+
+.error-state h3 {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+.retry-btn {
+  background: var(--accent-color);
+  color: #000;
+  border: none;
+  padding: 0.8rem 2rem;
+  border-radius: 30px;
+  cursor: pointer;
+  font-weight: 600;
+  margin-top: 1rem;
+  transition: transform 0.3s;
+}
+
+.retry-btn:hover {
+  transform: scale(1.05);
+}
+
+/* Card Performance Improvements */
+.card {
+  will-change: transform;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+/* Shortcut Hint */
+.shortcut-hint {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.search-container:has(input:focus) .shortcut-hint {
+  opacity: 1;
+++ b/kiros/3133rifs/src/sw.js
+// Service Worker for 313rifts - Wikipedia Reader
+const CACHE_NAME = '313rifts-cache-v1';
+const urlsToCache = [
+  '/',
+  '/index.html',
+  '/src/main.ts',
+  '/src/style.css',
+  'https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Inter:wght@300;400;600&display=swap'
+];
+
+// Install event - cache essential resources
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => {
+        console.log('Opened cache');
+        return cache.addAll(urlsToCache);
+      })
+  );
+});
+
+// Activate event - clean up old caches
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => {
+          if (cacheName !== CACHE_NAME) {
+            console.log('Deleting old cache:', cacheName);
+            return caches.delete(cacheName);
           }
-          if (selectedNode.project.hasHtml) launchLiveApp(selectedNode.project);
-          else openInspector(selectedNode.project);
+        })
+      );
+    })
+  );
+});
+
+// Fetch event - network first, fallback to cache
+self.addEventListener('fetch', event => {
+  // Skip non-GET requests and API requests (we want fresh Wikipedia data)
+  if (event.request.method !== 'GET' || event.request.url.includes('wikipedia.org/w/api.php')) {
+    return;
+  }
+
+  event.respondWith(
+    fetch(event.request)
+      .then(response => {
+        // Cache successful responses
+        if (response.status === 200) {
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME)
+            .then(cache => {
+              cache.put(event.request, responseToCache);
+            });
+        }
+        return response;
+      })
+      .catch(() => {
+        // If network fails, try cache
+        return caches.match(event.request)
+          .then(cachedResponse => {
+            if (cachedResponse) {
+              return cachedResponse;
+            }
+            // If not in cache, return offline page or fallback
+            return new Response('Offline', {
+              status: 503,
+              statusText: 'Service Unavailable',
+              headers: new Headers({
+                'Content-Type': 'text/plain'
+              })
+            });
+          });
+      })
+  );
+});
+++ b/kiros/3133rifs/vite.config.ts
+    rollupOptions: {
+      input: {
+        main: './index.html'
       }
-  <link id="favicon-link" rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAGklEQVR42mNk+M9QI0aMYARqQQBNAK4FAAU0AAAB1w0AAAAASUVORK5CYII=">
-        <div class="header-actions-buttons">
-          <button id="btn-galaxy-tour" class="action-btn tour-btn" title="Galaxy Camera Tour (Ctrl+G)">
-            <span class="tour-icon">🪐</span>
-            <span class="action-label">Tour</span>
-          </button>
-          <button id="btn-galaxy-snapshot" class="action-btn" title="Save Galaxy Snapshot PNG (Ctrl+Shift+S)">
-            <span>📸</span>
-            <span class="action-label">Snapshot</span>
-          </button>
-          <div class="hud-line" id="hudTour"><span class="hud-label">TOUR</span><span class="hud-value" id="hudTourVal">OFF</span></div>
-          <div class="hud-line hud-keyboard" id="hudKeyboard" title="Arrow keys navigate · Enter launch · F fly-to · Esc deselect · Ctrl+G Tour · Ctrl+Shift+S Snapshot · Space: Play/Pause Timeline"></div>
-++ b/changes.txt
-      orbitSpeed: -(0.0003 + Math.random() * 0.0004),
-++ b/changes.txt
-++ b/commit_message.txt
- This CSS code defines the styles for a timeline UI component, including th[2D[K
-the background, controls row, playback buttons, speed group, stats row, and[3D[K
-and toggles. The code also includes responsive adjustments for smaller scre[4D[K
-The timeline has a semi-transparent gray background with a subtle box shado[5D[K
-shadow, and the controls row is positioned at the bottom of the timeline. T[1D[K
-The playback buttons are circular and can be hovered and clicked to play, p[1D[K
-pause, and resume the timeline. The speed group allows you to adjust the pl[2D[K
-playback speed of the timeline, and the stats row displays various statisti[8D[K
-statistics about the timeline, such as the current time, duration, and prog[4D[K
-progress. The toggles allow you to enable or disable certain features of th[2D[K
-the timeline.
+    }
+  server: {
+    headers: {
+      'Service-Worker-Allowed': '/'
+    }
+  }
+++ /dev/null
+++ /dev/null
+++ /dev/null
+++ /dev/null
+++ /dev/null
+++ /dev/null
+++ /dev/null
+++ /dev/null
+++ /dev/null
+++ /dev/null
+++ /dev/null
+++ /dev/null
+++ /dev/null
+++ /dev/null
+++ /dev/null
+++ /dev/null
+++ /dev/null
+++ /dev/null
+++ /dev/null
+++ /dev/null
+++ /dev/null
+++ /dev/null
+++ /dev/null
+++ /dev/null
+++ /dev/null
+++ /dev/null
+++ /dev/null
+++ /dev/null
+++ /dev/null
+++ /dev/null
+++ /dev/null
+++ /dev/null
+++ /dev/null
+++ /dev/null
+++ /dev/null
+++ /dev/null
+++ /dev/null
+++ /dev/null
+++ /dev/null
+++ /dev/null
+++ /dev/null
+++ /dev/null
+++ /dev/null
+++ /dev/null
+++ /dev/null
+++ b/kiros/project-dashboard/index.html
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ProjectFlow - Project Management Dashboard</title>
+    <meta name="description" content="A beautiful dashboard for managing all your projects">
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+++ b/kiros/project-dashboard/package.json
+{
+  "name": "project-dashboard",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "keywords": ["project-management", "dashboard", "react", "typescript"],
+  "author": "",
+  "license": "MIT",
+  "description": "A beautiful project management dashboard for tracking and managing all your projects",
+  "dependencies": {
+    "lucide-react": "^1.37.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
+    "@vitejs/plugin-react": "^6.1.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.2"
+  }
+}
+++ b/kiros/project-dashboard/src/App.tsx
+import React, { useState } from 'react';
+import { 
+  Plus, 
+  Search, 
+  Bell, 
+  User, 
+  Filter, 
+  Calendar, 
+  CheckCircle, 
+  Clock, 
+  AlertCircle,
+  TrendingUp,
+  Users,
+  Folder,
+  BarChart3,
+  Settings,
+  Moon,
+  Sun,
+  X,
+  Edit2,
+  Eye,
+  Trash2,
+  Save,
+  CalendarDays,
+  Users as UsersIcon,
+  Target,
+  FileText,
+  BarChart,
+  Shield,
+  Zap,
+  Loader2
+} from 'lucide-react';
+import './modals.css';
 
-The code also includes some responsive adjustments, hiding the stats row an[2D[K
-and toggles on smaller screens to improve readability and usability. You ca[2D[K
-can further customize this code to fit your specific needs, such as changin[7D[K
-changing the colors, fonts, and sizes to match your brand and design.
-++ b/commit_message.txt
- This CSS code defines the styles for a timeline UI component. It includes [K
-various elements such as the background, controls row, playback buttons, sp[2D[K
-speed group, stats row, and toggles.
-shadow. The controls row is positioned at the bottom of the timeline.
+type Project = {
+  id: number;
+  name: string;
+  description: string;
+  status: 'active' | 'planning' | 'on-hold' | 'completed';
+  progress: number;
+  dueDate: string;
+  teamSize: number;
+  priority: 'high' | 'medium' | 'low';
+};
 
-Here's a breakdown of the different sections of the code:
+type Task = {
+  id: number;
+  title: string;
+  projectId: number;
+  completed: boolean;
+  dueDate: string;
+  assignedTo: string;
+};
 
-1. Playback buttons (`.tl-btn`): These buttons control playback of the time[4D[K
-timeline. They can be styled, hovered, and clicked to play, pause, and resu[4D[K
-resume the timeline.
+type Notification = {
+  id: number;
+  message: string;
+  time: string;
+  read: boolean;
+  type: 'info' | 'warning' | 'success';
+};
 
-2. Speed group (`.timeline-speed-group`): This group allows you to adjust t[1D[K
-the playback speed of the timeline. It includes a label and buttons for dif[3D[K
-different speeds.
+function App() {
+  const [darkMode, setDarkMode] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showNewProjectModal, setShowNewProjectModal] = useState(false);
+  const [showEditProjectModal, setShowEditProjectModal] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [newProject, setNewProject] = useState({
+    name: '',
+    description: '',
+    status: 'active' as 'active' | 'planning' | 'on-hold' | 'completed',
+    progress: 50, // Changed default to 50
+    dueDate: new Date().toISOString().split('T')[0], // Today's date
+    teamSize: 3,
+    priority: 'medium' as 'high' | 'medium' | 'low'
+  });
+  
+  const [projects, setProjects] = useState<Project[]>([
+    {
+      id: 1,
+      name: 'E-commerce Platform',
+      description: 'Build a modern online shopping platform',
+      status: 'active',
+      progress: 75,
+      dueDate: '2024-12-15',
+      teamSize: 8,
+      priority: 'high'
+    },
+    {
+      id: 2,
+      name: 'Mobile App Redesign',
+      description: 'Redesign the mobile application UI/UX',
+      status: 'planning',
+      progress: 20,
+      dueDate: '2024-11-30',
+      teamSize: 5,
+      priority: 'medium'
+    },
+    {
+      id: 3,
+      name: 'API Documentation',
+      description: 'Create comprehensive API documentation',
+      status: 'active',
+      progress: 45,
+      dueDate: '2024-10-30',
+      teamSize: 3,
+      priority: 'low'
+    },
+    {
+      id: 4,
+      name: 'Analytics Dashboard',
+      description: 'Build real-time analytics dashboard',
+      status: 'on-hold',
+      progress: 60,
+      dueDate: '2024-12-01',
+      teamSize: 6,
+      priority: 'high'
+    },
+    {
+      id: 5,
+      name: 'Security Audit',
+      description: 'Conduct comprehensive security audit',
+      status: 'completed',
+      progress: 100,
+      dueDate: '2024-09-15',
+      teamSize: 4,
+      priority: 'medium'
+    },
+  ]);
 
-3. Stats row (`.timeline-stats`): This row displays various statistics abou[4D[K
-about the timeline, such as the current time, duration, and progress.
+  const [tasks, setTasks] = useState<Task[]>([
+    { id: 1, title: 'Design wireframes', projectId: 1, completed: true, dueDate: '2024-10-15', assignedTo: 'Alex' },
+    { id: 2, title: 'Setup database schema', projectId: 1, completed: true, dueDate: '2024-10-20', assignedTo: 'Sam' },
+    { id: 3, title: 'Implement authentication', projectId: 1, completed: false, dueDate: '2024-10-25', assignedTo: 'Jordan' },
+    { id: 4, title: 'Create user research plan', projectId: 2, completed: false, dueDate: '2024-10-18', assignedTo: 'Taylor' },
+    { id: 5, title: 'Write API endpoints', projectId: 3, completed: false, dueDate: '2024-10-22', assignedTo: 'Casey' },
+  ]);
 
-4. Toggles (`.timeline-toggle-group`): These toggles allow you to enable or[2D[K
-or disable certain features of the timeline. They include a checkbox, track[5D[K
-track, icon, and label.
+  const [notifications, setNotifications] = useState<Notification[]>([
+    { id: 1, message: 'Project "E-commerce Platform" is 75% complete', time: '2 hours ago', read: false, type: 'info' },
+    { id: 2, message: 'Task "Design wireframes" completed by Alex', time: '5 hours ago', read: false, type: 'success' },
+    { id: 3, message: 'Project "Analytics Dashboard" is on hold', time: '1 day ago', read: false, type: 'warning' },
+    { id: 4, message: 'New team member joined ProjectFlow', time: '2 days ago', read: true, type: 'info' },
+  ]);
 
-5. Responsive adjustments: The code includes some responsive adjustments, h[1D[K
-hiding the stats row and toggles on smaller screens to improve readability [K
-and usability.
+  const stats = {
+    totalProjects: projects.length,
+    activeProjects: projects.filter(p => p.status === 'active').length,
+    completedProjects: projects.filter(p => p.status === 'completed').length,
+    teamMembers: 26,
+  };
 
-You can use this code as a starting point for your timeline UI component an[2D[K
-and modify it according to your needs.
+  // Button functionality handlers
+  const toggleTask = (taskId: number) => {
+    setTasks(tasks.map(task => 
+      task.id === taskId ? { ...task, completed: !task.completed } : task
+    ));
+  };
 
-++ b/flutters/meads_recycler/android/app/src/main/AndroidManifest.xml
-        android:label="meads_recycler"
+  const handleViewProject = (project: Project) => {
+    alert(`Viewing Project: ${project.name}\n\nDescription: ${project.description}\nStatus: ${project.status}\nProgress: ${project.progress}%\nDue: ${project.dueDate}\nTeam Size: ${project.teamSize}\nPriority: ${project.priority}`);
+  };
+
+  const handleEditProject = (project: Project) => {
+    setSelectedProject(project);
+    setShowEditProjectModal(true);
+  };
+
+  const handleDeleteProject = (projectId: number) => {
+    if (window.confirm('Are you sure you want to delete this project?')) {
+      setProjects(projects.filter(p => p.id !== projectId));
+      alert('Project deleted successfully!');
+    }
+  };
+
+  const handleAddProject = () => {
+    if (!newProject.name.trim()) {
+      alert('Project name is required');
+      return;
+    }
+
+    const newProjectObj: Project = {
+      id: projects.length + 1,
+      ...newProject
+    };
+
+    setProjects([...projects, newProjectObj]);
+    setShowNewProjectModal(false);
+    setNewProject({
+      name: '',
+      description: '',
+      status: 'active',
+      progress: 50,
+      dueDate: new Date().toISOString().split('T')[0],
+      teamSize: 3,
+      priority: 'medium'
+    });
+    alert('Project added successfully!');
+  };
+
+  const handleUpdateProject = () => {
+    if (!selectedProject) return;
+
+    setProjects(projects.map(p => 
+      p.id === selectedProject.id ? selectedProject : p
+    ));
+    setShowEditProjectModal(false);
+    setSelectedProject(null);
+    alert('Project updated successfully!');
+  };
+
+  const handleFilterProjects = () => {
+    const statuses = ['active', 'planning', 'on-hold', 'completed'];
+    const nextStatus = statuses[(statuses.indexOf('active') + 1) % statuses.length];
+    
+    setProjects(projects.map(p => ({
+      ...p,
+      status: nextStatus as any
+    })));
+    alert(`Filtered projects to show only: ${nextStatus}`);
+  };
+
+  const toggleNotifications = () => {
+    setShowNotifications(!showNotifications);
+  };
+
+  const markNotificationAsRead = (id: number) => {
+    setNotifications(notifications.map(notif => 
+      notif.id === id ? { ...notif, read: true } : notif
+    ));
+  };
+
+  const clearAllNotifications = () => {
+    if (window.confirm('Clear all notifications?')) {
+      setNotifications([]);
+    }
+  };
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  };
+
+  const filteredProjects = searchTerm 
+    ? projects.filter(project => 
+        project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        project.description.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : projects;
+
+  const filteredTasks = searchTerm
+    ? tasks.filter(task =>
+        task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        task.assignedTo.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : tasks;
+
+  const unreadNotifications = notifications.filter(n => !n.read).length;
+
+  const getStatusIcon = (status: Project['status']) => {
+    switch (status) {
+      case 'active': return <Clock className="w-4 h-4" />;
+      case 'planning': return <AlertCircle className="w-4 h-4" />;
+      case 'on-hold': return <Clock className="w-4 h-4" />;
+      case 'completed': return <CheckCircle className="w-4 h-4" />;
+      default: return <AlertCircle className="w-4 h-4" />;
+    }
+  };
+
+  const getPriorityColor = (priority: Project['priority']) => {
+    switch (priority) {
+      case 'high': return 'bg-red-500';
+      case 'medium': return 'bg-yellow-500';
+      case 'low': return 'bg-green-500';
+      default: return 'bg-yellow-500';
+    }
+  };
+
+  const getPriorityText = (priority: Project['priority']) => {
+    switch (priority) {
+      case 'high': return 'High';
+      case 'medium': return 'Medium';
+      case 'low': return 'Low';
+      default: return 'Medium';
+    }
+  };
+
+  const getNotificationColor = (type: Notification['type']) => {
+    switch (type) {
+      case 'info': return 'bg-blue-100 text-blue-800';
+      case 'warning': return 'bg-yellow-100 text-yellow-800';
+      case 'success': return 'bg-green-100 text-green-800';
+      default: return 'bg-blue-100 text-blue-800';
+    }
+  };
+
+  return (
+    <div className={darkMode ? 'dark' : ''}>
+      <div className="min-h-screen bg-background text-text">
+        {/* Header */}
+        <header className="sticky top-0 z-50 bg-surface border-b border-border shadow-sm">
+          <div className="container py-4">
+            <div className="flex-between">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+                    <Folder className="w-5 h-5 text-white" />
+                  </div>
+                  <h1 className="text-xl font-bold">ProjectFlow</h1>
+                </div>
+                
+                <div className="hidden md:flex items-center gap-6 ml-8">
+                  <button className="text-text-secondary hover:text-text transition-colors">Dashboard</button>
+                  <button className="text-text-secondary hover:text-text transition-colors">Projects</button>
+                  <button className="text-text-secondary hover:text-text transition-colors">Tasks</button>
+                  <button className="text-text-secondary hover:text-text transition-colors">Team</button>
+                  <button className="text-text-secondary hover:text-text transition-colors">Analytics</button>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-secondary" />
+                  <input
+                    type="text"
+                    placeholder="Search projects, tasks..."
+                    className="pl-10 pr-4 py-2 bg-background border border-border rounded-lg text-sm w-48"
+                    value={searchTerm}
+                    onChange={handleSearch}
+                  />
+                </div>
+
+                <button 
+                  className="p-2 hover:bg-background rounded-lg transition-colors"
+                  onClick={() => setDarkMode(!darkMode)}
+                  title="Toggle theme"
+                >
+                  {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                </button>
+
+                <div className="relative">
+                  <button 
+                    className="p-2 hover:bg-background rounded-lg transition-colors relative"
+                    onClick={toggleNotifications}
+                    title="Notifications"
+                  >
+                    <Bell className="w-5 h-5" />
+                    {unreadNotifications > 0 && (
+                      <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                    )}
+                  </button>
+
+                  {showNotifications && (
+                    <div className="absolute right-0 mt-2 w-80 bg-surface border border-border rounded-lg shadow-lg z-50">
+                      <div className="p-4 border-b border-border">
+                        <div className="flex-between">
+                          <h3 className="font-semibold">Notifications</h3>
+                          <div className="flex gap-2">
+                            <button 
+                              className="text-sm text-primary hover:text-primary-dark"
+                              onClick={() => setNotifications(notifications.map(n => ({ ...n, read: true })))}
+                            >
+                              Mark all read
+                            </button>
+                            <button 
+                              className="text-sm text-red-500 hover:text-red-700"
+                              onClick={clearAllNotifications}
+                            >
+                              Clear all
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="max-h-96 overflow-y-auto">
+                        {notifications.length === 0 ? (
+                          <div className="p-4 text-center text-text-secondary">
+                            No notifications
+                          </div>
+                        ) : (
+                          notifications.map(notification => (
+                            <div 
+                              key={notification.id} 
+                              className={`p-4 border-b border-border hover:bg-background cursor-pointer ${!notification.read ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
+                              onClick={() => markNotificationAsRead(notification.id)}
+                            >
+                              <div className="flex-between mb-2">
+                                <span className={`px-2 py-1 text-xs rounded-full ${getNotificationColor(notification.type)}`}>
+                                  {notification.type.toUpperCase()}
+                                </span>
+                                <span className="text-xs text-text-secondary">{notification.time}</span>
+                              </div>
+                              <p className="text-sm">{notification.message}</p>
+                              {!notification.read && (
+                                <div className="mt-2 text-xs text-primary">Click to mark as read</div>
+                              )}
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <button className="flex items-center gap-2 p-2 hover:bg-background rounded-lg transition-colors cursor-pointer">
+                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                    <User className="w-4 h-4 text-primary" />
+                  </div>
+                  <span className="text-sm font-medium hidden md:block">Admin</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main className="container py-8">
+          {/* Stats Section */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="card stat-card">
+              <div className="flex-between">
+                <div>
+                  <p className="stat-label">Total Projects</p>
+                  <p className="stat-value">{stats.totalProjects}</p>
+                </div>
+                <Folder className="w-8 h-8 text-primary" />
+              </div>
+            </div>
+
+            <div className="card stat-card">
+              <div className="flex-between">
+                <div>
+                  <p className="stat-label">Active Projects</p>
+                  <p className="stat-value">{stats.activeProjects}</p>
+                </div>
+                <TrendingUp className="w-8 h-8 text-secondary" />
+              </div>
+            </div>
+
+            <div className="card stat-card">
+              <div className="flex-between">
+                <div>
+                  <p className="stat-label">Completed</p>
+                  <p className="stat-value">{stats.completedProjects}</p>
+                </div>
+                <CheckCircle className="w-8 h-8 text-green-500" />
+              </div>
+            </div>
+
+            <div className="card stat-card">
+              <div className="flex-between">
+                <div>
+                  <p className="stat-label">Team Members</p>
+                  <p className="stat-value">{stats.teamMembers}</p>
+                </div>
+                <Users className="w-8 h-8 text-warning" />
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Projects List */}
+            <div className="lg:col-span-2">
+              <div className="card">
+                <div className="flex-between mb-6">
+                  <div>
+                    <h2 className="text-xl font-bold mb-2">Active Projects</h2>
+                    <p className="text-text-secondary text-sm">Track and manage your ongoing projects</p>
+                    <p className="text-xs text-text-secondary mt-1">
+                      Showing {filteredProjects.length} of {projects.length} projects
+                      {searchTerm && ` for "${searchTerm}"`}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button 
+                      className="btn btn-primary flex items-center gap-2"
+                      onClick={() => setShowNewProjectModal(true)}
+                    >
+                      <Plus className="w-4 h-4" />
+                      New Project
+                    </button>
+                    <button 
+                      className="p-2 hover:bg-background rounded-lg transition-colors"
+                      onClick={handleFilterProjects}
+                      title="Filter projects"
+                    >
+                      <Filter className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {filteredProjects.map(project => (
+                    <div key={project.id} className="p-4 border border-border rounded-lg hover:bg-background/50 transition-colors">
+                      <div className="flex-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <Folder className="w-5 h-5 text-primary" />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold">{project.name}</h3>
+                            <p className="text-sm text-text-secondary">{project.description}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-800">
+                                Priority: {getPriorityText(project.priority)}
+                              </span>
+                              <span className="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-800">
+                                Team: {project.teamSize} members
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={`tag tag-${project.status}`}>
+                            {getStatusIcon(project.status)}
+                            <span className="ml-1 capitalize">{project.status}</span>
+                          </span>
+                          <div className={`w-2 h-2 rounded-full ${getPriorityColor(project.priority)}`}></div>
+                        </div>
+                      </div>
+
+                      <div className="flex-between text-sm">
+                        <div className="flex items-center gap-6">
+                          <div>
+                            <p className="text-text-secondary">Progress</p>
+                            <div className="w-48 bg-border rounded-full h-2 mt-1">
+                              <div 
+                                className="h-full bg-primary rounded-full" 
+                                style={{ width: `${project.progress}%` }}
+                              ></div>
+                            </div>
+                            <p className="text-xs mt-1 text-text-secondary">{project.progress}% complete</p>
+                          </div>
+                          <div>
+                            <p className="text-text-secondary">Due Date</p>
+                            <p className="font-medium">{project.dueDate}</p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button 
+                            className="px-3 py-1 text-sm border border-border rounded-lg hover:bg-background transition-colors flex items-center gap-1"
+                            onClick={() => handleViewProject(project)}
+                          >
+                            <Eye className="w-3 h-3" />
+                            View
+                          </button>
+                          <button 
+                            className="px-3 py-1 text-sm bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors flex items-center gap-1"
+                            onClick={() => handleEditProject(project)}
+                          >
+                            <Edit2 className="w-3 h-3" />
+                            Edit
+                          </button>
+                          <button 
+                            className="px-3 py-1 text-sm bg-red-500 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-1"
+                            onClick={() => handleDeleteProject(project.id)}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Tasks & Activity */}
+            <div className="space-y-6">
+              {/* Upcoming Tasks */}
+              <div className="card">
+                <div className="flex-between mb-6">
+                  <h2 className="text-xl font-bold">Upcoming Tasks</h2>
+                  <button className="text-sm text-primary hover:text-primary-dark font-medium">
+                    View All
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  {filteredTasks.map(task => (
+                    <div key={task.id} className="flex items-center gap-3 p-3 border border-border rounded-lg">
+                      <button 
+                        onClick={() => toggleTask(task.id)}
+                        className={`w-5 h-5 rounded border flex items-center justify-center ${task.completed ? 'bg-primary border-primary' : 'border-text-secondary'}`}
+                        title={task.completed ? 'Mark as incomplete' : 'Mark as complete'}
+                      >
+                        {task.completed && <CheckCircle className="w-3 h-3 text-white" />}
+                      </button>
+                      <div className="flex-1">
+                        <p className={`font-medium ${task.completed ? 'line-through text-text-secondary' : ''}`}>
+                          {task.title}
+                        </p>
+                        <div className="flex items-center gap-4 text-sm text-text-secondary mt-1">
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {task.dueDate}
+                          </span>
+                          <span>Assigned to {task.assignedTo}</span>
+                        </div>
+                      </div>
+                      <button 
+                        className="text-text-secondary hover:text-red-500"
+                        onClick={() => {
+                          if (window.confirm('Delete this task?')) {
+                            setTasks(tasks.filter(t => t.id !== task.id));
+                          }
+                        }}
+                        title="Delete task"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Quick Stats */}
+              <div className="card">
+                <h2 className="text-xl font-bold mb-6">Project Status</h2>
+                <div className="space-y-4">
+                  {[
+                    { label: 'Active', value: stats.activeProjects, color: 'bg-primary' },
+                    { label: 'Planning', value: projects.filter(p => p.status === 'planning').length, color: 'bg-warning' },
+                    { label: 'On Hold', value: projects.filter(p => p.status === 'on-hold').length, color: 'bg-text-secondary' },
+                    { label: 'Completed', value: stats.completedProjects, color: 'bg-secondary' },
+                  ].map((stat, index) => (
+                    <div key={index}>
+                      <div className="flex-between text-sm mb-1">
+                        <span>{stat.label}</span>
+                        <span>{stat.value} projects</span>
+                      </div>
+                      <div className="w-full bg-border rounded-full h-2">
+                        <div 
+                          className={`h-full rounded-full ${stat.color}`}
+                          style={{ width: `${(stat.value / stats.totalProjects) * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+
+        <footer className="border-t border-border py-6">
+          <div className="container">
+            <div className="flex-between">
+              <div className="text-text-secondary text-sm">
+                © 2024 ProjectFlow. All rights reserved.
+              </div>
+              <div className="flex items-center gap-4">
+                <button 
+                  className="text-text-secondary hover:text-text transition-colors"
+                  onClick={() => alert('Settings opened')}
+                  title="Settings"
+                >
+                  <Settings className="w-5 h-5" />
+                </button>
+                <button 
+                  className="text-text-secondary hover:text-text transition-colors"
+                  onClick={() => alert('Analytics opened')}
+                  title="Analytics"
+                >
+                  <BarChart3 className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </footer>
+      </div>
+
+      {/* New Project Modal - Modern Design */}
+      {showNewProjectModal && (
+        <div className="modal-overlay">
+          <div className="modal-container">
+            <div className="modal-header">
+              <div>
+                <h2 className="modal-title">Create New Project</h2>
+                <p className="modal-subtitle">Fill in the details to add a new project to your dashboard</p>
+              </div>
+              <button 
+                className="modal-close-btn"
+                onClick={() => setShowNewProjectModal(false)}
+              >
+                <X />
+              </button>
+            </div>
+
+            <div className="modal-body">
+              {/* Basic Information Section */}
+              <div className="form-section">
+                <h3 className="form-section-title">Basic Information</h3>
+                
+                <div className="form-field">
+                  <label className="form-label">
+                    Project Name
+                    <span className="required">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={newProject.name}
+                    onChange={(e) => setNewProject({...newProject, name: e.target.value})}
+                    placeholder="e.g., E-commerce Platform Redesign"
+                    required
+                  />
+                </div>
+
+                <div className="form-field">
+                  <label className="form-label">
+                    Description
+                    <span className="optional">Optional</span>
+                  </label>
+                  <textarea
+                    className="form-textarea"
+                    value={newProject.description}
+                    onChange={(e) => setNewProject({...newProject, description: e.target.value})}
+                    placeholder="Describe what this project is about..."
+                    rows={3}
+                  />
+                </div>
+              </div>
+
+              {/* Status & Progress Section */}
+              <div className="form-section">
+                <h3 className="form-section-title">Status & Progress</h3>
+                
+                <div className="form-row">
+                  <div className="form-field">
+                    <label className="form-label">
+                      <Target size={16} />
+                      Status
+                    </label>
+                    <select 
+                      className="form-select"
+                      value={newProject.status}
+                      onChange={(e) => setNewProject({...newProject, status: e.target.value as any})}
+                    >
+                      <option value="active" className="status-option">
+                        <span className="status-badge active"></span>
+                        Active
+                      </option>
+                      <option value="planning" className="status-option">
+                        <span className="status-badge planning"></span>
+                        Planning
+                      </option>
+                      <option value="on-hold" className="status-option">
+                        <span className="status-badge on-hold"></span>
+                        On Hold
+                      </option>
+                      <option value="completed" className="status-option">
+                        <span className="status-badge completed"></span>
+                        Completed
+                      </option>
+                    </select>
+                  </div>
+
+                  <div className="form-field">
+                    <label className="form-label">
+                      <BarChart size={16} />
+                      Progress
+                    </label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      className="form-input"
+                      value={newProject.progress}
+                      onChange={(e) => setNewProject({...newProject, progress: parseInt(e.target.value) || 0})}
+                      style={{ padding: '12px 16px' }}
+                    />
+                    <div className="progress-preview">
+                      <div 
+                        className="progress-fill"
+                        style={{ width: `${newProject.progress}%` }}
+                      ></div>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
+                      <span className="text-xs text-text-secondary">0%</span>
+                      <span className="text-sm font-semibold">{newProject.progress}%</span>
+                      <span className="text-xs text-text-secondary">100%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Timeline & Team Section */}
+              <div className="form-section">
+                <h3 className="form-section-title">Timeline & Team</h3>
+                
+                <div className="form-row">
+                  <div className="form-field">
+                    <label className="form-label">
+                      <CalendarDays size={16} />
+                      Due Date
+                    </label>
+                    <input
+                      type="date"
+                      className="form-input"
+                      value={newProject.dueDate}
+                      onChange={(e) => setNewProject({...newProject, dueDate: e.target.value})}
+                    />
+                  </div>
+
+                  <div className="form-field">
+                    <label className="form-label">
+                      <UsersIcon size={16} />
+                      Team Size
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="50"
+                      className="form-input"
+                      value={newProject.teamSize}
+                      onChange={(e) => setNewProject({...newProject, teamSize: parseInt(e.target.value) || 1})}
+                      placeholder="Number of team members"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Priority Section */}
+              <div className="form-section">
+                <h3 className="form-section-title">Priority Settings</h3>
+                
+                <div className="form-field">
+                  <label className="form-label">
+                    <Zap size={16} />
+                    Priority Level
+                  </label>
+                  <select 
+                    className="form-select"
+                    value={newProject.priority}
+                    onChange={(e) => setNewProject({...newProject, priority: e.target.value as any})}
+                  >
+                    <option value="high" className="priority-indicator">
+                      <span className="priority-dot high"></span>
+                      High Priority
+                    </option>
+                    <option value="medium" className="priority-indicator">
+                      <span className="priority-dot medium"></span>
+                      Medium Priority
+                    </option>
+                    <option value="low" className="priority-indicator">
+                      <span className="priority-dot low"></span>
+                      Low Priority
+                    </option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button 
+                className="modal-btn modal-btn-secondary"
+                onClick={() => setShowNewProjectModal(false)}
+              >
+                <X size={18} />
+                Cancel
+              </button>
+              <button 
+                className="modal-btn modal-btn-primary"
+                onClick={handleAddProject}
+              >
+                <Save size={18} />
+                Create Project
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Project Modal - Modern Design */}
+      {showEditProjectModal && selectedProject && (
+        <div className="modal-overlay">
+          <div className="modal-container">
+            <div className="modal-header">
+              <div>
+                <h2 className="modal-title">Edit Project</h2>
+                <p className="modal-subtitle">Update the project details and settings</p>
+              </div>
+              <button 
+                className="modal-close-btn"
+                onClick={() => {
+                  setShowEditProjectModal(false);
+                  setSelectedProject(null);
+                }}
+              >
+                <X />
+              </button>
+            </div>
+
+            <div className="modal-body">
+              {/* Basic Information Section */}
+              <div className="form-section">
+                <h3 className="form-section-title">Basic Information</h3>
+                
+                <div className="form-field">
+                  <label className="form-label">
+                    Project Name
+                    <span className="required">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={selectedProject.name}
+                    onChange={(e) => setSelectedProject({...selectedProject, name: e.target.value})}
+                    placeholder="Project name"
+                    required
+                  />
+                </div>
+
+                <div className="form-field">
+                  <label className="form-label">
+                    Description
+                    <span className="optional">Optional</span>
+                  </label>
+                  <textarea
+                    className="form-textarea"
+                    value={selectedProject.description}
+                    onChange={(e) => setSelectedProject({...selectedProject, description: e.target.value})}
+                    placeholder="Project description..."
+                    rows={3}
+                  />
+                </div>
+              </div>
+
+              {/* Status & Progress Section */}
+              <div className="form-section">
+                <h3 className="form-section-title">Status & Progress</h3>
+                
+                <div className="form-row">
+                  <div className="form-field">
+                    <label className="form-label">
+                      <Target size={16} />
+                      Status
+                    </label>
+                    <select 
+                      className="form-select"
+                      value={selectedProject.status}
+                      onChange={(e) => setSelectedProject({...selectedProject, status: e.target.value as any})}
+                    >
+                      <option value="active" className="status-option">
+                        <span className="status-badge active"></span>
+                        Active
+                      </option>
+                      <option value="planning" className="status-option">
+                        <span className="status-badge planning"></span>
+                        Planning
+                      </option>
+                      <option value="on-hold" className="status-option">
+                        <span className="status-badge on-hold"></span>
+                        On Hold
+                      </option>
+                      <option value="completed" className="status-option">
+                        <span className="status-badge completed"></span>
+                        Completed
+                      </option>
+                    </select>
+                  </div>
+
+                  <div className="form-field">
+                    <label className="form-label">
+                      <BarChart size={16} />
+                      Progress
+                    </label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      className="form-input"
+                      value={selectedProject.progress}
+                      onChange={(e) => setSelectedProject({...selectedProject, progress: parseInt(e.target.value) || 0})}
+                      style={{ padding: '12px 16px' }}
+                    />
+                    <div className="progress-preview">
+                      <div 
+                        className="progress-fill"
+                        style={{ width: `${selectedProject.progress}%` }}
+                      ></div>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
+                      <span className="text-xs text-text-secondary">0%</span>
+                      <span className="text-sm font-semibold">{selectedProject.progress}%</span>
+                      <span className="text-xs text-text-secondary">100%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Timeline & Team Section */}
+              <div className="form-section">
+                <h3 className="form-section-title">Timeline & Team</h3>
+                
+                <div className="form-row">
+                  <div className="form-field">
+                    <label className="form-label">
+                      <CalendarDays size={16} />
+                      Due Date
+                    </label>
+                    <input
+                      type="date"
+                      className="form-input"
+                      value={selectedProject.dueDate}
+                      onChange={(e) => setSelectedProject({...selectedProject, dueDate: e.target.value})}
+                    />
+                  </div>
+
+                  <div className="form-field">
+                    <label className="form-label">
+                      <UsersIcon size={16} />
+                      Team Size
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="50"
+                      className="form-input"
+                      value={selectedProject.teamSize}
+                      onChange={(e) => setSelectedProject({...selectedProject, teamSize: parseInt(e.target.value) || 1})}
+                      placeholder="Number of team members"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Priority Section */}
+              <div className="form-section">
+                <h3 className="form-section-title">Priority Settings</h3>
+                
+                <div className="form-field">
+                  <label className="form-label">
+                    <Zap size={16} />
+                    Priority Level
+                  </label>
+                  <select 
+                    className="form-select"
+                    value={selectedProject.priority}
+                    onChange={(e) => setSelectedProject({...selectedProject, priority: e.target.value as any})}
+                  >
+                    <option value="high" className="priority-indicator">
+                      <span className="priority-dot high"></span>
+                      High Priority
+                    </option>
+                    <option value="medium" className="priority-indicator">
+                      <span className="priority-dot medium"></span>
+                      Medium Priority
+                    </option>
+                    <option value="low" className="priority-indicator">
+                      <span className="priority-dot low"></span>
+                      Low Priority
+                    </option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button 
+                className="modal-btn modal-btn-secondary"
+                onClick={() => {
+                  setShowEditProjectModal(false);
+                  setSelectedProject(null);
+                }}
+              >
+                <X size={18} />
+                Cancel
+              </button>
+              <button 
+                className="modal-btn modal-btn-primary"
+                onClick={handleUpdateProject}
+              >
+                <Save size={18} />
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default App;
+++ b/kiros/project-dashboard/src/index.css
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --primary: #4f46e5;
+  --primary-light: #6366f1;
+  --primary-dark: #4338ca;
+  --secondary: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --background: #f8fafc;
+  --surface: #ffffff;
+  --text: #1e293b;
+  --text-secondary: #64748b;
+  --border: #e2e8f0;
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --radius: 12px;
+  --green-500: #10b981;
+  --red-500: #ef4444;
+  --yellow-500: #f59e0b;
+}
+
+.dark {
+  --primary: #6366f1;
+  --primary-light: #818cf8;
+  --primary-dark: #4f46e5;
+  --secondary: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --background: #0f172a;
+  --surface: #1e293b;
+  --text: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --border: #334155;
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  --green-500: #10b981;
+  --red-500: #ef4444;
+  --yellow-500: #f59e0b;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--background);
+  color: var(--text);
+  transition: background-color 0.3s, color 0.3s;
+  line-height: 1.6;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+button {
+  cursor: pointer;
+  font-family: inherit;
+  background: none;
+  border: none;
+}
+
+.container {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+/* Layout Utilities */
+.grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.grid-cols-1 {
+  grid-template-columns: repeat(1, 1fr);
+}
+
+.grid-cols-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.grid-cols-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.grid-cols-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.lg\\:grid-cols-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.lg\\:grid-cols-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.md\\:grid-cols-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.lg\\:col-span-2 {
+  grid-column: span 2 / span 2;
+}
+
+.flex {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.gap-2 { gap: 0.5rem; }
+.gap-3 { gap: 0.75rem; }
+.gap-4 { gap: 1rem; }
+.gap-6 { gap: 1.5rem; }
+.gap-8 { gap: 2rem; }
+
+.space-y-4 > * + * { margin-top: 1rem; }
+.space-y-6 > * + * { margin-top: 1.5rem; }
+
+/* Typography */
+.text-sm { font-size: 0.875rem; }
+.text-xl { font-size: 1.25rem; }
+.text-2xl { font-size: 1.5rem; }
+
+.font-medium { font-weight: 500; }
+.font-semibold { font-weight: 600; }
+.font-bold { font-weight: 700; }
+
+.line-through { text-decoration: line-through; }
+
+/* Spacing */
+.mt-1 { margin-top: 0.25rem; }
+.mb-2 { margin-bottom: 0.5rem; }
+.mb-3 { margin-bottom: 0.75rem; }
+.mb-6 { margin-bottom: 1.5rem; }
+.mb-8 { margin-bottom: 2rem; }
+
+.ml-1 { margin-left: 0.25rem; }
+.ml-8 { margin-left: 2rem; }
+
+.py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+.py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+.py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+.py-6 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+.py-8 { padding-top: 2rem; padding-bottom: 2rem; }
+
+.p-2 { padding: 0.5rem; }
+.p-3 { padding: 0.75rem; }
+.p-4 { padding: 1rem; }
+
+.px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+.px-4 { padding-left: 1rem; padding-right: 1rem; }
+.pl-10 { padding-left: 2.5rem; }
+.pr-4 { padding-right: 1rem; }
+
+/* Sizing */
+.w-2 { width: 0.5rem; }
+.w-3 { width: 0.75rem; }
+.w-4 { width: 1rem; }
+.w-5 { width: 1.25rem; }
+.w-8 { width: 2rem; }
+.w-10 { width: 2.5rem; }
+.w-48 { width: 12rem; }
+.w-full { width: 100%; }
+
+.h-2 { height: 0.5rem; }
+.h-3 { height: 0.75rem; }
+.h-4 { height: 1rem; }
+.h-5 { height: 1.25rem; }
+.h-8 { height: 2rem; }
+.h-10 { height: 2.5rem; }
+
+.min-h-screen { min-height: 100vh; }
+
+/* Positioning */
+.relative { position: relative; }
+.absolute { position: absolute; }
+.sticky { position: sticky; }
+.top-0 { top: 0; }
+.left-3 { left: 0.75rem; }
+.right-1 { right: 0.25rem; }
+.top-1 { top: 0.25rem; }
+.top-1\\/2 { top: 50%; }
+.z-50 { z-index: 50; }
+
+.transform { transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y)); }
+.-translate-y-1\\/2 { --tw-translate-y: -50%; }
+
+/* Borders */
+.border { border: 1px solid var(--border); }
+.border-b { border-bottom: 1px solid var(--border); }
+.border-t { border-top: 1px solid var(--border); }
+
+.rounded { border-radius: 0.25rem; }
+.rounded-lg { border-radius: 0.5rem; }
+.rounded-full { border-radius: 9999px; }
+
+/* Backgrounds */
+.bg-background { background-color: var(--background); }
+.bg-surface { background-color: var(--surface); }
+.bg-primary { background-color: var(--primary); }
+.bg-primary\\/10 { background-color: rgba(79, 70, 229, 0.1); }
+.bg-primary\\/20 { background-color: rgba(79, 70, 229, 0.2); }
+.bg-border { background-color: var(--border); }
+.bg-red-500 { background-color: var(--red-500); }
+.bg-yellow-500 { background-color: var(--yellow-500); }
+.bg-green-500 { background-color: var(--green-500); }
+.bg-blue-100 { background-color: #dbeafe; }
+.bg-yellow-100 { background-color: #fef3c7; }
+.bg-green-100 { background-color: #d1fae5; }
+.bg-gray-100 { background-color: #f3f4f6; }
+.bg-blue-50 { background-color: #eff6ff; }
+.bg-black { background-color: #000; }
+.bg-opacity-50 { opacity: 0.5; }
+
+.hover\\:bg-background:hover { background-color: var(--background); }
+.hover\\:bg-primary-dark:hover { background-color: var(--primary-dark); }
+.hover\\:bg-red-700:hover { background-color: #b91c1c; }
+
+/* Text Colors */
+.text-text { color: var(--text); }
+.text-text-secondary { color: var(--text-secondary); }
+.text-primary { color: var(--primary); }
+.text-white { color: white; }
+.text-secondary { color: var(--secondary); }
+.text-warning { color: var(--warning); }
+.text-red-500 { color: var(--red-500); }
+.text-blue-800 { color: #1e40af; }
+.text-yellow-800 { color: #92400e; }
+.text-green-800 { color: #065f46; }
+.text-xs { font-size: 0.75rem; }
+
+.hover\\:text-text:hover { color: var(--text); }
+.hover\\:text-primary-dark:hover { color: var(--primary-dark); }
+.hover\\:text-red-700:hover { color: #b91c1c; }
+
+/* Shadows */
+.shadow-sm { box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); }
+
+/* Card */
+.card {
+  background-color: var(--surface);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 12px -1px rgba(0, 0, 0, 0.15);
+}
+
+/* Buttons */
+.btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  border: none;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-dark);
+}
+
+.btn-secondary {
+  background-color: var(--secondary);
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: #0da271;
+}
+
+.back-btn {
+  padding: 0.5rem 1rem;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.back-btn:hover {
+  color: var(--text);
+}
+
+.icon-btn {
+  padding: 0.5rem;
+  background: none;
+  border: none;
+  border-radius: 0.375rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-btn:hover {
+  background-color: var(--background);
+  color: var(--text);
+}
+
+/* Tags */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.tag-active {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: var(--secondary);
+}
+
+.tag-planning {
+  background-color: rgba(245, 158, 11, 0.1);
+  color: var(--warning);
+}
+
+.tag-on-hold {
+  background-color: rgba(100, 116, 139, 0.1);
+  color: var(--text-secondary);
+}
+
+.tag-completed {
+  background-color: rgba(79, 70, 229, 0.1);
+  color: var(--primary);
+}
+
+/* Stats */
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+/* Inputs & Textarea */
+input, textarea, select {
+  font-family: inherit;
+  font-size: 0.875rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background-color: var(--background);
+  color: var(--text);
+  outline: none;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+}
+
+textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* Transitions */
+.transition-colors {
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.transition-transform {
+  transition: transform 0.2s;
+}
+
+/* Display */
+.hidden { display: none; }
+
+/* Modals */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal-content {
+  background-color: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  max-width: 500px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  animation: modalSlideIn 0.3s ease-out;
+  transform-origin: center;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-header {
+  padding: 1.75rem 2rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.05) 0%, rgba(99, 102, 241, 0.05) 100%);
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
+.modal-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.modal-close {
+  background: var(--background);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.modal-close:hover {
+  background-color: var(--primary);
+  color: white;
+  border-color: var(--primary);
+  transform: rotate(90deg);
+}
+
+.modal-close svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.modal-body {
+  padding: 2rem;
+}
+
+.form-group {
+  margin-bottom: 1.75rem;
+  position: relative;
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 0.5rem;
+}
+
+.form-input, .form-textarea, .form-select {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background-color: var(--background);
+  color: var(--text);
+  font-size: 0.9375rem;
+  transition: all 0.2s ease;
+  font-family: 'Inter', sans-serif;
+}
+
+.form-input:hover, .form-textarea:hover, .form-select:hover {
+  border-color: var(--primary-light);
+}
+
+.form-input:focus, .form-textarea:focus, .form-select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+  transform: translateY(-1px);
+}
+
+.form-input::placeholder, .form-textarea::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+.form-label {
+  display: flex;
+  align-items: center;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 0.75rem;
+  letter-spacing: -0.01em;
+  gap: 0.25rem;
+}
+
+.form-label::after {
+  content: '*';
+  color: var(--danger);
+  font-weight: 700;
+  opacity: 0;
+}
+
+.form-label.required::after {
+  opacity: 1;
+}
+
+/* Hide the asterisk for non-required fields except project name */
+.form-group:not(:first-child) .form-label::after {
+  content: '';
+  display: none;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+.form-textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.modal-footer {
+  padding: 1rem 1.5rem 1.5rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 0.75rem;
+}
+
+.btn-modal-primary {
+  flex: 1;
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+  color: white;
+  border: none;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  letter-spacing: -0.01em;
+  box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
+}
+
+.btn-modal-primary:hover {
+  background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px -1px rgba(79, 70, 229, 0.3);
+}
+
+.btn-modal-primary:active {
+  transform: translateY(0);
+}
+
+.btn-modal-secondary {
+  flex: 1;
+  padding: 1rem 1.5rem;
+  background-color: transparent;
+  color: var(--text);
+  border: 2px solid var(--border);
+  border-radius: 0.75rem;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  letter-spacing: -0.01em;
+}
+
+.btn-modal-secondary:hover {
+  background-color: var(--background);
+  border-color: var(--text-secondary);
+  transform: translateY(-2px);
+}
+
+.btn-modal-secondary:active {
+  transform: translateY(0);
+}
+
+.fixed { position: fixed; }
+.inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+.flex-1 { flex: 1 1 0%; }
+.max-w-md { max-width: 28rem; }
+.max-h-\\[90vh\\] { max-height: 90vh; }
+.overflow-y-auto { overflow-y: auto; }
+
+/* Z-index */
+.z-50 { z-index: 50; }
+
+/* Responsive */
+@media (min-width: 768px) {
+  .md\\:flex { display: flex; }
+  .md\\:hidden { display: none; }
+  .md\\:block { display: block; }
+}
+
+@media (min-width: 1024px) {
+  .lg\\:grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .lg\\:col-span-2 { grid-column: span 2 / span 2; }
+}
+++ b/kiros/project-dashboard/src/index.css.d.ts
+// Type declarations for CSS modules
+declare module '*.css' {
+  const content: { [className: string]: string };
+  export default content;
+}
+++ b/kiros/project-dashboard/src/main.tsx
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App.tsx'
+import './index.css'
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+)
+++ b/kiros/project-dashboard/src/modals.css
+/* Modern Modal Styles */
+
+/* Modal Overlay */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Modal Container */
+.modal-container {
+  background: linear-gradient(135deg, var(--surface) 0%, rgba(255, 255, 255, 0.1) 100%);
+  backdrop-filter: blur(20px);
+  border-radius: 24px;
+  box-shadow: 
+    0 20px 40px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+    0 0 40px rgba(79, 70, 229, 0.1);
+  max-width: 520px;
+  width: 100%;
+  max-height: 85vh;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+  animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark .modal-container {
+  background: linear-gradient(135deg, var(--surface) 0%, rgba(30, 41, 59, 0.8) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Modal Header */
+.modal-header {
+  padding: 28px 32px 20px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.08) 0%, rgba(99, 102, 241, 0.04) 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.dark .modal-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.15) 0%, rgba(99, 102, 241, 0.08) 100%);
+}
+
+.modal-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary) 0%, var(--primary-light) 50%, var(--secondary) 100%);
+  animation: shimmer 3s infinite linear;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -100% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.modal-title {
+  font-size: 28px;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0;
+  letter-spacing: -0.02em;
+  position: relative;
+  display: inline-block;
+}
+
+.modal-title::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  width: 60px;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+  border-radius: 2px;
+}
+
+.modal-subtitle {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-top: 8px;
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+.modal-close-btn {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 0;
+}
+
+.dark .modal-close-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-close-btn:hover {
+  background: var(--primary);
+  color: white;
+  transform: rotate(90deg) scale(1.1);
+  border-color: var(--primary);
+  box-shadow: 0 8px 16px rgba(79, 70, 229, 0.3);
+}
+
+.modal-close-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Modal Body */
+.modal-body {
+  padding: 32px;
+  overflow-y: auto;
+  max-height: calc(85vh - 160px);
+}
+
+/* Form Styles */
+.form-section {
+  margin-bottom: 32px;
+  position: relative;
+}
+
+.form-section:last-child {
+  margin-bottom: 0;
+}
+
+.form-section-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid rgba(79, 70, 229, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.form-section-title::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  background: var(--primary);
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.form-field {
+  position: relative;
+  margin-bottom: 24px;
+}
+
+.form-field:last-child {
+  margin-bottom: 0;
+}
+
+.form-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 10px;
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.form-label .required {
+  color: var(--danger);
+  font-weight: 800;
+}
+
+.form-label .optional {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 400;
+  margin-left: auto;
+}
+
+.form-input,
+.form-textarea,
+.form-select {
+  width: 100%;
+  padding: 16px 20px;
+  background: var(--background);
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  border-radius: 14px;
+  color: var(--text);
+  font-size: 15px;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.dark .form-input,
+.dark .form-textarea,
+.dark .form-select {
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  background: rgba(30, 41, 59, 0.5);
+}
+
+.form-input:hover,
+.form-textarea:hover,
+.form-select:hover {
+  border-color: var(--primary-light);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(79, 70, 229, 0.1);
+}
+
+.form-input:focus,
+.form-textarea:focus,
+.form-select:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: var(--surface);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(79, 70, 229, 0.15);
+}
+
+.form-input::placeholder,
+.form-textarea::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+.form-textarea {
+  min-height: 120px;
+  resize: vertical;
+  line-height: 1.6;
+}
+
+.form-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  background-size: 16px;
+  padding-right: 48px;
+}
+
+.form-select option {
+  background: var(--surface);
+  color: var(--text);
+  padding: 12px;
+}
+
+/* Progress Bar Preview */
+.progress-preview {
+  margin-top: 12px;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.dark .progress-preview {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary) 0%, var(--primary-light) 100%);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(255, 255, 255, 0.3) 50%, 
+    transparent 100%);
+  animation: progressShimmer 2s infinite;
+}
+
+@keyframes progressShimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Modal Footer */
+.modal-footer {
+  padding: 24px 32px 32px;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  display: flex;
+  gap: 16px;
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.03) 0%, rgba(99, 102, 241, 0.01) 100%);
+}
+
+.dark .modal-footer {
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.08) 0%, rgba(99, 102, 241, 0.04) 100%);
+}
+
+.modal-btn {
+  flex: 1;
+  padding: 18px 24px;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  position: relative;
+  overflow: hidden;
+}
+
+.modal-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.1);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.modal-btn:hover::before {
+  opacity: 1;
+}
+
+.modal-btn-primary {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+  color: white;
+  border: none;
+  box-shadow: 0 8px 20px rgba(79, 70, 229, 0.25);
+}
+
+.modal-btn-primary:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 32px rgba(79, 70, 229, 0.35);
+}
+
+.modal-btn-primary:active {
+  transform: translateY(-2px);
+}
+
+.modal-btn-secondary {
+  background: transparent;
+  color: var(--text);
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  font-weight: 600;
+}
+
+.dark .modal-btn-secondary {
+  border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-btn-secondary:hover {
+  background: var(--background);
+  border-color: var(--primary-light);
+  transform: translateY(-2px);
+}
+
+/* Status Badges in Select */
+.status-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+}
+
+.status-badge {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.status-badge.active {
+  background: var(--secondary);
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+}
+
+.status-badge.planning {
+  background: var(--warning);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+}
+
+.status-badge.on-hold {
+  background: var(--text-secondary);
+  box-shadow: 0 0 10px rgba(100, 116, 139, 0.5);
+}
+
+.status-badge.completed {
+  background: var(--primary);
+  box-shadow: 0 0 10px rgba(79, 70, 229, 0.5);
+}
+
+/* Priority Indicators */
+.priority-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+}
+
+.priority-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.priority-dot.high {
+  background: var(--danger);
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+}
+
+.priority-dot.medium {
+  background: var(--warning);
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+}
+
+.priority-dot.low {
+  background: var(--secondary);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+  .modal-container {
+    max-width: 95%;
+    border-radius: 20px;
+  }
+  
+  .modal-header,
+  .modal-body,
+  .modal-footer {
+    padding: 20px;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .modal-btn {
+    padding: 16px 20px;
+    font-size: 15px;
+  }
+  
+  .modal-title {
+    font-size: 24px;
+  }
+}
+
+/* Form Validation */
+.form-input:invalid:not(:focus):not(:placeholder-shown) {
+  border-color: var(--danger);
+  animation: shake 0.5s ease;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+/* Loading State */
+.modal-btn.loading {
+  position: relative;
+  color: transparent;
+}
+
+.modal-btn.loading::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+/* Range Input Styling */
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+  outline: none;
+  margin: 10px 0;
+}
+
+.dark input[type="range"] {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--primary);
+  cursor: pointer;
+  border: 3px solid white;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  background: var(--primary-dark);
+  transform: scale(1.1);
+  box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--primary);
+  cursor: pointer;
+  border: 3px solid white;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+input[type="range"]::-moz-range-thumb:hover {
+  background: var(--primary-dark);
+  transform: scale(1.1);
+  box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4);
+}
+
+/* Number Input Styling */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Date Input Styling */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.5);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+.dark input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  background-color: rgba(79, 70, 229, 0.1);
+}
+
+/* Scrollbar Styling */
+.modal-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+}
+
+.dark .modal-body::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+  background: var(--primary);
+  border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-dark);
+}
+++ b/kiros/project-dashboard/tsconfig.json
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["src"],
+  "references": [{ "path": "./tsconfig.node.json" }]
+}
+++ b/kiros/project-dashboard/tsconfig.node.json
+{
+  "compilerOptions": {
+    "composite": true,
+    "skipLibCheck": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true,
+    "strict": true
+  },
+  "include": ["vite.config.ts"]
+}
+++ b/kiros/project-dashboard/vite.config.ts
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+// https://vitejs.dev/config/
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    port: 5174
+  }
+})
