@@ -1,33 +1,25 @@
-// In-memory user store
-const users = [];
-let nextId = 1;
+// In-memory user database (for development)
+// In production, you would use a real database like MongoDB, PostgreSQL, etc.
 
-function findByEmail(email) {
-  return users.find((u) => u.email === email);
-}
-
-function findById(id) {
-  return users.find((u) => u.id === id);
-}
-
-function create({ name, email, password }) {
-  const user = {
-    id: nextId++,
-    name,
-    email,
-    password,
+const users = [
+  {
+    id: 1,
+    email: 'admin@example.com',
+    password: '$2a$12$N0wIhZQd6Q8fPvMk7V8v/.nB9h4LkYjW8mN3pQrS2tUvXyZ1A2B3C4', // password: admin123
+    name: 'Admin User',
+    role: 'admin',
     createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-  users.push(user);
-  return user;
-}
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 2,
+    email: 'user@example.com',
+    password: '$2a$12$N0wIhZQd6Q8fPvMk7V8v/.nB9h4LkYjW8mN3pQrS2tUvXyZ1A2B3C4', // password: user123
+    name: 'Regular User',
+    role: 'user',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  }
+];
 
-function update(id, updates) {
-  const user = users.find((u) => u.id === id);
-  if (!user) return null;
-  Object.assign(user, updates, { updatedAt: new Date().toISOString() });
-  return user;
-}
-
-export { findByEmail, findById, create, update };
+export default users;

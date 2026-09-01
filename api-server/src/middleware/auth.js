@@ -1,22 +1,40 @@
 import jwt from 'jsonwebtoken';
-import config from '../config/index.js';
+import users from '../data/users.js';
 
-function authenticate(req, res, next) {
-  const authHeader = req.headers.authorization;
+const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this-in-production';
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Authentication required' });
-  }
-
-  const token = authHeader.split(' ')[1];
-
+export const authenticate = (req, res, next) => {
   try {
-    const decoded = jwt.verify(token, config.jwt.secret);
-    req.userId = decoded.userId;
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+    
+    if (!token) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const user = users.find(u => u.id === decoded.userId);
+    
+    if (!user) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+
+    req.user = user;
     next();
-  } catch (err) {
+  } catch (error) {
     return res.status(401).json({ error: 'Invalid or expired token' });
   }
-}
+};
 
-export default authenticate;
+export const authorize = (roles = []) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    if (roles.length && !roles.includes(req.user.role)) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
+
+    next();
+  };
+};
