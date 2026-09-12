@@ -1,0 +1,58 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Background circle (dark space) -->
+    <path
+        android:fillColor="#1A1A2E"
+        android:pathData="M54,54m-54,0a54,54 0,1 1,108 0a54,54 0,1 1,-108 0"/>
+    <!-- Outer glow -->
+    <path
+        android:fillColor="#4A4A6A"
+        android:fillAlpha="0.3"
+        android:pathData="M54,54m-50,0a50,50 0,1 1,100 0a50,50 0,1 1,-100 0"/>
+    <!-- Full moon body -->
+    <path
+        android:fillColor="#FFF8E7"
+        android:pathData="M54,54m-38,0a38,38 0,1 1,76 0a38,38 0,1 1,-76 0"/>
+    <!-- Moon surface detail 1 (top right) -->
+    <path
+        android:fillColor="#F0E6D3"
+        android:pathData="M74,38c-4,-6 -12,-8 -20,-6c-8,2 -14,8 -16,16c-2,8 0,16 6,22c-8,-4 -14,-12 -14,-22c0,-14 12,-26 26,-26c8,0 14,4 18,10z"/>
+    <!-- Moon surface detail 2 (bottom) -->
+    <path
+        android:fillColor="#EDE0C8"
+        android:pathData="M60,78c-10,0 -18,-4 -24,-10c6,4 14,6 22,6c8,0 16,-2 22,-6c-6,6 -14,10 -20,10z"/>
+    <!-- Small crater -->
+    <path
+        android:fillColor="#E8D8B8"
+        android:pathData="M44,62m-6,0a6,6 0,1 1,12 0a6,6 0,1 1,-12 0"/>
+    <path
+        android:fillColor="#E8D8B8"
+        android:pathData="M64,48m-4,0a4,4 0,1 1,8 0a4,4 0,1 1,-8 0"/>
+    <path
+        android:fillColor="#E8D8B8"
+        android:pathData="M38,44m-3,0a3,3 0,1 1,6 0a3,3 0,1 1,-6 0"/>
+    <!-- Stars -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M20,25l2,0l1,-2l1,2l2,0l-1.5,1.5l0.5,2l-2,-1l-2,1l0.5,-2z"/>
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M82,28l1.5,0l0.75,-1.5l0.75,1.5l1.5,0l-1.125,1.125l0.375,1.5l-1.5,-0.75l-1.5,0.75l0.375,-1.5z"/>
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M85,70l1.2,0l0.6,-1.2l0.6,1.2l1.2,0l-0.9,0.9l0.3,1.2l-1.2,-0.6l-1.2,0.6l0.3,-1.2z"/>
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M18,60l1.2,0l0.6,-1.2l0.6,1.2l1.2,0l-0.9,0.9l0.3,1.2l-1.2,-0.6l-1.2,0.6l0.3,-1.2z"/>
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.7"
+        android:pathData="M30,82l1,0l0.5,-1l0.5,1l1,0l-0.75,0.75l0.25,1l-1,-0.5l-1,0.5l0.25,-1z"/>
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.7"
+        android:pathData="M78,48l1,0l0.5,-1l0.5,1l1,0l-0.75,0.75l0.25,1l-1,-0.5l-1,0.5l0.25,-1z"/>
+</vector>

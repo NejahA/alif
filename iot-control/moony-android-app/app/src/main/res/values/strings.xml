@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Moony</string>
+    <string name="connect">Connect</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="server_address">Server Address</string>
+    <string name="your_name">Your Device Name</string>
+    <string name="send_command">Send Command</string>
+    <string name="send_message">Send Message</string>
+    <string name="type_message">Type a message...</string>
+    <string name="connected_devices">Connected Devices</string>
+    <string name="no_devices">No devices connected</string>
+    <string name="connecting">Connecting...</string>
+    <string name="connected">Connected</string>
+    <string name="disconnected">Disconnected</string>
+    <string name="command_placeholder">Enter command...</string>
+    <string name="chat">Chat</string>
+    <string name="commands">Commands</string>
+    <string name="devices">Devices</string>
+    <string name="moony_control">Moony IoT Control</string>
+    <string name="select_device">Select a device</string>
+</resources>

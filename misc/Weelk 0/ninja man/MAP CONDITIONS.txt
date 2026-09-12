@@ -1,0 +1,3 @@
+Cdt 1 : if 4 adjacent blank squares: wall 1 of them
+Cdt 2 : if 1 blank square in a gird of 8; blank 2 adjacent;
+        if this blank is adjacent to limit; dont blank limit

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+
+    <!-- Outer Sacred Triangle -->
+    <path
+        android:pathData="M 50 10 L 90 85 L 10 85 Z"
+        android:strokeColor="#FFD700"
+        android:strokeWidth="3.5"
+        android:strokeLineJoin="round" />
+
+    <!-- Inner Triangle Glow -->
+    <path
+        android:pathData="M 50 22 L 80 78 L 20 78 Z"
+        android:strokeColor="#4DFFD700"
+        android:strokeWidth="1.5"
+        android:strokeLineJoin="round" />
+
+    <!-- Eye Outline -->
+    <path
+        android:pathData="M 30 54 Q 50 38 70 54 Q 50 70 30 54 Z"
+        android:strokeColor="#FFD700"
+        android:strokeWidth="2.5"
+        android:strokeLineJoin="round" />
+
+    <!-- Eye Pupil -->
+    <path
+        android:pathData="M 50 54 m -7 0 a 7 7 0 1 0 14 0 a 7 7 0 1 0 -14 0"
+        android:fillColor="#FFD700" />
+</vector>

@@ -1,0 +1,91 @@
+{
+  "name": "Ollama Chat Webhook",
+  "nodes": [
+    {
+      "id": "20ba0ca0-1517-4877-b9b7-68cf331afd00",
+      "parameters": {
+        "path": "ollama/chat",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ],
+      "name": "Webhook"
+    },
+    {
+      "id": "f8c37661-6bf2-499e-b50a-88d8d0ab0083",
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:11434/api/generate",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "\"llama3.2:1b\""
+            },
+            {
+              "name": "prompt",
+              "value": "={{ $json.body.prompt }}"
+            },
+            {
+              "name": "stream",
+              "value": "false"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        550,
+        300
+      ],
+      "name": "Call Ollama"
+    },
+    {
+      "id": "e5c9ed3b-ba62-47cf-a361-ddd2e99ffe81",
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.response }}"
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        850,
+        300
+      ],
+      "name": "Respond"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Call Ollama",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Ollama": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "pinData": {},
+  "active": false
+}

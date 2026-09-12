@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chronos — Focus Timer</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="script.js" defer></script>
+</head>
+<body>
+
+  <!-- ====== BACKGROUND PARTICLES (pure CSS) ====== -->
+  <div class="particles" aria-hidden="true">
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+  </div>
+
+  <div class="app">
+    <!-- ====== HEADER ====== -->
+    <header class="header">
+      <h1 class="logo">⏱ Chronos</h1>
+      <p class="tagline">Focus. Track. Achieve.</p>
+    </header>
+
+    <div class="dashboard">
+
+      <!-- ====== LEFT: FOCUS TIMER ====== -->
+      <section class="card timer-card">
+        <div class="card-header">
+          <h2>Focus Session</h2>
+          <div class="mode-badges">
+            <button class="mode-btn active" data-minutes="25">Focus</button>
+            <button class="mode-btn" data-minutes="5">Short</button>
+            <button class="mode-btn" data-minutes="15">Long</button>
+          </div>
+        </div>
+
+        <div class="timer-circle" id="timerRing">
+          <svg viewBox="0 0 220 220" class="ring-svg">
+            <circle class="ring-bg" cx="110" cy="110" r="100" />
+            <circle class="ring-progress" id="ringProgress" cx="110" cy="110" r="100"
+              style="stroke-dasharray: 628.32; stroke-dashoffset: 0;" />
+          </svg>
+          <div class="timer-display">
+            <span id="timerDisplay">25:00</span>
+          </div>
+        </div>
+
+        <div class="timer-controls">
+          <button class="ctrl-btn primary" id="startBtn">▶ Start</button>
+          <button class="ctrl-btn" id="pauseBtn" disabled>⏸ Pause</button>
+          <button class="ctrl-btn danger" id="resetBtn">↺ Reset</button>
+        </div>
+
+        <div class="session-counter">
+          Sessions today: <strong id="sessionCount">0</strong>
+        </div>
+      </section>
+
+      <!-- ====== RIGHT: TASKS ====== -->
+      <section class="card tasks-card">
+        <div class="card-header">
+          <h2>Tasks</h2>
+          <span class="task-badge" id="taskCount">0</span>
+        </div>
+
+        <form class="task-form" id="taskForm">
+          <input type="text" id="taskInput" placeholder="What do you need to do?" autocomplete="off" />
+          <button type="submit" class="add-btn">+ Add</button>
+        </form>
+
+        <ul class="task-list" id="taskList">
+          <!-- Tasks rendered by JS -->
+        </ul>
+      </section>
+
+      <!-- ====== BOTTOM: STATS ====== -->
+  </div>
+</body>
+</html>

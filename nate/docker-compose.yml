@@ -1,0 +1,29 @@
+services:
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      # Disable mandatory user management / owner signup (no SMTP needed)
+      - N8N_USER_MANAGEMENT_DISABLED=true
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678/
+      - N8N_ENCRYPTION_KEY=your-encryption-key-change-me
+      # Ollama configuration - n8n will connect to Ollama running on host
+      - EXECUTIONS_DATA_PRUNE=true
+      - EXECUTIONS_DATA_MAX_AGE=168
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./n8n/backup:/backup
+      - ./n8n/credentials:/credentials
+      - ./n8n/workflows:/workflows
+    # Allow n8n to reach Ollama running on the host machine
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  n8n_data:

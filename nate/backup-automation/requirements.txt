@@ -1,0 +1,10 @@
+# Requirements for Backup Automation Script
+# This script uses only Python standard library modules.
+# No external dependencies are required to run.
+#
+# For scheduled/cron-like functionality on Windows, consider:
+#   pywin32       -- to install as a Windows service
+#
+# For additional compression formats, consider:
+#   brotli        -- Brotli compression support
+#   python-lz4    -- LZ4 compression support

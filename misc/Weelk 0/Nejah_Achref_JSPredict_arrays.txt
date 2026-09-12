@@ -1,0 +1,6 @@
+["Paula", "Smith", "1234 Main Street", "St. Louis", "MO", 12345]
+["broccoli", "ice cream", "hashbrowns"]
+["Bambi", "Beetlejuice", "Toy Story", "Zoro"];
+
+
+ 

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+</head>
+<body>
+	<style type="text/css">
+		#ocean {
+			background-image: url("ocean.jpg");
+			width: 900px;
+			height: 700px;
+		}
+		.player{
+			position:absolute;
+			background-image: url("player.png");
+			width: 70px;
+			height: 75px;
+		}
+		.enemy {
+			position:absolute;
+			background-image: url("enemy.png");
+			width: 70px;
+			height: 75px;
+		}
+
+	</style>
+
+	<div id="ocean">
+		<div id="players"></div>
+		<div id="enemies"></div>	
+	</div>
+
+
+
+
+
+	<script type="text/javascript">
+	
+	var player= {
+		left: 450,
+		top: 620
+	}
+	var enemies= [
+		{left: 350, top:200},
+		{left: 450, top:250},
+		{left: 150, top:150},
+		{left: 300, top:250},
+		{left: 400, top:200},
+		{left: 150, top:250}
+	]
+
+	function drawPlayer(){
+		content ="<div class= 'player' style = 'left:"+player.left+"px; top:"+player.top+"px'></div>"
+		document.getElementById('players').innerHTML= content;
+	}
+	drawPlayer();
+	
+	function  drawEnnemies (){
+		content="";
+		console.log(enemies);
+		for(var idx=0; idx<enemies.length; idx++){
+			content +="<div class= 'enemy' style= 'left:"+enemies[idx].left+"px; top:"+enemies[idx].top+"px'></div>";
+		}
+		document.getElementById("enemies").innerHTML= content;
+	}
+	drawEnnemies();
+
+	document.onkeydown = function(e) {
+		console.log(e);
+		if(e.keyCode == 37) {   //left
+			player.left = player.left - 10;
+		}
+		if(e.keyCode == 39){    //right
+			player.left =player.left +10; 
+		}
+		if(e.keyCode == 38 && player.top > 500){   //down
+			player.top =player.top -10;
+		}
+		if(e.keyCode == 40 && player.top< 625){  //up
+			player.top =player.top +10;
+		}
+		drawPlayer();
+	}
+
+
+	</script>
+</body>
+</html>

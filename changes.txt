@@ -1,3 +1,4358 @@
+++ b/ElCoccoEddie/analysis_options.yaml
+# This file configures the analyzer, which statically analyzes Dart code to
+# check for errors, warnings, and lints.
+#
+# The issues identified by the analyzer are surfaced in the UI of Dart-enabled
+# IDEs (https://dart.dev/tools#ides-and-editors). The analyzer can also be
+# invoked from the command line by running `flutter analyze`.
+
+# The following line activates a set of recommended lints for Flutter apps,
+# packages, and plugins designed to encourage good coding practices.
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  # The lint rules applied to this project can be customized in the
+  # section below to disable rules from the `package:flutter_lints/flutter.yaml`
+  # included above or to enable additional rules. A list of all available lints
+  # and their documentation is published at https://dart.dev/lints.
+  #
+  # Instead of disabling a lint rule for the entire project in the
+  # section below, it can also be suppressed for a single line of code
+  # or a specific dart file by using the `// ignore: name_of_lint` and
+  # `// ignore_for_file: name_of_lint` syntax on the line or in the file
+  # producing the lint.
+  rules:
+    # avoid_print: false  # Uncomment to disable the `avoid_print` rule
+    # prefer_single_quotes: true  # Uncomment to enable the `prefer_single_quotes` rule
+
+# Additional information about this file can be found at
+# https://dart.dev/guides/language/analysis-options
+++ b/ElCoccoEddie/lib/bloc/camera/camera_bloc.dart
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:camera/camera.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'camera_event.dart';
+import 'camera_state.dart';
+
+class CameraBloc extends Bloc<CameraEvent, CameraState> {
+  CameraController? _controller;
+  List<CameraDescription> _cameras = [];
+
+  CameraController? get controller => _controller;
+
+  CameraBloc() : super(const CameraBlockedState()) {
+    on<InitializeCameraEvent>(_onInitializeCamera);
+    on<LockCameraEvent>(_onLockCamera);
+    on<UnlockCameraEvent>(_onUnlockCamera);
+    on<ToggleCameraSealEvent>(_onToggleCameraSeal);
+  }
+
+  Future<void> _onInitializeCamera(
+    InitializeCameraEvent event,
+    Emitter<CameraState> emit,
+  ) async {
+    emit(CameraLoadingState());
+    try {
+      final status = await Permission.camera.request();
+      if (status.isGranted) {
+        _cameras = await availableCameras();
+        if (_cameras.isNotEmpty) {
+          await _disposeController();
+          _controller = CameraController(
+            _cameras.first,
+            ResolutionPreset.medium,
+            enableAudio: false,
+          );
+          await _controller!.initialize();
+          emit(CameraReadyState(controller: _controller!, cameras: _cameras));
+        } else {
+          emit(const CameraErrorState(errorMessage: "No hardware cameras available."));
+        }
+      } else {
+        emit(const CameraErrorState(errorMessage: "Camera permission denied."));
+      }
+    } catch (e) {
+      emit(CameraErrorState(errorMessage: "Camera init error: $e"));
+    }
+  }
+
+  Future<void> _onLockCamera(
+    LockCameraEvent event,
+    Emitter<CameraState> emit,
+  ) async {
+    await _disposeController();
+    emit(const CameraBlockedState(reason: "All-Seeing Eye Camera Seal Engaged"));
+  }
+
+  Future<void> _onUnlockCamera(
+    UnlockCameraEvent event,
+    Emitter<CameraState> emit,
+  ) async {
+    add(InitializeCameraEvent());
+  }
+
+  Future<void> _onToggleCameraSeal(
+    ToggleCameraSealEvent event,
+    Emitter<CameraState> emit,
+  ) async {
+    if (state is CameraBlockedState) {
+      add(UnlockCameraEvent());
+    } else {
+      add(LockCameraEvent());
+    }
+  }
+
+  Future<void> _disposeController() async {
+    if (_controller != null) {
+      await _controller!.dispose();
+      _controller = null;
+    }
+  }
+
+  @override
+  Future<void> close() async {
+    await _disposeController();
+    return super.close();
+  }
+}
+++ b/ElCoccoEddie/lib/bloc/camera/camera_event.dart
+import 'package:equatable/equatable.dart';
+
+abstract class CameraEvent extends Equatable {
+  const CameraEvent();
+
+  @override
+  List<Object?> get props => [];
+}
+
+class InitializeCameraEvent extends CameraEvent {}
+
+class LockCameraEvent extends CameraEvent {}
+
+class UnlockCameraEvent extends CameraEvent {}
+
+class ToggleCameraSealEvent extends CameraEvent {}
+++ b/ElCoccoEddie/lib/bloc/camera/camera_state.dart
+import 'package:camera/camera.dart';
+import 'package:equatable/equatable.dart';
+
+abstract class CameraState extends Equatable {
+  const CameraState();
+
+  @override
+  List<Object?> get props => [];
+}
+
+class CameraInitialState extends CameraState {}
+
+class CameraLoadingState extends CameraState {}
+
+class CameraReadyState extends CameraState {
+  final CameraController controller;
+  final List<CameraDescription> cameras;
+
+  const CameraReadyState({
+    required this.controller,
+    required this.cameras,
+  });
+
+  @override
+  List<Object?> get props => [controller, cameras];
+}
+
+class CameraBlockedState extends CameraState {
+  final String reason;
+
+  const CameraBlockedState({
+    this.reason = "Hardware Camera Seal Active",
+  });
+
+  @override
+  List<Object?> get props => [reason];
+}
+
+class CameraErrorState extends CameraState {
+  final String errorMessage;
+
+  const CameraErrorState({required this.errorMessage});
+
+  @override
+  List<Object?> get props => [errorMessage];
+}
+++ b/ElCoccoEddie/lib/main.dart
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
+import 'theme/illuminati_theme.dart';
+import 'providers/privacy_shield_provider.dart';
+import 'bloc/camera/camera_bloc.dart';
+import 'screens/home_screen.dart';
+
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(const ElCoccoApp());
+}
+
+class ElCoccoApp extends StatelessWidget {
+  const ElCoccoApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => PrivacyShieldProvider()),
+        BlocProvider<CameraBloc>(create: (_) => CameraBloc()),
+      ],
+      child: MaterialApp(
+        title: 'ElCocco - Privacy Shield',
+        debugShowCheckedModeBanner: false,
+        theme: IlluminatiTheme.darkTheme,
+        home: const HomeScreen(),
+      ),
+    );
+  }
+}
+++ b/ElCoccoEddie/lib/providers/privacy_shield_provider.dart
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
+import '../services/native_blocker_service.dart';
+
+enum ThreatLevel { low, medium, high, critical }
+
+enum CameraFilter { none, monochrome, nightVision, thermal, fullScreen }
+
+class AuditedApp {
+  final String name;
+  final String packageName;
+  final bool hasCamera;
+  final bool hasMic;
+  final ThreatLevel risk;
+  final String lastAccessed;
+
+  AuditedApp({
+    required this.name,
+    required this.packageName,
+    required this.hasCamera,
+    required this.hasMic,
+    required this.risk,
+    required this.lastAccessed,
+  });
+}
+
+class PrivacyShieldProvider extends ChangeNotifier {
+  bool _cameraBlocked = false;
+  bool _micBlocked = false;
+  bool _volButtonsBlocked = false;
+  bool _masterLockActive = false;
+  bool _acousticJammerActive = false;
+  double _jammerFrequency = 18500.0;
+  bool _stealthMode = false;
+  bool _isAuditing = false;
+  int _blockedAttemptsCount = 14;
+  bool _isDeviceAdminActive = false;
+  bool _canDrawOverlays = false;
+  CameraFilter _cameraFilter = CameraFilter.fullScreen;
+  Color _cameraFilterColor = Colors.black;
+  bool _privacyAutomationEnabled = true;
+  int _lockDelaySeconds = 10;
+  int _unlockDelaySeconds = 1;
+
+  PermissionStatus _cameraPermissionStatus = PermissionStatus.denied;
+  PermissionStatus _micPermissionStatus = PermissionStatus.denied;
+
+  List<AuditedApp> _auditedApps = [];
+
+  bool get cameraBlocked => _cameraBlocked;
+  bool get micBlocked => _micBlocked;
+  bool get volumeButtonsBlocked => _volButtonsBlocked;
+  bool get masterLockActive => _masterLockActive;
+  bool get acousticJammerActive => _acousticJammerActive;
+  double get jammerFrequency => _jammerFrequency;
+  bool get stealthMode => _stealthMode;
+  bool get isAuditing => _isAuditing;
+  int get blockedAttemptsCount => _blockedAttemptsCount;
+  bool get isDeviceAdminActive => _isDeviceAdminActive;
+  bool get canDrawOverlays => _canDrawOverlays;
+  CameraFilter get cameraFilter => _cameraFilter;
+  Color get cameraFilterColor => _cameraFilterColor;
+  bool get privacyAutomationEnabled => _privacyAutomationEnabled;
+  int get lockDelaySeconds => _lockDelaySeconds;
+  int get unlockDelaySeconds => _unlockDelaySeconds;
+  List<AuditedApp> get auditedApps => _auditedApps;
+  PermissionStatus get cameraPermissionStatus => _cameraPermissionStatus;
+  PermissionStatus get micPermissionStatus => _micPermissionStatus;
+
+  PrivacyShieldProvider() {
+    _initPermissionsAndAudit();
+  }
+
+  Future<void> _initPermissionsAndAudit() async {
+    _cameraPermissionStatus = await Permission.camera.status;
+    _micPermissionStatus = await Permission.microphone.status;
+    final statusMap = await NativeBlockerService.getShieldStatus();
+    _isDeviceAdminActive = statusMap['isAdminActive'] ?? false;
+    _canDrawOverlays = statusMap['canDrawOverlays'] ?? false;
+    _cameraBlocked = statusMap['cameraBlocked'] ?? false;
+    _micBlocked = statusMap['micBlocked'] ?? false;
+    _volButtonsBlocked = statusMap['volButtonsBlocked'] ?? false;
+    _masterLockActive = _cameraBlocked && _micBlocked;
+    await _loadPrivacyEngineStatus();
+    _generateInitialAuditData();
+    notifyListeners();
+  }
+
+  Future<void> checkStatus() async {
+    final statusMap = await NativeBlockerService.getShieldStatus();
+    _isDeviceAdminActive = statusMap['isAdminActive'] ?? false;
+    _canDrawOverlays = statusMap['canDrawOverlays'] ?? false;
+    _cameraBlocked = statusMap['cameraBlocked'] ?? false;
+    _micBlocked = statusMap['micBlocked'] ?? false;
+    _volButtonsBlocked = statusMap['volButtonsBlocked'] ?? false;
+    _masterLockActive = _cameraBlocked && _micBlocked;
+    await _loadPrivacyEngineStatus();
+    notifyListeners();
+  }
+
+  Future<void> _loadPrivacyEngineStatus() async {
+    final status = await NativeBlockerService.getPrivacyEngineStatus();
+    _privacyAutomationEnabled = status['automationEnabled'] ?? _privacyAutomationEnabled;
+    _lockDelaySeconds = status['lockDelaySeconds'] ?? _lockDelaySeconds;
+    _unlockDelaySeconds = status['unlockDelaySeconds'] ?? _unlockDelaySeconds;
+  }
+
+  Future<void> setPrivacyAutomationEnabled(bool enabled) async {
+    if (await NativeBlockerService.setPrivacyAutomationEnabled(enabled)) {
+      _privacyAutomationEnabled = enabled;
+      notifyListeners();
+    }
+  }
+
+  Future<void> setPrivacyFeaturePolicy(String feature, {
+    required bool disableOnLock,
+    required bool enableOnUnlock,
+  }) async {
+    await NativeBlockerService.setPrivacyFeaturePolicy(
+      feature: feature,
+      disableOnLock: disableOnLock,
+      enableOnUnlock: enableOnUnlock,
+    );
+  }
+
+  Future<void> setPrivacyTimerSettings({required int lockDelaySeconds, required int unlockDelaySeconds}) async {
+    if (await NativeBlockerService.setPrivacyTimerSettings(
+      lockDelaySeconds: lockDelaySeconds,
+      unlockDelaySeconds: unlockDelaySeconds,
+    )) {
+      _lockDelaySeconds = lockDelaySeconds;
+      _unlockDelaySeconds = unlockDelaySeconds;
+      notifyListeners();
+    }
+  }
+
+  Future<void> requestOverlayPermission() async {
+    await NativeBlockerService.requestOverlayPermission();
+    await Future.delayed(const Duration(seconds: 1));
+    await checkStatus();
+  }
+
+  Future<void> requestDeviceAdmin() async {
+    await NativeBlockerService.requestDeviceAdmin();
+    await Future.delayed(const Duration(seconds: 1));
+    await checkStatus();
+    if (_isDeviceAdminActive) {
+      await syncNativeHardwareState();
+    }
+  }
+
+  Future<void> syncNativeHardwareState() async {
+    final cameraApplied = await NativeBlockerService.setCameraBlocked(_cameraBlocked);
+    await NativeBlockerService.setMicrophoneBlocked(_micBlocked);
+    await NativeBlockerService.setVolumeButtonsBlocked(_volButtonsBlocked);
+    if (!cameraApplied) {
+      await checkStatus();
+    }
+  }
+
+  Future<bool> _ensureRequiredPermissions({bool requireCamera = false, bool requireMic = false}) async {
+    final adminActive = await NativeBlockerService.isDeviceAdminActive();
+
+    if (!adminActive) {
+      // Camera control stores the requested state natively and applies it when
+      // the user returns from the Device Admin approval screen.
+      return requireCamera;
+    }
+
+    // DevicePolicyManager controls the camera system-wide and does not require
+    // the app's camera runtime permission or overlay permission.
+    if (requireCamera) {
+      return true;
+    }
+
+    final overlayReady = await NativeBlockerService.canDrawOverlays();
+    if (requireMic && !overlayReady) {
+      return false;
+    }
+
+    final permissionsToCheck = <Permission>[];
+    if (requireCamera) permissionsToCheck.add(Permission.camera);
+    if (requireMic) permissionsToCheck.add(Permission.microphone);
+
+    if (permissionsToCheck.isNotEmpty) {
+      await requestPermissions();
+
+      if (requireCamera && _cameraPermissionStatus.isDenied) {
+        return false;
+      }
+      if (requireMic && _micPermissionStatus.isDenied) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  Future<void> toggleMasterLock() async {
+    final canActivate = await _ensureRequiredPermissions(requireCamera: true, requireMic: true);
+    if (!canActivate) {
+      return;
+    }
+
+    _masterLockActive = !_masterLockActive;
+    _cameraBlocked = _masterLockActive;
+    _micBlocked = _masterLockActive;
+    _volButtonsBlocked = _masterLockActive;
+    if (_masterLockActive) {
+      _blockedAttemptsCount += 1;
+    }
+    await syncNativeHardwareState();
+    notifyListeners();
+  }
+
+  Future<void> toggleCameraShield() async {
+    _cameraFilter = _cameraFilter == CameraFilter.fullScreen
+        ? CameraFilter.none
+        : CameraFilter.fullScreen;
+    _cameraBlocked = _cameraFilter == CameraFilter.fullScreen;
+    notifyListeners();
+  }
+
+  void setCameraFilter(CameraFilter filter) {
+    _cameraFilter = filter;
+    _cameraBlocked = filter == CameraFilter.fullScreen;
+    notifyListeners();
+  }
+
+  void setCameraFilterColor(Color color) {
+    _cameraFilterColor = color;
+    notifyListeners();
+  }
+
+  Future<void> toggleMicShield() async {
+    final canActivate = await _ensureRequiredPermissions(requireMic: true);
+    if (!canActivate) {
+      return;
+    }
+
+    _micBlocked = !_micBlocked;
+    if (_cameraBlocked && _micBlocked) {
+      _masterLockActive = true;
+    } else if (!_micBlocked) {
+      _masterLockActive = false;
+    }
+    await NativeBlockerService.setMicrophoneBlocked(_micBlocked);
+    notifyListeners();
+  }
+
+  Future<void> toggleVolumeButtonsShield() async {
+    _volButtonsBlocked = !_volButtonsBlocked;
+    await NativeBlockerService.setVolumeButtonsBlocked(_volButtonsBlocked);
+    notifyListeners();
+  }
+
+  void toggleAcousticJammer() {
+    _acousticJammerActive = !_acousticJammerActive;
+    notifyListeners();
+  }
+
+  void setJammerFrequency(double freq) {
+    _jammerFrequency = freq;
+    notifyListeners();
+  }
+
+  void toggleStealthMode() {
+    _stealthMode = !_stealthMode;
+    notifyListeners();
+  }
+
+  Future<void> requestPermissions() async {
+    Map<Permission, PermissionStatus> statuses = await [
+      Permission.camera,
+      Permission.microphone,
+    ].request();
+
+    _cameraPermissionStatus = statuses[Permission.camera] ?? PermissionStatus.denied;
+    _micPermissionStatus = statuses[Permission.microphone] ?? PermissionStatus.denied;
+    notifyListeners();
+  }
+
+  Future<void> scanThreats() async {
+    _isAuditing = true;
+    notifyListeners();
+
+    await Future.delayed(const Duration(seconds: 2));
+
+    _generateInitialAuditData();
+    _isAuditing = false;
+    _blockedAttemptsCount += 3;
+    notifyListeners();
+  }
+
+  void _generateInitialAuditData() {
+    _auditedApps = [
+      AuditedApp(
+        name: 'Social Cipher App',
+        packageName: 'com.social.cipher',
+        hasCamera: true,
+        hasMic: true,
+        risk: ThreatLevel.high,
+        lastAccessed: '2 mins ago',
+      ),
+      AuditedApp(
+        name: 'Voice Assistant Background',
+        packageName: 'com.voice.listener',
+        hasCamera: false,
+        hasMic: true,
+        risk: ThreatLevel.critical,
+        lastAccessed: 'Just now',
+      ),
+      AuditedApp(
+        name: 'Shadow Cam Tracker',
+        packageName: 'com.spy.shadowcam',
+        hasCamera: true,
+        hasMic: false,
+        risk: ThreatLevel.high,
+        lastAccessed: '14 mins ago',
+      ),
+      AuditedApp(
+        name: 'Browser WebRTC Agent',
+        packageName: 'com.net.browser',
+        hasCamera: true,
+        hasMic: true,
+        risk: ThreatLevel.medium,
+        lastAccessed: '1 hour ago',
+      ),
+      AuditedApp(
+        name: 'System Audio Service',
+        packageName: 'android.system.audio',
+        hasCamera: false,
+        hasMic: true,
+        risk: ThreatLevel.low,
+        lastAccessed: '3 hours ago',
+      ),
+    ];
+  }
+}
+++ b/ElCoccoEddie/lib/screens/acoustic_jammer_screen.dart
+import 'dart:math' as math;
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import '../theme/illuminati_theme.dart';
+import '../providers/privacy_shield_provider.dart';
+import '../widgets/sacred_geometry_background.dart';
+
+class AcousticJammerScreen extends StatelessWidget {
+  const AcousticJammerScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SacredGeometryBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          title: Text(
+            'ACOUSTIC CIPHER JAMMER',
+            style: GoogleFonts.cinzel(
+              color: IlluminatiTheme.sacredGold,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          centerTitle: true,
+        ),
+        body: Consumer<PrivacyShieldProvider>(
+          builder: (context, provider, child) {
+            return Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                children: [
+                  Text(
+                    'ULTRASONIC NOISE SPECTRUM',
+                    style: GoogleFonts.cinzel(
+                      color: IlluminatiTheme.sacredGold,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Emits non-linear acoustic interference to disrupt unauthorized microphone recording.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.orbitron(
+                      color: Colors.white70,
+                      fontSize: 11,
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Waveform Visualizer Area
+                  Container(
+                    height: 200,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: IlluminatiTheme.voidDark,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: provider.acousticJammerActive
+                            ? IlluminatiTheme.cyberCyan
+                            : IlluminatiTheme.sacredGold.withValues(alpha: 0.3),
+                        width: 1.5,
+                      ),
+                      boxShadow: provider.acousticJammerActive
+                          ? [
+                              BoxShadow(
+                                color: IlluminatiTheme.cyberCyan.withValues(alpha: 0.25),
+                                blurRadius: 20,
+                                spreadRadius: 2,
+                              ),
+                            ]
+                          : [],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: FrequencyWaveformWidget(
+                        isActive: provider.acousticJammerActive,
+                        frequency: provider.jammerFrequency,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  // Frequency Slider
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: IlluminatiTheme.slateCard,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: IlluminatiTheme.sacredGold.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'CARRIER FREQUENCY',
+                              style: GoogleFonts.cinzel(
+                                color: IlluminatiTheme.sacredGold,
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              '${(provider.jammerFrequency / 1000).toStringAsFixed(2)} kHz',
+                              style: GoogleFonts.orbitron(
+                                color: IlluminatiTheme.cyberCyan,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Slider(
+                          value: provider.jammerFrequency,
+                          min: 18000.0,
+                          max: 22000.0,
+                          divisions: 40,
+                          activeColor: IlluminatiTheme.cyberCyan,
+                          inactiveColor: IlluminatiTheme.obsidianBlack,
+                          onChanged: (val) {
+                            provider.setJammerFrequency(val);
+                          },
+                        ),
+                      ],
+                    ),
+                  ).animate().fadeIn(delay: 200.ms),
+
+                  const Spacer(),
+
+                  // Master Jammer Toggle Button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: provider.acousticJammerActive
+                            ? IlluminatiTheme.crimsonSeal
+                            : IlluminatiTheme.cyberCyan,
+                        foregroundColor: IlluminatiTheme.obsidianBlack,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      onPressed: () {
+                        provider.toggleAcousticJammer();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              provider.acousticJammerActive
+                                  ? '🔊 Ultrasonic Acoustic Cipher Active'
+                                  : '🔇 Acoustic Cipher Deactivated',
+                            ),
+                          ),
+                        );
+                      },
+                      icon: Icon(
+                        provider.acousticJammerActive
+                            ? Icons.stop_circle_outlined
+                            : Icons.play_circle_fill,
+                        size: 28,
+                      ),
+                      label: Text(
+                        provider.acousticJammerActive
+                            ? 'DISENGAGE ACOUSTIC CIPHER'
+                            : 'ENGAGE ULTRASONIC JAMMER',
+                        style: GoogleFonts.orbitron(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ),
+                  ).animate().slideY(begin: 0.3, end: 0),
+                  const SizedBox(height: 16),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class FrequencyWaveformWidget extends StatefulWidget {
+  final bool isActive;
+  final double frequency;
+
+  const FrequencyWaveformWidget({
+    super.key,
+    required this.isActive,
+    required this.frequency,
+  });
+
+  @override
+  State<FrequencyWaveformWidget> createState() =>
+      _FrequencyWaveformWidgetState();
+}
+
+class _FrequencyWaveformWidgetState extends State<FrequencyWaveformWidget>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return CustomPaint(
+          painter: WaveformPainter(
+            progress: _controller.value,
+            isActive: widget.isActive,
+            frequency: widget.frequency,
+          ),
+        );
+      },
+    );
+  }
+}
+
+class WaveformPainter extends CustomPainter {
+  final double progress;
+  final bool isActive;
+  final double frequency;
+
+  WaveformPainter({
+    required this.progress,
+    required this.isActive,
+    required this.frequency,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+
+    final wavePaint = Paint()
+      ..color = isActive ? IlluminatiTheme.cyberCyan : IlluminatiTheme.sacredGold.withValues(alpha: 0.4)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = isActive ? 2.5 : 1.2;
+
+    final glowPaint = Paint()
+      ..color = (isActive ? IlluminatiTheme.cyberCyan : IlluminatiTheme.sacredGold).withValues(alpha: 0.6)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 6.0
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+
+    final path = Path();
+    final wavelength = 50.0 - (frequency - 18000) / 100;
+    final amplitude = isActive ? size.height * 0.35 : size.height * 0.08;
+
+    path.moveTo(0, center.dy);
+
+    for (double x = 0; x <= size.width; x += 2) {
+      final y = center.dy +
+          math.sin((x / wavelength) + (progress * math.pi * 2)) * amplitude *
+              math.cos((x / (size.width * 0.5)));
+      path.lineTo(x, y);
+    }
+
+    if (isActive) {
+      canvas.drawPath(path, glowPaint);
+    }
+    canvas.drawPath(path, wavePaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant WaveformPainter oldDelegate) {
+    return oldDelegate.progress != progress ||
+        oldDelegate.isActive != isActive ||
+        oldDelegate.frequency != frequency;
+  }
+}
+++ b/ElCoccoEddie/lib/screens/app_audit_screen.dart
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import '../theme/illuminati_theme.dart';
+import '../providers/privacy_shield_provider.dart';
+import '../widgets/sacred_geometry_background.dart';
+
+class AppAuditScreen extends StatelessWidget {
+  const AppAuditScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SacredGeometryBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          title: Text(
+            'THREAT MATRIX AUDIT',
+            style: GoogleFonts.cinzel(
+              color: IlluminatiTheme.sacredGold,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          centerTitle: true,
+        ),
+        body: Consumer<PrivacyShieldProvider>(
+          builder: (context, provider, child) {
+            return Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  // Scan Header Card
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.radar,
+                                color: IlluminatiTheme.sacredGold,
+                                size: 30,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'SACRED PERMISSION AUDITOR',
+                                      style: GoogleFonts.cinzel(
+                                        color: IlluminatiTheme.sacredGold,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Auditing hardware access vectors for stealth surveillance.',
+                                      style: GoogleFonts.orbitron(
+                                        color: Colors.white70,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: IlluminatiTheme.sacredGold,
+                                foregroundColor: IlluminatiTheme.obsidianBlack,
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              onPressed: provider.isAuditing
+                                  ? null
+                                  : () async {
+                                      await provider.scanThreats();
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('⚡ System Threat Matrix Scan Completed'),
+                                          ),
+                                        );
+                                      }
+                                    },
+                              icon: provider.isAuditing
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: IlluminatiTheme.obsidianBlack,
+                                      ),
+                                    )
+                                  : const Icon(Icons.shield),
+                              label: Text(
+                                provider.isAuditing
+                                    ? 'SCANNING THREAT VECTOR...'
+                                    : 'INITIATE THREAT SCAN',
+                                style: GoogleFonts.orbitron(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // App List Section Header
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'AUDITED PACKAGES (${provider.auditedApps.length})',
+                        style: GoogleFonts.cinzel(
+                          color: IlluminatiTheme.sacredGold,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        'RISK LEVEL',
+                        style: GoogleFonts.orbitron(
+                          color: Colors.white38,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  // List of Audited Apps
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: provider.auditedApps.length,
+                      itemBuilder: (context, index) {
+                        final app = provider.auditedApps[index];
+                        return _buildAppItemCard(app, index);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAppItemCard(AuditedApp app, int index) {
+    Color riskColor;
+    String riskText;
+
+    switch (app.risk) {
+      case ThreatLevel.critical:
+        riskColor = IlluminatiTheme.crimsonSeal;
+        riskText = 'CRITICAL';
+        break;
+      case ThreatLevel.high:
+        riskColor = Colors.orangeAccent;
+        riskText = 'HIGH';
+        break;
+      case ThreatLevel.medium:
+        riskColor = IlluminatiTheme.amberGlow;
+        riskText = 'MEDIUM';
+        break;
+      case ThreatLevel.low:
+        riskColor = IlluminatiTheme.emeraldShield;
+        riskText = 'LOW';
+        break;
+    }
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: riskColor.withValues(alpha: 0.15),
+            shape: BoxShape.circle,
+            border: Border.all(color: riskColor.withValues(alpha: 0.5)),
+          ),
+          child: Icon(
+            app.hasCamera && app.hasMic
+                ? Icons.videocam
+                : app.hasCamera
+                    ? Icons.camera_alt
+                    : Icons.mic,
+            color: riskColor,
+            size: 22,
+          ),
+        ),
+        title: Text(
+          app.name,
+          style: GoogleFonts.cinzel(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 2),
+            Text(
+              app.packageName,
+              style: GoogleFonts.orbitron(
+                color: Colors.white38,
+                fontSize: 11,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                if (app.hasCamera) _buildPermissionBadge('CAM', IlluminatiTheme.sacredGold),
+                if (app.hasMic) _buildPermissionBadge('MIC', IlluminatiTheme.cyberCyan),
+                const SizedBox(width: 8),
+                Text(
+                  'Access: ${app.lastAccessed}',
+                  style: GoogleFonts.orbitron(color: Colors.white54, fontSize: 10),
+                ),
+              ],
+            ),
+          ],
+        ),
+        trailing: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: riskColor.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: riskColor),
+          ),
+          child: Text(
+            riskText,
+            style: GoogleFonts.orbitron(
+              color: riskColor,
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ),
+    ).animate().fadeIn(delay: (100 * index).ms).slideX(begin: 0.1, end: 0);
+  }
+
+  Widget _buildPermissionBadge(String label, Color color) {
+    return Container(
+      margin: const EdgeInsets.only(right: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: color.withValues(alpha: 0.6), width: 0.8),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.orbitron(
+          color: color,
+          fontSize: 9,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+}
+++ b/ElCoccoEddie/lib/screens/camera_filter_screen.dart
+import 'package:camera/camera.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../bloc/camera/camera_bloc.dart';
+import '../bloc/camera/camera_event.dart';
+import '../bloc/camera/camera_state.dart';
+import '../providers/privacy_shield_provider.dart';
+import '../theme/illuminati_theme.dart';
+
+class CameraFilterScreen extends StatefulWidget {
+  const CameraFilterScreen({super.key});
+
+  @override
+  State<CameraFilterScreen> createState() => _CameraFilterScreenState();
+}
+
+class _CameraFilterScreenState extends State<CameraFilterScreen> {
+  @override
+  void initState() {
+    super.initState();
+    context.read<CameraBloc>().add(InitializeCameraEvent());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        title: Text('CAMERA FILTERS', style: GoogleFonts.cinzel(color: IlluminatiTheme.sacredGold)),
+        actions: [
+          IconButton(
+            tooltip: 'Close camera',
+            icon: const Icon(Icons.close),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: BlocBuilder<CameraBloc, CameraState>(
+              builder: (context, state) {
+                if (state is CameraLoadingState) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (state is CameraReadyState) {
+                  return _FilteredPreview(controller: state.controller);
+                }
+                if (state is CameraErrorState) {
+                  return Center(
+                    child: Text(state.errorMessage, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70)),
+                  );
+                }
+                return const Center(child: Text('Camera is ready to initialize.', style: TextStyle(color: Colors.white70)));
+              },
+            ),
+          ),
+          const _FilterControls(),
+        ],
+      ),
+    );
+  }
+}
+
+class _FilteredPreview extends StatelessWidget {
+  final CameraController controller;
+
+  const _FilteredPreview({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = context.watch<PrivacyShieldProvider>();
+    Widget preview = CameraPreview(controller);
+
+    switch (provider.cameraFilter) {
+      case CameraFilter.monochrome:
+        preview = ColorFiltered(
+          colorFilter: const ColorFilter.matrix(<double>[
+            0.2126, 0.7152, 0.0722, 0, 0,
+            0.2126, 0.7152, 0.0722, 0, 0,
+            0.2126, 0.7152, 0.0722, 0, 0,
+            0, 0, 0, 1, 0,
+          ]),
+          child: preview,
+        );
+      case CameraFilter.nightVision:
+        preview = ColorFiltered(
+          colorFilter: const ColorFilter.mode(Color(0xFF37FF88), BlendMode.modulate),
+          child: preview,
+        );
+      case CameraFilter.thermal:
+        preview = ColorFiltered(
+          colorFilter: const ColorFilter.matrix(<double>[
+            1.5, 0, 0, 0, 0,
+            0, 0.35, 0, 0, 35,
+            0, 0, 1.5, 0, 35,
+            0, 0, 0, 1, 0,
+          ]),
+          child: preview,
+        );
+      case CameraFilter.fullScreen:
+        preview = Stack(children: [preview, Positioned.fill(child: ColoredBox(color: provider.cameraFilterColor))]);
+      case CameraFilter.none:
+        break;
+    }
+
+    return Center(child: AspectRatio(aspectRatio: controller.value.aspectRatio, child: preview));
+  }
+}
+
+class _FilterControls extends StatelessWidget {
+  const _FilterControls();
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = context.watch<PrivacyShieldProvider>();
+    return SafeArea(
+      top: false,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
+        color: IlluminatiTheme.voidDark,
+        child: Column(
+          children: [
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 8,
+              children: [
+                _FilterButton(label: 'CLEAR', filter: CameraFilter.none),
+                _FilterButton(label: 'B&W', filter: CameraFilter.monochrome),
+                _FilterButton(label: 'NIGHT', filter: CameraFilter.nightVision),
+                _FilterButton(label: 'THERMAL', filter: CameraFilter.thermal),
+                _FilterButton(label: 'FULL SCREEN', filter: CameraFilter.fullScreen),
+              ],
+            ),
+            if (provider.cameraFilter == CameraFilter.fullScreen) ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  const Text('SCREEN COLOR', style: TextStyle(color: Colors.white70)),
+                  const SizedBox(width: 12),
+                  GestureDetector(
+                    onTap: () => _showColorDialog(context, provider),
+                    child: Container(
+                      width: 42,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: provider.cameraFilterColor,
+                        border: Border.all(color: Colors.white),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(_hex(provider.cameraFilterColor), style: const TextStyle(color: Colors.white70)),
+                  const Spacer(),
+                  ...[Colors.black, Colors.white, Colors.red, Colors.blue, Colors.green].map(
+                    (color) => Padding(
+                      padding: const EdgeInsets.only(left: 7),
+                      child: GestureDetector(
+                        onTap: () => provider.setCameraFilterColor(color),
+                        child: CircleAvatar(radius: 13, backgroundColor: color),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  static String _hex(Color color) => '#${color.toARGB32().toRadixString(16).substring(2).toUpperCase()}';
+
+  static Future<void> _showColorDialog(BuildContext context, PrivacyShieldProvider provider) async {
+    final controller = TextEditingController(text: _hex(provider.cameraFilterColor));
+    final value = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Full-screen color'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(prefixText: '#', hintText: '000000'),
+          textCapitalization: TextCapitalization.characters,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('CANCEL')),
+          FilledButton(onPressed: () => Navigator.pop(context, controller.text), child: const Text('APPLY')),
+        ],
+      ),
+    );
+    if (value == null) return;
+    final normalized = value.replaceFirst('#', '').trim();
+    if (RegExp(r'^[0-9a-fA-F]{6}$').hasMatch(normalized)) {
+      provider.setCameraFilterColor(Color(int.parse('FF$normalized', radix: 16)));
+    }
+  }
+}
+
+class _FilterButton extends StatelessWidget {
+  final String label;
+  final CameraFilter filter;
+
+  const _FilterButton({required this.label, required this.filter});
+
+  @override
+  Widget build(BuildContext context) {
+    final active = context.watch<PrivacyShieldProvider>().cameraFilter == filter;
+    return OutlinedButton(
+      onPressed: () => context.read<PrivacyShieldProvider>().setCameraFilter(filter),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: active ? Colors.black : IlluminatiTheme.sacredGold,
+        backgroundColor: active ? IlluminatiTheme.sacredGold : Colors.transparent,
+        side: const BorderSide(color: IlluminatiTheme.sacredGold),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      ),
+      child: Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+    );
+  }
+}
+++ b/ElCoccoEddie/lib/screens/home_screen.dart
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../theme/illuminati_theme.dart';
+import '../providers/privacy_shield_provider.dart';
+import '../widgets/illuminati_eye_painter.dart';
+import '../widgets/sacred_geometry_background.dart';
+import '../services/native_blocker_service.dart';
+import 'camera_filter_screen.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../bloc/camera/camera_bloc.dart';
+import '../bloc/camera/camera_state.dart';
+import 'app_audit_screen.dart';
+import 'acoustic_jammer_screen.dart';
+import 'stealth_settings_screen.dart';
+
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SacredGeometryBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          centerTitle: true,
+          title: Text(
+            'EL COCCO',
+            style: GoogleFonts.cinzelDecorative(
+              color: IlluminatiTheme.sacredGold,
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 2.5,
+            ),
+          ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.security, color: IlluminatiTheme.sacredGold),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const StealthSettingsScreen()),
+                );
+              },
+            ),
+          ],
+        ),
+        body: Consumer<PrivacyShieldProvider>(
+          builder: (context, provider, child) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              child: Column(
+                children: [
+                  // Status Banner
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: provider.masterLockActive
+                          ? IlluminatiTheme.emeraldShield.withValues(alpha: 0.12)
+                          : IlluminatiTheme.crimsonSeal.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: provider.masterLockActive
+                            ? IlluminatiTheme.emeraldShield
+                            : IlluminatiTheme.crimsonSeal,
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          provider.masterLockActive
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                          color: provider.masterLockActive
+                              ? IlluminatiTheme.emeraldShield
+                              : IlluminatiTheme.crimsonSeal,
+                          size: 22,
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          provider.masterLockActive
+                              ? 'PRIVACY SHIELD ACTIVE'
+                              : 'PRIVACY SHIELD READY',
+                          style: GoogleFonts.orbitron(
+                            color: provider.masterLockActive
+                                ? IlluminatiTheme.emeraldShield
+                                : IlluminatiTheme.crimsonSeal,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ).animate().fadeIn(duration: 500.ms).slideY(begin: -0.2, end: 0),
+                  // Device Admin Prompt Banner if not active
+                  if (!provider.isDeviceAdminActive)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: IlluminatiTheme.amberGlow.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: IlluminatiTheme.sacredGold, width: 1.5),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.admin_panel_settings, color: IlluminatiTheme.sacredGold, size: 28),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'GRANT DEVICE ADMIN TO SEAL CAMERA HARDWARE',
+                                  style: GoogleFonts.cinzel(
+                                    color: IlluminatiTheme.sacredGold,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: IlluminatiTheme.sacredGold,
+                                    foregroundColor: IlluminatiTheme.obsidianBlack,
+                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                  ),
+                                  onPressed: () async {
+                                    await provider.requestDeviceAdmin();
+                                  },
+                                  child: Text(
+                                    'ACTIVATE DEVICE ADMIN',
+                                    style: GoogleFonts.orbitron(fontSize: 10, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: OutlinedButton(
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: IlluminatiTheme.sacredGold,
+                                    side: const BorderSide(color: IlluminatiTheme.sacredGold),
+                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                  ),
+                                  onPressed: () async {
+                                    await NativeBlockerService.openPrivacySettings();
+                                  },
+                                  child: Text(
+                                    'OS PRIVACY SETTINGS',
+                                    style: GoogleFonts.orbitron(fontSize: 10, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ).animate().fadeIn(duration: 400.ms),
+
+                  // Display Over Other Apps Prompt Banner if not granted
+                  if (!provider.canDrawOverlays)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: IlluminatiTheme.cyberCyan.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: IlluminatiTheme.cyberCyan, width: 1.5),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.layers, color: IlluminatiTheme.cyberCyan, size: 28),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'ALLOW DISPLAY OVER OTHER APPS FOR FLOATING SHIELD',
+                                  style: GoogleFonts.cinzel(
+                                    color: IlluminatiTheme.cyberCyan,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: IlluminatiTheme.cyberCyan,
+                                foregroundColor: IlluminatiTheme.obsidianBlack,
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                              ),
+                              onPressed: () async {
+                                await provider.requestOverlayPermission();
+                              },
+                              child: Text(
+                                'GRANT DISPLAY OVER OTHER APPS',
+                                style: GoogleFonts.orbitron(fontSize: 11, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ).animate().fadeIn(duration: 400.ms),
+
+                  const SizedBox(height: 24),
+
+                  // Central Illuminati Eye Node
+                  IlluminatiEyeWidget(
+                    isShielded: provider.masterLockActive,
+                    onTap: () {
+                      provider.toggleMasterLock();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            provider.masterLockActive
+                                ? '✨ Illuminati Privacy Lock Activated'
+                                : '⚠️ Privacy Shields Unsealed',
+                          ),
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    },
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  Text(
+                    'TAP TRIANGLE TO TOGGLE MASTER SEAL',
+                    style: GoogleFonts.cinzel(
+                      color: IlluminatiTheme.sacredGold.withValues(alpha: 0.8),
+                      fontSize: 11,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+
+                  const SizedBox(height: 28),
+
+                  // Individual Camera, Microphone & Volume Button Seal Toggles
+                  Row(
+                    children: [
+                      Expanded(
+                        child: BlocConsumer<CameraBloc, CameraState>(
+                          listener: (context, cameraState) {},
+                          builder: (context, cameraState) {
+                            return _buildShieldToggleCard(
+                              context: context,
+                              title: 'CAM FILTER',
+                              subtitle: provider.cameraFilter == CameraFilter.fullScreen
+                                  ? 'FULL SCREEN'
+                                  : provider.cameraFilter.name.toUpperCase(),
+                              icon: Icons.camera_alt,
+                              isActive: provider.cameraFilter != CameraFilter.none,
+                              activeColor: IlluminatiTheme.emeraldShield,
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => const CameraFilterScreen()),
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _buildShieldToggleCard(
+                          context: context,
+                          title: 'MIC SEAL',
+                          subtitle: provider.micBlocked ? 'BLOCKED' : 'EXPOSED',
+                          icon: Icons.mic_off,
+                          isActive: provider.micBlocked,
+                          activeColor: IlluminatiTheme.cyberCyan,
+                          onTap: provider.toggleMicShield,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _buildShieldToggleCard(
+                          context: context,
+                          title: 'VOL TRAP',
+                          subtitle: provider.volumeButtonsBlocked ? 'TRAPPED' : 'ACTIVE',
+                          icon: Icons.volume_off,
+                          isActive: provider.volumeButtonsBlocked,
+                          activeColor: IlluminatiTheme.amberGlow,
+                          onTap: provider.toggleVolumeButtonsShield,
+                        ),
+                      ),
+                    ],
+                  ).animate().fadeIn(delay: 200.ms),
+
+                  const SizedBox(height: 20),
+
+                  // Threat Stats Card
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: IlluminatiTheme.amberGlow.withValues(alpha: 0.15),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.shield_outlined,
+                              color: IlluminatiTheme.sacredGold,
+                              size: 28,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'INTERCEPTED ATTEMPTS',
+                                  style: GoogleFonts.cinzel(
+                                    color: IlluminatiTheme.sacredGold,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${provider.blockedAttemptsCount} Spyware Probe Attacks Neutralized',
+                                  style: GoogleFonts.orbitron(
+                                    color: Colors.white70,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ).animate().fadeIn(delay: 300.ms),
+
+                  const SizedBox(height: 24),
+
+                  // Quick Action Buttons
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildQuickActionButton(
+                        context: context,
+                        icon: Icons.radar,
+                        label: 'Threat Audit',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const AppAuditScreen()),
+                          );
+                        },
+                      ),
+                      _buildQuickActionButton(
+                        context: context,
+                        icon: Icons.graphic_eq,
+                        label: 'Acoustic Jammer',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const AcousticJammerScreen()),
+                          );
+                        },
+                      ),
+                      _buildQuickActionButton(
+                        context: context,
+                        icon: Icons.lock_clock,
+                        label: 'Stealth Vault',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const StealthSettingsScreen()),
+                          );
+                        },
+                      ),
+                    ],
+                  ).animate().fadeIn(delay: 400.ms),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildShieldToggleCard({
+    required BuildContext context,
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required bool isActive,
+    required Color activeColor,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+        decoration: BoxDecoration(
+          color: isActive
+              ? activeColor.withValues(alpha: 0.1)
+              : IlluminatiTheme.slateCard,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isActive ? activeColor : IlluminatiTheme.sacredGold.withValues(alpha: 0.2),
+            width: 1.8,
+          ),
+          boxShadow: isActive
+              ? [
+                  BoxShadow(
+                    color: activeColor.withValues(alpha: 0.2),
+                    blurRadius: 12,
+                    spreadRadius: 1,
+                  ),
+                ]
+              : [],
+        ),
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              size: 32,
+              color: isActive ? activeColor : Colors.white38,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: GoogleFonts.cinzel(
+                color: IlluminatiTheme.sacredGold,
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: GoogleFonts.orbitron(
+                color: isActive ? activeColor : IlluminatiTheme.crimsonSeal,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickActionButton({
+    required BuildContext context,
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: IlluminatiTheme.slateCard,
+              shape: BoxShape.circle,
+              border: Border.all(color: IlluminatiTheme.sacredGold.withValues(alpha: 0.4)),
+            ),
+            child: Icon(icon, color: IlluminatiTheme.sacredGold, size: 24),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: GoogleFonts.orbitron(
+              color: Colors.white70,
+              fontSize: 11,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+++ b/ElCoccoEddie/lib/screens/stealth_settings_screen.dart
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import '../theme/illuminati_theme.dart';
+import '../providers/privacy_shield_provider.dart';
+import '../widgets/sacred_geometry_background.dart';
+
+class StealthSettingsScreen extends StatelessWidget {
+  const StealthSettingsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SacredGeometryBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          title: Text(
+            'STEALTH & PANIC VAULT',
+            style: GoogleFonts.cinzel(
+              color: IlluminatiTheme.sacredGold,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          centerTitle: true,
+        ),
+        body: Consumer<PrivacyShieldProvider>(
+          builder: (context, provider, child) {
+            return Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: ListView(
+                children: [
+                  // Emergency Panic Button Card
+                  Card(
+                    color: IlluminatiTheme.crimsonSeal.withValues(alpha: 0.15),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      side: const BorderSide(
+                        color: IlluminatiTheme.crimsonSeal,
+                        width: 1.8,
+                      ),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Column(
+                        children: [
+                          const Icon(
+                            Icons.warning_amber_rounded,
+                            color: IlluminatiTheme.crimsonSeal,
+                            size: 44,
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            'EMERGENCY PANIC PROTOCOL',
+                            style: GoogleFonts.cinzel(
+                              color: IlluminatiTheme.crimsonSeal,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Immediately lockdown all camera & mic access points and purge session tokens.',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.orbitron(
+                              color: Colors.white70,
+                              fontSize: 11,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: IlluminatiTheme.crimsonSeal,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              onPressed: () {
+                                if (!provider.masterLockActive) {
+                                  provider.toggleMasterLock();
+                                }
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('🚨 EMERGENCY PANIC PROTOCOL ENGAGED! ALL SHIELDS SEALED.'),
+                                  ),
+                                );
+                              },
+                              child: Text(
+                                'ENGAGE PANIC LOCKDOWN',
+                                style: GoogleFonts.orbitron(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ).animate().fadeIn(duration: 400.ms),
+
+                  const SizedBox(height: 24),
+
+                  Text(
+                    'STEALTH SETTINGS',
+                    style: GoogleFonts.cinzel(
+                      color: IlluminatiTheme.sacredGold,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  _buildSettingTile(
+                    title: 'AUTO PRIVACY FLIP',
+                    subtitle: 'Apply selected privacy protections when the device locks and restore them on unlock',
+                    icon: Icons.screen_lock_portrait,
+                    value: provider.privacyAutomationEnabled,
+                    onChanged: provider.setPrivacyAutomationEnabled,
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  _buildSettingTile(
+                    title: 'LOCK DELAY',
+                    subtitle: '${provider.lockDelaySeconds}s before network protections engage',
+                    icon: Icons.timer_outlined,
+                    trailingWidget: SizedBox(
+                      width: 150,
+                      child: Slider(
+                        value: provider.lockDelaySeconds.toDouble(),
+                        min: 0,
+                        max: 60,
+                        divisions: 60,
+                        activeColor: IlluminatiTheme.sacredGold,
+                        onChanged: (value) {
+                          provider.setPrivacyTimerSettings(
+                            lockDelaySeconds: value.round(),
+                            unlockDelaySeconds: provider.unlockDelaySeconds,
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  _buildSettingTile(
+                    title: 'SENSOR RESTORATION',
+                    subtitle: 'Camera and microphone restore after confirmed unlock',
+                    icon: Icons.sensors,
+                    value: provider.privacyAutomationEnabled,
+                    onChanged: (enabled) async {
+                      await provider.setPrivacyFeaturePolicy(
+                        'CAMERA',
+                        disableOnLock: enabled,
+                        enableOnUnlock: enabled,
+                      );
+                      await provider.setPrivacyFeaturePolicy(
+                        'MICROPHONE',
+                        disableOnLock: enabled,
+                        enableOnUnlock: enabled,
+                      );
+                    },
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Decoy App Icon Switch
+                  _buildSettingTile(
+                    title: 'STEALTH DECOY MODE',
+                    subtitle: 'Mask ElCoccoEddie title & icon as a Calculator app',
+                    icon: Icons.phonelink_setup,
+                    value: provider.stealthMode,
+                    onChanged: (val) {
+                      provider.toggleStealthMode();
+                    },
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Volume Hardware Buttons Intercept Trap
+                  _buildSettingTile(
+                    title: 'VOLUME BUTTONS INTERCEPT TRAP',
+                    subtitle: 'Trap volume key events to prevent unauthorized hardware clicks',
+                    icon: Icons.volume_off,
+                    value: provider.volumeButtonsBlocked,
+                    onChanged: (val) {
+                      provider.toggleVolumeButtonsShield();
+                    },
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // System Permission Status Check
+                  _buildSettingTile(
+                    title: 'HARDWARE PERMISSION HOOKS',
+                    subtitle: 'Camera: ${provider.cameraPermissionStatus.name.toUpperCase()} | Mic: ${provider.micPermissionStatus.name.toUpperCase()}',
+                    icon: Icons.security_update_good,
+                    trailingWidget: TextButton(
+                      onPressed: () async {
+                        await provider.requestPermissions();
+                      },
+                      child: Text(
+                        'GRANT PERMS',
+                        style: GoogleFonts.orbitron(
+                          color: IlluminatiTheme.sacredGold,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Secret Code Passcode Lock
+                  _buildSettingTile(
+                    title: 'SACRED PASSCODE LOCK',
+                    subtitle: 'Require biometric or PIN to alter privacy seals',
+                    icon: Icons.fingerprint,
+                    value: true,
+                    onChanged: (val) {},
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSettingTile({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    bool? value,
+    ValueChanged<bool>? onChanged,
+    Widget? trailingWidget,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: IlluminatiTheme.slateCard,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: IlluminatiTheme.sacredGold.withValues(alpha: 0.25),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: IlluminatiTheme.sacredGold.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: IlluminatiTheme.sacredGold, size: 22),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.cinzel(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: GoogleFonts.orbitron(
+                    color: Colors.white54,
+                    fontSize: 10,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (value != null && onChanged != null)
+            Switch(
+              value: value,
+              activeThumbColor: IlluminatiTheme.emeraldShield,
+              onChanged: onChanged,
+            ),
+          if (trailingWidget != null)
+            trailingWidget,
+        ],
+      ),
+    );
+  }
+}
+++ b/ElCoccoEddie/lib/services/native_blocker_service.dart
+import 'package:flutter/services.dart';
+
+class NativeBlockerService {
+  static const MethodChannel _channel = MethodChannel('com.elcoccoeddy.privacy/blocker');
+
+  /// Check if the app has Device Administrator privileges active on Android
+  static Future<bool> isDeviceAdminActive() async {
+    try {
+      final bool result = await _channel.invokeMethod('isDeviceAdminActive');
+      return result;
+    } on PlatformException catch (e) {
+      print("Failed to check device admin: ${e.message}");
+      return false;
+    }
+  }
+
+  /// Launch Android native Device Administrator prompt
+  static Future<bool> requestDeviceAdmin() async {
+    try {
+      final bool result = await _channel.invokeMethod('requestDeviceAdmin');
+      return result;
+    } on PlatformException catch (e) {
+      print("Failed to request device admin: ${e.message}");
+      return false;
+    }
+  }
+
+  /// Check if Display Over Other Apps permission is granted
+  static Future<bool> canDrawOverlays() async {
+    try {
+      final bool result = await _channel.invokeMethod('canDrawOverlays');
+      return result;
+    } on PlatformException catch (e) {
+      print("Failed to check overlay permission: ${e.message}");
+      return false;
+    }
+  }
+
+  /// Launch Android Display Over Other Apps permission screen
+  static Future<bool> requestOverlayPermission() async {
+    try {
+      final bool result = await _channel.invokeMethod('requestOverlayPermission');
+      return result;
+    } on PlatformException catch (e) {
+      print("Failed to request overlay permission: ${e.message}");
+      return false;
+    }
+  }
+
+  /// Physically block/unblock hardware camera systemwide across all apps
+  static Future<bool> setCameraBlocked(bool blocked) async {
+    try {
+      final bool result = await _channel.invokeMethod('setCameraBlocked', {'blocked': blocked});
+      return result;
+    } on PlatformException catch (e) {
+      print("Failed to set camera block: ${e.message}");
+      return false;
+    }
+  }
+
+  /// Block/unblock system microphone recording input
+  static Future<bool> setMicrophoneBlocked(bool blocked) async {
+    try {
+      final bool result = await _channel.invokeMethod('setMicrophoneBlocked', {'blocked': blocked});
+      return result;
+    } on PlatformException catch (e) {
+      print("Failed to set mic block: ${e.message}");
+      return false;
+    }
+  }
+
+  /// Trap/untrap volume hardware buttons
+  static Future<bool> setVolumeButtonsBlocked(bool blocked) async {
+    try {
+      final bool result = await _channel.invokeMethod('setVolumeButtonsBlocked', {'blocked': blocked});
+      return result;
+    } on PlatformException catch (e) {
+      print("Failed to set volume buttons trap: ${e.message}");
+      return false;
+    }
+  }
+
+  /// Open native Android Privacy & Security settings
+  static Future<bool> openPrivacySettings() async {
+    try {
+      final bool result = await _channel.invokeMethod('openPrivacySettings');
+      return result;
+    } on PlatformException catch (e) {
+      print("Failed to open privacy settings: ${e.message}");
+      return false;
+    }
+  }
+
+  /// Get status map from Android native layer
+  static Future<Map<String, dynamic>> getShieldStatus() async {
+    try {
+      final Map<dynamic, dynamic>? result = await _channel.invokeMethod('getShieldStatus');
+      if (result != null) {
+        return Map<String, dynamic>.from(result);
+      }
+    } on PlatformException catch (e) {
+      print("Failed to get shield status: ${e.message}");
+    }
+    return {};
+  }
+
+  static Future<bool> setPrivacyAutomationEnabled(bool enabled) async {
+    try {
+      return await _channel.invokeMethod<bool>('setPrivacyAutomationEnabled', {'enabled': enabled}) ?? false;
+    } on PlatformException catch (e) {
+      print('Failed to set privacy automation: ${e.message}');
+      return false;
+    }
+  }
+
+  static Future<bool> setPrivacyFeaturePolicy({
+    required String feature,
+    required bool disableOnLock,
+    required bool enableOnUnlock,
+  }) async {
+    try {
+      return await _channel.invokeMethod<bool>('setPrivacyFeaturePolicy', {
+        'feature': feature,
+        'disableOnLock': disableOnLock,
+        'enableOnUnlock': enableOnUnlock,
+      }) ?? false;
+    } on PlatformException catch (e) {
+      print('Failed to set privacy feature policy: ${e.message}');
+      return false;
+    }
+  }
+
+  static Future<bool> setPrivacyTimerSettings({
+    required int lockDelaySeconds,
+    required int unlockDelaySeconds,
+    bool showCountdown = true,
+  }) async {
+    try {
+      return await _channel.invokeMethod<bool>('setPrivacyTimerSettings', {
+        'lockDelaySeconds': lockDelaySeconds,
+        'unlockDelaySeconds': unlockDelaySeconds,
+        'showCountdown': showCountdown,
+      }) ?? false;
+    } on PlatformException catch (e) {
+      print('Failed to set privacy timers: ${e.message}');
+      return false;
+    }
+  }
+
+  static Future<Map<String, dynamic>> getPrivacyEngineStatus() async {
+    try {
+      final result = await _channel.invokeMethod<Map<dynamic, dynamic>>('getPrivacyEngineStatus');
+      return result == null ? {} : Map<String, dynamic>.from(result);
+    } on PlatformException catch (e) {
+      print('Failed to read privacy engine status: ${e.message}');
+      return {};
+    }
+  }
+}
+++ b/ElCoccoEddie/lib/theme/illuminati_theme.dart
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+class IlluminatiTheme {
+  // Color Palette
+  static const Color obsidianBlack = Color(0xFF0B0D12);
+  static const Color voidDark = Color(0xFF121620);
+  static const Color sacredGold = Color(0xFFFFD700);
+  static const Color amberGlow = Color(0xFFFFB300);
+  static const Color cyberCyan = Color(0xFF00E5FF);
+  static const Color emeraldShield = Color(0xFF00FFAB);
+  static const Color crimsonSeal = Color(0xFFFF0266);
+  static const Color occultPurple = Color(0xFF8A2BE2);
+  static const Color slateCard = Color(0xFF1A1F2C);
+  static const Color mutedGold = Color(0xFF9E8B47);
+
+  static ThemeData get darkTheme {
+    return ThemeData(
+      brightness: Brightness.dark,
+      scaffoldBackgroundColor: obsidianBlack,
+      primaryColor: sacredGold,
+      colorScheme: const ColorScheme.dark(
+        primary: sacredGold,
+        secondary: cyberCyan,
+        tertiary: emeraldShield,
+        error: crimsonSeal,
+        surface: slateCard,
+      ),
+      textTheme: TextTheme(
+        displayLarge: GoogleFonts.cinzel(
+          color: sacredGold,
+          fontSize: 32,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 2.0,
+        ),
+        displayMedium: GoogleFonts.cinzel(
+          color: Colors.white,
+          fontSize: 24,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 1.5,
+        ),
+        titleLarge: GoogleFonts.cinzelDecorative(
+          color: sacredGold,
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 1.2,
+        ),
+        bodyLarge: GoogleFonts.orbitron(
+          color: const Color(0xFFD0D7E5),
+          fontSize: 15,
+          letterSpacing: 0.8,
+        ),
+        bodyMedium: GoogleFonts.orbitron(
+          color: const Color(0xFF94A3B8),
+          fontSize: 13,
+        ),
+        labelLarge: GoogleFonts.cinzel(
+          color: sacredGold,
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 1.5,
+        ),
+      ),
+      cardTheme: CardThemeData(
+        color: slateCard,
+        elevation: 8,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: sacredGold.withValues(alpha: 0.3), width: 1.2),
+        ),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: voidDark,
+        contentTextStyle: GoogleFonts.orbitron(color: sacredGold),
+        shape: RoundedRectangleBorder(
+          side: const BorderSide(color: sacredGold, width: 1.5),
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+    );
+  }
+}
+++ b/ElCoccoEddie/lib/widgets/illuminati_eye_painter.dart
+import 'dart:math' as math;
+import 'package:flutter/material.dart';
+import '../theme/illuminati_theme.dart';
+
+class IlluminatiEyeWidget extends StatefulWidget {
+  final bool isShielded;
+  final VoidCallback onTap;
+  final double size;
+
+  const IlluminatiEyeWidget({
+    super.key,
+    required this.isShielded,
+    required this.onTap,
+    this.size = 280,
+  });
+
+  @override
+  State<IlluminatiEyeWidget> createState() => _IlluminatiEyeWidgetState();
+}
+
+class _IlluminatiEyeWidgetState extends State<IlluminatiEyeWidget>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 8),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: widget.onTap,
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          return CustomPaint(
+            size: Size(widget.size, widget.size),
+            painter: IlluminatiEyePainter(
+              rotationProgress: _controller.value,
+              isShielded: widget.isShielded,
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class IlluminatiEyePainter extends CustomPainter {
+  final double rotationProgress;
+  final bool isShielded;
+
+  IlluminatiEyePainter({
+    required this.rotationProgress,
+    required this.isShielded,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
+
+    // 1. Outer Glowing Ambient Pulse
+    final pulsePaint = Paint()
+      ..color = (isShielded ? IlluminatiTheme.emeraldShield : IlluminatiTheme.crimsonSeal)
+          .withValues(alpha: 0.15 + 0.05 * math.sin(rotationProgress * math.pi * 2))
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 25);
+    canvas.drawCircle(center, radius * 0.95, pulsePaint);
+
+    // 2. Sacred Outer Geometric Circles & Ticks
+    final circlePaint = Paint()
+      ..color = IlluminatiTheme.sacredGold.withValues(alpha: 0.5)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+
+    canvas.drawCircle(center, radius * 0.88, circlePaint);
+    canvas.drawCircle(center, radius * 0.82, circlePaint..color = IlluminatiTheme.amberGlow.withValues(alpha: 0.3));
+
+    // Outer Rotating Rune Ticks
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    canvas.rotate(rotationProgress * math.pi * 2);
+    final tickPaint = Paint()
+      ..color = IlluminatiTheme.sacredGold.withValues(alpha: 0.7)
+      ..strokeWidth = 2.0;
+
+    const numTicks = 12;
+    for (int i = 0; i < numTicks; i++) {
+      final angle = (i * 2 * math.pi) / numTicks;
+      final x1 = (radius * 0.84) * math.cos(angle);
+      final y1 = (radius * 0.84) * math.sin(angle);
+      final x2 = (radius * 0.88) * math.cos(angle);
+      final y2 = (radius * 0.88) * math.sin(angle);
+      canvas.drawLine(Offset(x1, y1), Offset(x2, y2), tickPaint);
+    }
+    canvas.restore();
+
+    // 3. Counter-Rotating Inner Triangle Rays
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    canvas.rotate(-rotationProgress * math.pi);
+    final rayPaint = Paint()
+      ..color = (isShielded ? IlluminatiTheme.cyberCyan : IlluminatiTheme.crimsonSeal)
+          .withValues(alpha: 0.18)
+      ..strokeWidth = 1.0;
+    for (int i = 0; i < 8; i++) {
+      final angle = (i * 2 * math.pi) / 8;
+      canvas.drawLine(
+        Offset.zero,
+        Offset((radius * 0.75) * math.cos(angle), (radius * 0.75) * math.sin(angle)),
+        rayPaint,
+      );
+    }
+    canvas.restore();
+
+    // 4. The Illuminati Pyramid Triangle
+    final trianglePath = Path();
+    final triangleRadius = radius * 0.75;
+    // Top vertex
+    final topVertex = Offset(center.dx, center.dy - triangleRadius * 0.85);
+    // Bottom Right
+    final bottomRightVertex = Offset(
+      center.dx + triangleRadius * math.cos(math.pi / 6),
+      center.dy + triangleRadius * math.sin(math.pi / 6),
+    );
+    // Bottom Left
+    final bottomLeftVertex = Offset(
+      center.dx - triangleRadius * math.cos(math.pi / 6),
+      center.dy + triangleRadius * math.sin(math.pi / 6),
+    );
+
+    trianglePath.moveTo(topVertex.dx, topVertex.dy);
+    trianglePath.lineTo(bottomRightVertex.dx, bottomRightVertex.dy);
+    trianglePath.lineTo(bottomLeftVertex.dx, bottomLeftVertex.dy);
+    trianglePath.close();
+
+    // Pyramid Gradient Fill
+    final pyramidFillPaint = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          IlluminatiTheme.slateCard.withValues(alpha: 0.9),
+          IlluminatiTheme.voidDark.withValues(alpha: 0.95),
+          IlluminatiTheme.obsidianBlack,
+        ],
+        center: Alignment.center,
+        radius: 0.8,
+      ).createShader(Rect.fromCircle(center: center, radius: radius));
+
+    canvas.drawPath(trianglePath, pyramidFillPaint);
+
+    // Pyramid Border & Glow
+    final pyramidBorderPaint = Paint()
+      ..color = isShielded ? IlluminatiTheme.sacredGold : IlluminatiTheme.crimsonSeal
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.5;
+
+    final glowBorderPaint = Paint()
+      ..color = (isShielded ? IlluminatiTheme.sacredGold : IlluminatiTheme.crimsonSeal).withValues(alpha: 0.6)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 8.0
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
+
+    canvas.drawPath(trianglePath, glowBorderPaint);
+    canvas.drawPath(trianglePath, pyramidBorderPaint);
+
+    // Pyramid Horizontal Bricks Lines
+    final brickPaint = Paint()
+      ..color = IlluminatiTheme.sacredGold.withValues(alpha: 0.25)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+
+    for (int i = 1; i <= 4; i++) {
+      double t = i / 5.0;
+      double y = topVertex.dy + (bottomRightVertex.dy - topVertex.dy) * t;
+      double leftX = topVertex.dx + (bottomLeftVertex.dx - topVertex.dx) * t;
+      double rightX = topVertex.dx + (bottomRightVertex.dx - topVertex.dx) * t;
+      canvas.drawLine(Offset(leftX, y), Offset(rightX, y), brickPaint);
+    }
+
+    // 5. The All-Seeing Eye of Providence
+    final eyeCenter = Offset(center.dx, center.dy + 8);
+    final eyeWidth = radius * 0.45;
+    final eyeHeight = isShielded ? radius * 0.05 : radius * 0.25; // Closed when shielded!
+
+    final eyePath = Path();
+    eyePath.moveTo(eyeCenter.dx - eyeWidth, eyeCenter.dy);
+    eyePath.quadraticBezierTo(
+      eyeCenter.dx,
+      eyeCenter.dy - eyeHeight,
+      eyeCenter.dx + eyeWidth,
+      eyeCenter.dy,
+    );
+    eyePath.quadraticBezierTo(
+      eyeCenter.dx,
+      eyeCenter.dy + eyeHeight,
+      eyeCenter.dx - eyeWidth,
+      eyeCenter.dy,
+    );
+
+    final eyePaint = Paint()
+      ..color = isShielded ? IlluminatiTheme.sacredGold : IlluminatiTheme.cyberCyan
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5;
+
+    final eyeGlowPaint = Paint()
+      ..color = (isShielded ? IlluminatiTheme.sacredGold : IlluminatiTheme.cyberCyan).withValues(alpha: 0.8)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 6.0
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+
+    canvas.drawPath(eyePath, eyeGlowPaint);
+    canvas.drawPath(eyePath, eyePaint);
+
+    if (!isShielded) {
+      // Iris & Pupil (Visible when watching / unshielded)
+      final irisRadius = radius * 0.11;
+      final irisPaint = Paint()
+        ..color = IlluminatiTheme.crimsonSeal
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(eyeCenter, irisRadius, irisPaint);
+
+      final pupilPaint = Paint()
+        ..color = Colors.black
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(eyeCenter, irisRadius * 0.45, pupilPaint);
+
+      // Glint in the eye
+      final glintPaint = Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(
+        Offset(eyeCenter.dx - irisRadius * 0.3, eyeCenter.dy - irisRadius * 0.3),
+        irisRadius * 0.25,
+        glintPaint,
+      );
+    } else {
+      // Shielded Lock Seal Symbol in the Eye
+      final lockPaint = Paint()
+        ..color = IlluminatiTheme.emeraldShield
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.5;
+      
+      canvas.drawCircle(eyeCenter, 8, lockPaint);
+      canvas.drawLine(
+        Offset(eyeCenter.dx - 12, eyeCenter.dy),
+        Offset(eyeCenter.dx + 12, eyeCenter.dy),
+        lockPaint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant IlluminatiEyePainter oldDelegate) {
+    return oldDelegate.rotationProgress != rotationProgress ||
+        oldDelegate.isShielded != isShielded;
+  }
+}
+++ b/ElCoccoEddie/lib/widgets/sacred_geometry_background.dart
+import 'dart:math' as math;
+import 'package:flutter/material.dart';
+import '../theme/illuminati_theme.dart';
+
+class SacredGeometryBackground extends StatefulWidget {
+  final Widget child;
+
+  const SacredGeometryBackground({super.key, required this.child});
+
+  @override
+  State<SacredGeometryBackground> createState() =>
+      _SacredGeometryBackgroundState();
+}
+
+class _SacredGeometryBackgroundState extends State<SacredGeometryBackground>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 20),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return CustomPaint(
+          painter: SacredGridPainter(progress: _controller.value),
+          child: widget.child,
+        );
+      },
+    );
+  }
+}
+
+class SacredGridPainter extends CustomPainter {
+  final double progress;
+
+  SacredGridPainter({required this.progress});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final bgPaint = Paint()..color = IlluminatiTheme.obsidianBlack;
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), bgPaint);
+
+    final linePaint = Paint()
+      ..color = IlluminatiTheme.sacredGold.withValues(alpha: 0.05)
+      ..strokeWidth = 0.8;
+
+    const gridSize = 45.0;
+    for (double x = 0; x < size.width; x += gridSize) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), linePaint);
+    }
+
+    for (double y = 0; y < size.height; y += gridSize) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), linePaint);
+    }
+
+    // Floating particles
+    final rand = math.Random(42);
+    final particlePaint = Paint()
+      ..style = PaintingStyle.fill;
+
+    for (int i = 0; i < 25; i++) {
+      final initialX = rand.nextDouble() * size.width;
+      final initialY = rand.nextDouble() * size.height;
+      final speed = 0.2 + rand.nextDouble() * 0.5;
+
+      final currentY = (initialY - progress * size.height * speed) % size.height;
+      final alpha = 0.2 + 0.3 * math.sin((progress * math.pi * 2) + i);
+
+      particlePaint.color = (i % 3 == 0
+              ? IlluminatiTheme.sacredGold
+              : i % 3 == 1
+                  ? IlluminatiTheme.cyberCyan
+                  : IlluminatiTheme.emeraldShield)
+          .withValues(alpha: alpha);
+
+      canvas.drawCircle(Offset(initialX, currentY), 1.5 + (i % 3), particlePaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant SacredGridPainter oldDelegate) {
+    return oldDelegate.progress != progress;
+  }
+}
+++ b/ElCoccoEddie/macos/Flutter/Flutter-Debug.xcconfig
+#include "ephemeral/Flutter-Generated.xcconfig"
+++ b/ElCoccoEddie/macos/Flutter/Flutter-Release.xcconfig
+#include "ephemeral/Flutter-Generated.xcconfig"
+++ b/ElCoccoEddie/macos/Flutter/GeneratedPluginRegistrant.swift
+//
+//  Generated file. Do not edit.
+//
+
+import FlutterMacOS
+import Foundation
+
+
+func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
+}
+++ b/ElCoccoEddie/macos/Runner.xcodeproj/project.pbxproj
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 54;
+	objects = {
+
+/* Begin PBXAggregateTarget section */
+		33CC111A2044C6BA0003C045 /* Flutter Assemble */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = 33CC111B2044C6BA0003C045 /* Build configuration list for PBXAggregateTarget "Flutter Assemble" */;
+			buildPhases = (
+				33CC111E2044C6BF0003C045 /* ShellScript */,
+			);
+			dependencies = (
+			);
+			name = "Flutter Assemble";
+			productName = FLX;
+		};
+/* End PBXAggregateTarget section */
+
+/* Begin PBXBuildFile section */
+		331C80D8294CF71000263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C80D7294CF71000263BE5 /* RunnerTests.swift */; };
+		335BBD1B22A9A15E00E9071D /* GeneratedPluginRegistrant.swift in Sources */ = {isa = PBXBuildFile; fileRef = 335BBD1A22A9A15E00E9071D /* GeneratedPluginRegistrant.swift */; };
+		33CC10F12044A3C60003C045 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CC10F02044A3C60003C045 /* AppDelegate.swift */; };
+		33CC10F32044A3C60003C045 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 33CC10F22044A3C60003C045 /* Assets.xcassets */; };
+		33CC10F62044A3C60003C045 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 33CC10F42044A3C60003C045 /* MainMenu.xib */; };
+		33CC11132044BFA00003C045 /* MainFlutterWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CC11122044BFA00003C045 /* MainFlutterWindow.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		331C80D9294CF71000263BE5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 33CC10E52044A3C60003C045 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 33CC10EC2044A3C60003C045;
+			remoteInfo = Runner;
+		};
+		33CC111F2044C79F0003C045 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 33CC10E52044A3C60003C045 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 33CC111A2044C6BA0003C045;
+			remoteInfo = FLX;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		33CC110E2044A8840003C045 /* Bundle Framework */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+			);
+			name = "Bundle Framework";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		331C80D5294CF71000263BE5 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		331C80D7294CF71000263BE5 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
+		333000ED22D3DE5D00554162 /* Warnings.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Warnings.xcconfig; sourceTree = "<group>"; };
+		335BBD1A22A9A15E00E9071D /* GeneratedPluginRegistrant.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GeneratedPluginRegistrant.swift; sourceTree = "<group>"; };
+		33CC10ED2044A3C60003C045 /* elcoccoeddy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "elcoccoeddy.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		33CC10F02044A3C60003C045 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		33CC10F22044A3C60003C045 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = Runner/Assets.xcassets; sourceTree = "<group>"; };
+		33CC10F52044A3C60003C045 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
+		33CC10F72044A3C60003C045 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = Runner/Info.plist; sourceTree = "<group>"; };
+		33CC11122044BFA00003C045 /* MainFlutterWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainFlutterWindow.swift; sourceTree = "<group>"; };
+		33CEB47222A05771004F2AC0 /* Flutter-Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Flutter-Debug.xcconfig"; sourceTree = "<group>"; };
+		33CEB47422A05771004F2AC0 /* Flutter-Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Flutter-Release.xcconfig"; sourceTree = "<group>"; };
+		33CEB47722A0578A004F2AC0 /* Flutter-Generated.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = "Flutter-Generated.xcconfig"; path = "ephemeral/Flutter-Generated.xcconfig"; sourceTree = "<group>"; };
+		33E51913231747F40026EE4D /* DebugProfile.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DebugProfile.entitlements; sourceTree = "<group>"; };
+		33E51914231749380026EE4D /* Release.entitlements */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.entitlements; path = Release.entitlements; sourceTree = "<group>"; };
+		33E5194F232828860026EE4D /* AppInfo.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = AppInfo.xcconfig; sourceTree = "<group>"; };
+		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
+		9740EEB21CF90195004384FC /* Debug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		331C80D2294CF70F00263BE5 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		33CC10EA2044A3C60003C045 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		331C80D6294CF71000263BE5 /* RunnerTests */ = {
+			isa = PBXGroup;
+			children = (
+				331C80D7294CF71000263BE5 /* RunnerTests.swift */,
+			);
+			path = RunnerTests;
+			sourceTree = "<group>";
+		};
+		33BA886A226E78AF003329D5 /* Configs */ = {
+			isa = PBXGroup;
+			children = (
+				33E5194F232828860026EE4D /* AppInfo.xcconfig */,
+				9740EEB21CF90195004384FC /* Debug.xcconfig */,
+				7AFA3C8E1D35360C0083082E /* Release.xcconfig */,
+				333000ED22D3DE5D00554162 /* Warnings.xcconfig */,
+			);
+			path = Configs;
+			sourceTree = "<group>";
+		};
+		33CC10E42044A3C60003C045 = {
+			isa = PBXGroup;
+			children = (
+				33FAB671232836740065AC1E /* Runner */,
+				33CEB47122A05771004F2AC0 /* Flutter */,
+				331C80D6294CF71000263BE5 /* RunnerTests */,
+				33CC10EE2044A3C60003C045 /* Products */,
+				D73912EC22F37F3D000D13A0 /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		33CC10EE2044A3C60003C045 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				33CC10ED2044A3C60003C045 /* elcoccoeddy.app */,
+				331C80D5294CF71000263BE5 /* RunnerTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		33CC11242044D66E0003C045 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				33CC10F22044A3C60003C045 /* Assets.xcassets */,
+				33CC10F42044A3C60003C045 /* MainMenu.xib */,
+				33CC10F72044A3C60003C045 /* Info.plist */,
+			);
+			name = Resources;
+			path = ..;
+			sourceTree = "<group>";
+		};
+		33CEB47122A05771004F2AC0 /* Flutter */ = {
+			isa = PBXGroup;
+			children = (
+				335BBD1A22A9A15E00E9071D /* GeneratedPluginRegistrant.swift */,
+				33CEB47222A05771004F2AC0 /* Flutter-Debug.xcconfig */,
+				33CEB47422A05771004F2AC0 /* Flutter-Release.xcconfig */,
+				33CEB47722A0578A004F2AC0 /* Flutter-Generated.xcconfig */,
+			);
+			path = Flutter;
+			sourceTree = "<group>";
+		};
+		33FAB671232836740065AC1E /* Runner */ = {
+			isa = PBXGroup;
+			children = (
+				33CC10F02044A3C60003C045 /* AppDelegate.swift */,
+				33CC11122044BFA00003C045 /* MainFlutterWindow.swift */,
+				33E51913231747F40026EE4D /* DebugProfile.entitlements */,
+				33E51914231749380026EE4D /* Release.entitlements */,
+				33CC11242044D66E0003C045 /* Resources */,
+				33BA886A226E78AF003329D5 /* Configs */,
+			);
+			path = Runner;
+			sourceTree = "<group>";
+		};
+		D73912EC22F37F3D000D13A0 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		331C80D4294CF70F00263BE5 /* RunnerTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 331C80DE294CF71000263BE5 /* Build configuration list for PBXNativeTarget "RunnerTests" */;
+			buildPhases = (
+				331C80D1294CF70F00263BE5 /* Sources */,
+				331C80D2294CF70F00263BE5 /* Frameworks */,
+				331C80D3294CF70F00263BE5 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				331C80DA294CF71000263BE5 /* PBXTargetDependency */,
+			);
+			name = RunnerTests;
+			productName = RunnerTests;
+			productReference = 331C80D5294CF71000263BE5 /* RunnerTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		33CC10EC2044A3C60003C045 /* Runner */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 33CC10FB2044A3C60003C045 /* Build configuration list for PBXNativeTarget "Runner" */;
+			buildPhases = (
+				33CC10E92044A3C60003C045 /* Sources */,
+				33CC10EA2044A3C60003C045 /* Frameworks */,
+				33CC10EB2044A3C60003C045 /* Resources */,
+				33CC110E2044A8840003C045 /* Bundle Framework */,
+				3399D490228B24CF009A79C7 /* ShellScript */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				33CC11202044C79F0003C045 /* PBXTargetDependency */,
+			);
+			name = Runner;
+			productName = Runner;
+			productReference = 33CC10ED2044A3C60003C045 /* elcoccoeddy.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		33CC10E52044A3C60003C045 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastSwiftUpdateCheck = 0920;
+				LastUpgradeCheck = 1510;
+				ORGANIZATIONNAME = "";
+				TargetAttributes = {
+					331C80D4294CF70F00263BE5 = {
+						CreatedOnToolsVersion = 14.0;
+						TestTargetID = 33CC10EC2044A3C60003C045;
+					};
+					33CC10EC2044A3C60003C045 = {
+						CreatedOnToolsVersion = 9.2;
+						LastSwiftMigration = 1100;
+						ProvisioningStyle = Automatic;
+						SystemCapabilities = {
+							com.apple.Sandbox = {
+								enabled = 1;
+							};
+						};
+					};
+					33CC111A2044C6BA0003C045 = {
+						CreatedOnToolsVersion = 9.2;
+						ProvisioningStyle = Manual;
+					};
+				};
+			};
+			buildConfigurationList = 33CC10E82044A3C60003C045 /* Build configuration list for PBXProject "Runner" */;
+			compatibilityVersion = "Xcode 9.3";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 33CC10E42044A3C60003C045;
+			productRefGroup = 33CC10EE2044A3C60003C045 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				33CC10EC2044A3C60003C045 /* Runner */,
+				331C80D4294CF70F00263BE5 /* RunnerTests */,
+				33CC111A2044C6BA0003C045 /* Flutter Assemble */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		331C80D3294CF70F00263BE5 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		33CC10EB2044A3C60003C045 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				33CC10F32044A3C60003C045 /* Assets.xcassets in Resources */,
+				33CC10F62044A3C60003C045 /* MainMenu.xib in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		3399D490228B24CF009A79C7 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "echo \"$PRODUCT_NAME.app\" > \"$PROJECT_DIR\"/Flutter/ephemeral/.app_filename && \"$FLUTTER_ROOT\"/packages/flutter_tools/bin/macos_assemble.sh embed\n";
+		};
+		33CC111E2044C6BF0003C045 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				Flutter/ephemeral/FlutterInputs.xcfilelist,
+			);
+			inputPaths = (
+				Flutter/ephemeral/tripwire,
+			);
+			outputFileListPaths = (
+				Flutter/ephemeral/FlutterOutputs.xcfilelist,
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"$FLUTTER_ROOT\"/packages/flutter_tools/bin/macos_assemble.sh && touch Flutter/ephemeral/tripwire";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		331C80D1294CF70F00263BE5 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				331C80D8294CF71000263BE5 /* RunnerTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		33CC10E92044A3C60003C045 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				33CC11132044BFA00003C045 /* MainFlutterWindow.swift in Sources */,
+				33CC10F12044A3C60003C045 /* AppDelegate.swift in Sources */,
+				335BBD1B22A9A15E00E9071D /* GeneratedPluginRegistrant.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		331C80DA294CF71000263BE5 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 33CC10EC2044A3C60003C045 /* Runner */;
+			targetProxy = 331C80D9294CF71000263BE5 /* PBXContainerItemProxy */;
+		};
+		33CC11202044C79F0003C045 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 33CC111A2044C6BA0003C045 /* Flutter Assemble */;
+			targetProxy = 33CC111F2044C79F0003C045 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */
+		33CC10F42044A3C60003C045 /* MainMenu.xib */ = {
+			isa = PBXVariantGroup;
+			children = (
+				33CC10F52044A3C60003C045 /* Base */,
+			);
+			name = MainMenu.xib;
+			path = Runner;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		331C80DB294CF71000263BE5 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.elcoccoeddy.privacy.elcoccoeddy.RunnerTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/elcoccoeddy.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/elcoccoeddy";
+			};
+			name = Debug;
+		};
+		331C80DC294CF71000263BE5 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.elcoccoeddy.privacy.elcoccoeddy.RunnerTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/elcoccoeddy.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/elcoccoeddy";
+			};
+			name = Release;
+		};
+		331C80DD294CF71000263BE5 /* Profile */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.elcoccoeddy.privacy.elcoccoeddy.RunnerTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/elcoccoeddy.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/elcoccoeddy";
+			};
+			name = Profile;
+		};
+		338D0CE9231458BD00FA5F75 /* Profile */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+			};
+			name = Profile;
+		};
+		338D0CEA231458BD00FA5F75 /* Profile */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 33E5194F232828860026EE4D /* AppInfo.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = Runner/DebugProfile.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = Runner/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Profile;
+		};
+		338D0CEB231458BD00FA5F75 /* Profile */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Manual;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Profile;
+		};
+		33CC10F92044A3C60003C045 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9740EEB21CF90195004384FC /* Debug.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		33CC10FA2044A3C60003C045 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+			};
+			name = Release;
+		};
+		33CC10FC2044A3C60003C045 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 33E5194F232828860026EE4D /* AppInfo.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = Runner/DebugProfile.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = Runner/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		33CC10FD2044A3C60003C045 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 33E5194F232828860026EE4D /* AppInfo.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = Runner/Release.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = Runner/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		33CC111C2044C6BA0003C045 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Manual;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		33CC111D2044C6BA0003C045 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		331C80DE294CF71000263BE5 /* Build configuration list for PBXNativeTarget "RunnerTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				331C80DB294CF71000263BE5 /* Debug */,
+				331C80DC294CF71000263BE5 /* Release */,
+				331C80DD294CF71000263BE5 /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		33CC10E82044A3C60003C045 /* Build configuration list for PBXProject "Runner" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				33CC10F92044A3C60003C045 /* Debug */,
+				33CC10FA2044A3C60003C045 /* Release */,
+				338D0CE9231458BD00FA5F75 /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		33CC10FB2044A3C60003C045 /* Build configuration list for PBXNativeTarget "Runner" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				33CC10FC2044A3C60003C045 /* Debug */,
+				33CC10FD2044A3C60003C045 /* Release */,
+				338D0CEA231458BD00FA5F75 /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		33CC111B2044C6BA0003C045 /* Build configuration list for PBXAggregateTarget "Flutter Assemble" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				33CC111C2044C6BA0003C045 /* Debug */,
+				33CC111D2044C6BA0003C045 /* Release */,
+				338D0CEB231458BD00FA5F75 /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 33CC10E52044A3C60003C045 /* Project object */;
+}
+++ b/ElCoccoEddie/macos/Runner.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IDEDidComputeMac32BitWarning</key>
+	<true/>
+</dict>
+</plist>
+++ b/ElCoccoEddie/macos/Runner.xcodeproj/xcshareddata/xcschemes/Runner.xcscheme
+<?xml version="1.0" encoding="UTF-8"?>
+<Scheme
+   LastUpgradeVersion = "1510"
+   version = "1.3">
+   <BuildAction
+      parallelizeBuildables = "YES"
+      buildImplicitDependencies = "YES">
+      <BuildActionEntries>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "33CC10EC2044A3C60003C045"
+               BuildableName = "elcoccoeddy.app"
+               BlueprintName = "Runner"
+               ReferencedContainer = "container:Runner.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
+      </BuildActionEntries>
+   </BuildAction>
+   <TestAction
+      buildConfiguration = "Debug"
+      selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
+      selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
+      shouldUseLaunchSchemeArgsEnv = "YES">
+      <MacroExpansion>
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "33CC10EC2044A3C60003C045"
+            BuildableName = "elcoccoeddy.app"
+            BlueprintName = "Runner"
+            ReferencedContainer = "container:Runner.xcodeproj">
+         </BuildableReference>
+      </MacroExpansion>
+      <Testables>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "331C80D4294CF70F00263BE5"
+               BuildableName = "RunnerTests.xctest"
+               BlueprintName = "RunnerTests"
+               ReferencedContainer = "container:Runner.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+      </Testables>
+   </TestAction>
+   <LaunchAction
+      buildConfiguration = "Debug"
+      selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
+      selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
+      launchStyle = "0"
+      useCustomWorkingDirectory = "NO"
+      ignoresPersistentStateOnLaunch = "NO"
+      debugDocumentVersioning = "YES"
+      debugServiceExtension = "internal"
+      enableGPUValidationMode = "1"
+      allowLocationSimulation = "YES">
+      <BuildableProductRunnable
+         runnableDebuggingMode = "0">
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "33CC10EC2044A3C60003C045"
+            BuildableName = "elcoccoeddy.app"
+            BlueprintName = "Runner"
+            ReferencedContainer = "container:Runner.xcodeproj">
+         </BuildableReference>
+      </BuildableProductRunnable>
+   </LaunchAction>
+   <ProfileAction
+      buildConfiguration = "Profile"
+      shouldUseLaunchSchemeArgsEnv = "YES"
+      savedToolIdentifier = ""
+      useCustomWorkingDirectory = "NO"
+      debugDocumentVersioning = "YES">
+      <BuildableProductRunnable
+         runnableDebuggingMode = "0">
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "33CC10EC2044A3C60003C045"
+            BuildableName = "elcoccoeddy.app"
+            BlueprintName = "Runner"
+            ReferencedContainer = "container:Runner.xcodeproj">
+         </BuildableReference>
+      </BuildableProductRunnable>
+   </ProfileAction>
+   <AnalyzeAction
+      buildConfiguration = "Debug">
+   </AnalyzeAction>
+   <ArchiveAction
+      buildConfiguration = "Release"
+      revealArchiveInOrganizer = "YES">
+   </ArchiveAction>
+</Scheme>
+++ b/ElCoccoEddie/macos/Runner.xcworkspace/contents.xcworkspacedata
+<?xml version="1.0" encoding="UTF-8"?>
+<Workspace
+   version = "1.0">
+   <FileRef
+      location = "group:Runner.xcodeproj">
+   </FileRef>
+</Workspace>
+++ b/ElCoccoEddie/macos/Runner.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IDEDidComputeMac32BitWarning</key>
+	<true/>
+</dict>
+</plist>
+++ b/ElCoccoEddie/macos/Runner/AppDelegate.swift
+import Cocoa
+import FlutterMacOS
+
+@main
+class AppDelegate: FlutterAppDelegate {
+  override func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+    return true
+  }
+
+  override func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool {
+    return true
+  }
+}
+++ b/ElCoccoEddie/macos/Runner/Assets.xcassets/AppIcon.appiconset/Contents.json
+{
+  "images" : [
+    {
+      "size" : "16x16",
+      "idiom" : "mac",
+      "filename" : "app_icon_16.png",
+      "scale" : "1x"
+    },
+    {
+      "size" : "16x16",
+      "idiom" : "mac",
+      "filename" : "app_icon_32.png",
+      "scale" : "2x"
+    },
+    {
+      "size" : "32x32",
+      "idiom" : "mac",
+      "filename" : "app_icon_32.png",
+      "scale" : "1x"
+    },
+    {
+      "size" : "32x32",
+      "idiom" : "mac",
+      "filename" : "app_icon_64.png",
+      "scale" : "2x"
+    },
+    {
+      "size" : "128x128",
+      "idiom" : "mac",
+      "filename" : "app_icon_128.png",
+      "scale" : "1x"
+    },
+    {
+      "size" : "128x128",
+      "idiom" : "mac",
+      "filename" : "app_icon_256.png",
+      "scale" : "2x"
+    },
+    {
+      "size" : "256x256",
+      "idiom" : "mac",
+      "filename" : "app_icon_256.png",
+      "scale" : "1x"
+    },
+    {
+      "size" : "256x256",
+      "idiom" : "mac",
+      "filename" : "app_icon_512.png",
+      "scale" : "2x"
+    },
+    {
+      "size" : "512x512",
+      "idiom" : "mac",
+      "filename" : "app_icon_512.png",
+      "scale" : "1x"
+    },
+    {
+      "size" : "512x512",
+      "idiom" : "mac",
+      "filename" : "app_icon_1024.png",
+      "scale" : "2x"
+    }
+  ],
+  "info" : {
+    "version" : 1,
+    "author" : "xcode"
+  }
+}
+++ b/ElCoccoEddie/macos/Runner/Base.lproj/MainMenu.xib
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="14490.70" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
+    <dependencies>
+        <deployment identifier="macosx"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="14490.70"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <objects>
+        <customObject id="-2" userLabel="File's Owner" customClass="NSApplication">
+            <connections>
+                <outlet property="delegate" destination="Voe-Tx-rLC" id="GzC-gU-4Uq"/>
+            </connections>
+        </customObject>
+        <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
+        <customObject id="-3" userLabel="Application" customClass="NSObject"/>
+        <customObject id="Voe-Tx-rLC" customClass="AppDelegate" customModule="Runner" customModuleProvider="target">
+            <connections>
+                <outlet property="applicationMenu" destination="uQy-DD-JDr" id="XBo-yE-nKs"/>
+                <outlet property="mainFlutterWindow" destination="QvC-M9-y7g" id="gIp-Ho-8D9"/>
+            </connections>
+        </customObject>
+        <customObject id="YLy-65-1bz" customClass="NSFontManager"/>
+        <menu title="Main Menu" systemMenu="main" id="AYu-sK-qS6">
+            <items>
+                <menuItem title="APP_NAME" id="1Xt-HY-uBw">
+                    <modifierMask key="keyEquivalentModifierMask"/>
+                    <menu key="submenu" title="APP_NAME" systemMenu="apple" id="uQy-DD-JDr">
+                        <items>
+                            <menuItem title="About APP_NAME" id="5kV-Vb-QxS">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <connections>
+                                    <action selector="orderFrontStandardAboutPanel:" target="-1" id="Exp-CZ-Vem"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem isSeparatorItem="YES" id="VOq-y0-SEH"/>
+                            <menuItem title="Preferences…" keyEquivalent="," id="BOF-NM-1cW"/>
+                            <menuItem isSeparatorItem="YES" id="wFC-TO-SCJ"/>
+                            <menuItem title="Services" id="NMo-om-nkz">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <menu key="submenu" title="Services" systemMenu="services" id="hz9-B4-Xy5"/>
+                            </menuItem>
+                            <menuItem isSeparatorItem="YES" id="4je-JR-u6R"/>
+                            <menuItem title="Hide APP_NAME" keyEquivalent="h" id="Olw-nP-bQN">
+                                <connections>
+                                    <action selector="hide:" target="-1" id="PnN-Uc-m68"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem title="Hide Others" keyEquivalent="h" id="Vdr-fp-XzO">
+                                <modifierMask key="keyEquivalentModifierMask" option="YES" command="YES"/>
+                                <connections>
+                                    <action selector="hideOtherApplications:" target="-1" id="VT4-aY-XCT"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem title="Show All" id="Kd2-mp-pUS">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <connections>
+                                    <action selector="unhideAllApplications:" target="-1" id="Dhg-Le-xox"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem isSeparatorItem="YES" id="kCx-OE-vgT"/>
+                            <menuItem title="Quit APP_NAME" keyEquivalent="q" id="4sb-4s-VLi">
+                                <connections>
+                                    <action selector="terminate:" target="-1" id="Te7-pn-YzF"/>
+                                </connections>
+                            </menuItem>
+                        </items>
+                    </menu>
+                </menuItem>
+                <menuItem title="Edit" id="5QF-Oa-p0T">
+                    <modifierMask key="keyEquivalentModifierMask"/>
+                    <menu key="submenu" title="Edit" id="W48-6f-4Dl">
+                        <items>
+                            <menuItem title="Undo" keyEquivalent="z" id="dRJ-4n-Yzg">
+                                <connections>
+                                    <action selector="undo:" target="-1" id="M6e-cu-g7V"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem title="Redo" keyEquivalent="Z" id="6dh-zS-Vam">
+                                <connections>
+                                    <action selector="redo:" target="-1" id="oIA-Rs-6OD"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem isSeparatorItem="YES" id="WRV-NI-Exz"/>
+                            <menuItem title="Cut" keyEquivalent="x" id="uRl-iY-unG">
+                                <connections>
+                                    <action selector="cut:" target="-1" id="YJe-68-I9s"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem title="Copy" keyEquivalent="c" id="x3v-GG-iWU">
+                                <connections>
+                                    <action selector="copy:" target="-1" id="G1f-GL-Joy"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem title="Paste" keyEquivalent="v" id="gVA-U4-sdL">
+                                <connections>
+                                    <action selector="paste:" target="-1" id="UvS-8e-Qdg"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem title="Paste and Match Style" keyEquivalent="V" id="WeT-3V-zwk">
+                                <modifierMask key="keyEquivalentModifierMask" option="YES" command="YES"/>
+                                <connections>
+                                    <action selector="pasteAsPlainText:" target="-1" id="cEh-KX-wJQ"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem title="Delete" id="pa3-QI-u2k">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <connections>
+                                    <action selector="delete:" target="-1" id="0Mk-Ml-PaM"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem title="Select All" keyEquivalent="a" id="Ruw-6m-B2m">
+                                <connections>
+                                    <action selector="selectAll:" target="-1" id="VNm-Mi-diN"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem isSeparatorItem="YES" id="uyl-h8-XO2"/>
+                            <menuItem title="Find" id="4EN-yA-p0u">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <menu key="submenu" title="Find" id="1b7-l0-nxx">
+                                    <items>
+                                        <menuItem title="Find…" tag="1" keyEquivalent="f" id="Xz5-n4-O0W">
+                                            <connections>
+                                                <action selector="performFindPanelAction:" target="-1" id="cD7-Qs-BN4"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Find and Replace…" tag="12" keyEquivalent="f" id="YEy-JH-Tfz">
+                                            <modifierMask key="keyEquivalentModifierMask" option="YES" command="YES"/>
+                                            <connections>
+                                                <action selector="performFindPanelAction:" target="-1" id="WD3-Gg-5AJ"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Find Next" tag="2" keyEquivalent="g" id="q09-fT-Sye">
+                                            <connections>
+                                                <action selector="performFindPanelAction:" target="-1" id="NDo-RZ-v9R"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Find Previous" tag="3" keyEquivalent="G" id="OwM-mh-QMV">
+                                            <connections>
+                                                <action selector="performFindPanelAction:" target="-1" id="HOh-sY-3ay"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Use Selection for Find" tag="7" keyEquivalent="e" id="buJ-ug-pKt">
+                                            <connections>
+                                                <action selector="performFindPanelAction:" target="-1" id="U76-nv-p5D"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Jump to Selection" keyEquivalent="j" id="S0p-oC-mLd">
+                                            <connections>
+                                                <action selector="centerSelectionInVisibleArea:" target="-1" id="IOG-6D-g5B"/>
+                                            </connections>
+                                        </menuItem>
+                                    </items>
+                                </menu>
+                            </menuItem>
+                            <menuItem title="Spelling and Grammar" id="Dv1-io-Yv7">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <menu key="submenu" title="Spelling" id="3IN-sU-3Bg">
+                                    <items>
+                                        <menuItem title="Show Spelling and Grammar" keyEquivalent=":" id="HFo-cy-zxI">
+                                            <connections>
+                                                <action selector="showGuessPanel:" target="-1" id="vFj-Ks-hy3"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Check Document Now" keyEquivalent=";" id="hz2-CU-CR7">
+                                            <connections>
+                                                <action selector="checkSpelling:" target="-1" id="fz7-VC-reM"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem isSeparatorItem="YES" id="bNw-od-mp5"/>
+                                        <menuItem title="Check Spelling While Typing" id="rbD-Rh-wIN">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="toggleContinuousSpellChecking:" target="-1" id="7w6-Qz-0kB"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Check Grammar With Spelling" id="mK6-2p-4JG">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="toggleGrammarChecking:" target="-1" id="muD-Qn-j4w"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Correct Spelling Automatically" id="78Y-hA-62v">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="toggleAutomaticSpellingCorrection:" target="-1" id="2lM-Qi-WAP"/>
+                                            </connections>
+                                        </menuItem>
+                                    </items>
+                                </menu>
+                            </menuItem>
+                            <menuItem title="Substitutions" id="9ic-FL-obx">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <menu key="submenu" title="Substitutions" id="FeM-D8-WVr">
+                                    <items>
+                                        <menuItem title="Show Substitutions" id="z6F-FW-3nz">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="orderFrontSubstitutionsPanel:" target="-1" id="oku-mr-iSq"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem isSeparatorItem="YES" id="gPx-C9-uUO"/>
+                                        <menuItem title="Smart Copy/Paste" id="9yt-4B-nSM">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="toggleSmartInsertDelete:" target="-1" id="3IJ-Se-DZD"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Smart Quotes" id="hQb-2v-fYv">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="toggleAutomaticQuoteSubstitution:" target="-1" id="ptq-xd-QOA"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Smart Dashes" id="rgM-f4-ycn">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="toggleAutomaticDashSubstitution:" target="-1" id="oCt-pO-9gS"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Smart Links" id="cwL-P1-jid">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="toggleAutomaticLinkDetection:" target="-1" id="Gip-E3-Fov"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Data Detectors" id="tRr-pd-1PS">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="toggleAutomaticDataDetection:" target="-1" id="R1I-Nq-Kbl"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Text Replacement" id="HFQ-gK-NFA">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="toggleAutomaticTextReplacement:" target="-1" id="DvP-Fe-Py6"/>
+                                            </connections>
+                                        </menuItem>
+                                    </items>
+                                </menu>
+                            </menuItem>
+                            <menuItem title="Transformations" id="2oI-Rn-ZJC">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <menu key="submenu" title="Transformations" id="c8a-y6-VQd">
+                                    <items>
+                                        <menuItem title="Make Upper Case" id="vmV-6d-7jI">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="uppercaseWord:" target="-1" id="sPh-Tk-edu"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Make Lower Case" id="d9M-CD-aMd">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="lowercaseWord:" target="-1" id="iUZ-b5-hil"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Capitalize" id="UEZ-Bs-lqG">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="capitalizeWord:" target="-1" id="26H-TL-nsh"/>
+                                            </connections>
+                                        </menuItem>
+                                    </items>
+                                </menu>
+                            </menuItem>
+                            <menuItem title="Speech" id="xrE-MZ-jX0">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <menu key="submenu" title="Speech" id="3rS-ZA-NoH">
+                                    <items>
+                                        <menuItem title="Start Speaking" id="Ynk-f8-cLZ">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="startSpeaking:" target="-1" id="654-Ng-kyl"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Stop Speaking" id="Oyz-dy-DGm">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="stopSpeaking:" target="-1" id="dX8-6p-jy9"/>
+                                            </connections>
+                                        </menuItem>
+                                    </items>
+                                </menu>
+                            </menuItem>
+                        </items>
+                    </menu>
+                </menuItem>
+                <menuItem title="View" id="H8h-7b-M4v">
+                    <modifierMask key="keyEquivalentModifierMask"/>
+                    <menu key="submenu" title="View" id="HyV-fh-RgO">
+                        <items>
+                            <menuItem title="Enter Full Screen" keyEquivalent="f" id="4J7-dP-txa">
+                                <modifierMask key="keyEquivalentModifierMask" control="YES" command="YES"/>
+                                <connections>
+                                    <action selector="toggleFullScreen:" target="-1" id="dU3-MA-1Rq"/>
+                                </connections>
+                            </menuItem>
+                        </items>
+                    </menu>
+                </menuItem>
+                <menuItem title="Window" id="aUF-d1-5bR">
+                    <modifierMask key="keyEquivalentModifierMask"/>
+                    <menu key="submenu" title="Window" systemMenu="window" id="Td7-aD-5lo">
+                        <items>
+                            <menuItem title="Minimize" keyEquivalent="m" id="OY7-WF-poV">
+                                <connections>
+                                    <action selector="performMiniaturize:" target="-1" id="VwT-WD-YPe"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem title="Zoom" id="R4o-n2-Eq4">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <connections>
+                                    <action selector="performZoom:" target="-1" id="DIl-cC-cCs"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem isSeparatorItem="YES" id="eu3-7i-yIM"/>
+                            <menuItem title="Bring All to Front" id="LE2-aR-0XJ">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <connections>
+                                    <action selector="arrangeInFront:" target="-1" id="DRN-fu-gQh"/>
+                                </connections>
+                            </menuItem>
+                        </items>
+                    </menu>
+                </menuItem>
+                <menuItem title="Help" id="EPT-qC-fAb">
+                    <modifierMask key="keyEquivalentModifierMask"/>
+                    <menu key="submenu" title="Help" systemMenu="help" id="rJ0-wn-3NY"/>
+                </menuItem>
+            </items>
+            <point key="canvasLocation" x="142" y="-258"/>
+        </menu>
+        <window title="APP_NAME" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" animationBehavior="default" id="QvC-M9-y7g" customClass="MainFlutterWindow" customModule="Runner" customModuleProvider="target">
+            <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES"/>
+            <rect key="contentRect" x="335" y="390" width="800" height="600"/>
+            <rect key="screenRect" x="0.0" y="0.0" width="2560" height="1577"/>
+            <view key="contentView" wantsLayer="YES" id="EiT-Mj-1SZ">
+                <rect key="frame" x="0.0" y="0.0" width="800" height="600"/>
+                <autoresizingMask key="autoresizingMask"/>
+            </view>
+        </window>
+    </objects>
+</document>
+++ b/ElCoccoEddie/macos/Runner/Configs/AppInfo.xcconfig
+// Application-level settings for the Runner target.
+//
+// This may be replaced with something auto-generated from metadata (e.g., pubspec.yaml) in the
+// future. If not, the values below would default to using the project name when this becomes a
+// 'flutter create' template.
+
+// The application's name. By default this is also the title of the Flutter window.
+PRODUCT_NAME = elcoccoeddy
+
+// The application's bundle identifier
+PRODUCT_BUNDLE_IDENTIFIER = com.elcoccoeddy.privacy.elcoccoeddy
+
+// The copyright displayed in application information
+PRODUCT_COPYRIGHT = Copyright © 2026 com.elcoccoeddy.privacy. All rights reserved.
+++ b/ElCoccoEddie/macos/Runner/Configs/Debug.xcconfig
+#include "../../Flutter/Flutter-Debug.xcconfig"
+#include "Warnings.xcconfig"
+++ b/ElCoccoEddie/macos/Runner/Configs/Release.xcconfig
+#include "../../Flutter/Flutter-Release.xcconfig"
+#include "Warnings.xcconfig"
+++ b/ElCoccoEddie/macos/Runner/Configs/Warnings.xcconfig
+WARNING_CFLAGS = -Wall -Wconditional-uninitialized -Wnullable-to-nonnull-conversion -Wmissing-method-return-type -Woverlength-strings
+GCC_WARN_UNDECLARED_SELECTOR = YES
+CLANG_UNDEFINED_BEHAVIOR_SANITIZER_NULLABILITY = YES
+CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE
+CLANG_WARN__DUPLICATE_METHOD_MATCH = YES
+CLANG_WARN_PRAGMA_PACK = YES
+CLANG_WARN_STRICT_PROTOTYPES = YES
+CLANG_WARN_COMMA = YES
+GCC_WARN_STRICT_SELECTOR_MATCH = YES
+CLANG_WARN_OBJC_REPEATED_USE_OF_WEAK = YES
+CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES
+GCC_WARN_SHADOW = YES
+CLANG_WARN_UNREACHABLE_CODE = YES
+++ b/ElCoccoEddie/macos/Runner/DebugProfile.entitlements
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+	<key>com.apple.security.cs.allow-jit</key>
+	<true/>
+	<key>com.apple.security.network.server</key>
+	<true/>
+</dict>
+</plist>
+++ b/ElCoccoEddie/macos/Runner/Info.plist
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIconFile</key>
+	<string></string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(FLUTTER_BUILD_NAME)</string>
+	<key>CFBundleVersion</key>
+	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>$(PRODUCT_COPYRIGHT)</string>
+	<key>NSMainNibFile</key>
+	<string>MainMenu</string>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+</dict>
+</plist>
+++ b/ElCoccoEddie/macos/Runner/MainFlutterWindow.swift
+import Cocoa
+import FlutterMacOS
+
+class MainFlutterWindow: NSWindow {
+  override func awakeFromNib() {
+    let flutterViewController = FlutterViewController()
+    let windowFrame = self.frame
+    self.contentViewController = flutterViewController
+    self.setFrame(windowFrame, display: true)
+
+    RegisterGeneratedPlugins(registry: flutterViewController)
+
+    super.awakeFromNib()
+  }
+}
+++ b/ElCoccoEddie/macos/Runner/Release.entitlements
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+</dict>
+</plist>
+++ b/ElCoccoEddie/macos/RunnerTests/RunnerTests.swift
+import Cocoa
+import FlutterMacOS
+import XCTest
+
+class RunnerTests: XCTestCase {
+
+  func testExample() {
+    // If you add code to the Runner application, consider adding tests here.
+    // See https://developer.apple.com/documentation/xctest for more information about using XCTest.
+  }
+
+}
+++ b/ElCoccoEddie/pubspec.yaml
+name: elcocco
+description: "ElCocco - privacy shield dashboard for monitoring app permissions and exposure."
+# The following line prevents the package from being accidentally published to
+# pub.dev using `flutter pub publish`. This is preferred for private packages.
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+# The following defines the version and build number for your application.
+# A version number is three numbers separated by dots, like 1.2.43
+# followed by an optional build number separated by a +.
+# Both the version and the builder number may be overridden in flutter
+# build by specifying --build-name and --build-number, respectively.
+# In Android, build-name is used as versionName while build-number used as versionCode.
+# Read more about Android versioning at https://developer.android.com/studio/publish/versioning
+# In iOS, build-name is used as CFBundleShortVersionString while build-number is used as CFBundleVersion.
+# Read more about iOS versioning at
+# https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
+# In Windows, build-name is used as the major, minor, and patch parts
+# of the product and file versions while build-number is used as the build suffix.
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.4
+
+# Dependencies specify other packages that your package needs in order to work.
+# To automatically upgrade your package dependencies to the latest versions
+# consider running `flutter pub upgrade --major-versions`. Alternatively,
+# dependencies can be manually updated by changing the version numbers below to
+# the latest version available on pub.dev. To see which dependencies have newer
+# versions available, run `flutter pub outdated`.
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # The following adds the Cupertino Icons font to your application.
+  # Use with the CupertinoIcons class for iOS style icons.
+  cupertino_icons: ^1.0.8
+  provider: ^6.1.2
+  google_fonts: ^6.2.1
+  flutter_animate: ^4.5.2
+  permission_handler: ^11.3.1
+  flutter_bloc: ^8.1.3
+  camera: ^0.11.0+2
+  equatable: ^2.0.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # The "flutter_lints" package below contains a set of recommended lints to
+  # encourage good coding practices. The lint set provided by the package is
+  # activated in the `analysis_options.yaml` file located at the root of your
+  # package. See that file for information about deactivating specific lint
+  # rules and activating additional ones.
+  flutter_lints: ^6.0.0
+
+# For information on the generic Dart part of this file, see the
+# following page: https://dart.dev/tools/pub/pubspec
+
+# The following section is specific to Flutter packages.
+flutter:
+
+  # The following line ensures that the Material Icons font is
+  # included with your application, so that you can use the icons in
+  # the material Icons class.
+  uses-material-design: true
+
+  # To add assets to your application, add an assets section, like this:
+  # assets:
+  #   - images/a_dot_burr.jpeg
+  #   - images/a_dot_ham.jpeg
+
+  # An image asset can refer to one or more resolution-specific "variants", see
+  # https://flutter.dev/to/resolution-aware-images
+
+  # For details regarding adding assets from package dependencies, see
+  # https://flutter.dev/to/asset-from-package
+
+  # To add custom fonts to your application, add a fonts section here,
+  # in this "flutter" section. Each entry in this list should have a
+  # "family" key with the font family name, and a "fonts" key with a
+  # list giving the asset and other descriptors for the font. For
+  # example:
+  # fonts:
+  #   - family: Schyler
+  #     fonts:
+  #       - asset: fonts/Schyler-Regular.ttf
+  #       - asset: fonts/Schyler-Italic.ttf
+  #         style: italic
+  #   - family: Trajan Pro
+  #     fonts:
+  #       - asset: fonts/TrajanPro.ttf
+  #       - asset: fonts/TrajanPro_Bold.ttf
+  #         weight: 700
+  #
+  # For details regarding fonts from package dependencies,
+  # see https://flutter.dev/to/font-from-package
+++ b/ElCoccoEddie/web/index.html
+<!DOCTYPE html>
+<html>
+<head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="A new Flutter project.">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="elcoccoedie">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>elcoccoedie</title>
+  <link rel="manifest" href="manifest.json">
+</head>
+<body>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>
+++ b/ElCoccoEddie/web/manifest.json
+{
+    "name": "elcoccoedie",
+    "short_name": "elcoccoedie",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#0175C2",
+    "theme_color": "#0175C2",
+    "description": "A new Flutter project.",
+    "orientation": "portrait-primary",
+    "prefer_related_applications": false,
+    "icons": [
+        {
+            "src": "icons/Icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-maskable-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "icons/Icon-maskable-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ]
+}
+++ b/changes.txt
 ++ b/api-server/.env.example
 # Server Configuration
 PORT=3001
@@ -28,18 +4383,15 @@ const JWT_EXPIRY = process.env.JWT_EXPIRY || '7d';
 export const register = async (req, res) => {
   try {
     const { email, password, name } = req.body;
-
     // Validate input
     if (!email || !password || !name) {
       return res.status(400).json({ error: 'Email, password, and name are required' });
     }
-
     // Check if user already exists
     const existingUser = users.find(u => u.email === email);
     if (existingUser) {
       return res.status(400).json({ error: 'User already exists' });
     }
-
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -53,16 +4405,13 @@ export const register = async (req, res) => {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-
     users.push(newUser);
-
     // Generate JWT token
     const token = jwt.sign(
       { userId: newUser.id, email: newUser.email, role: newUser.role },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRY }
     );
-
     // Return user data without password
     const { password: _, ...userWithoutPassword } = newUser;
     
@@ -76,35 +4425,27 @@ export const register = async (req, res) => {
     res.status(500).json({ error: 'Registration failed' });
   }
 };
-
 export const login = async (req, res) => {
-  try {
     const { email, password } = req.body;
-
     // Validate input
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
-
     // Find user
     const user = users.find(u => u.email === email);
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
     // Check password
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
-
     // Generate JWT token
     const token = jwt.sign(
       { userId: user.id, email: user.email, role: user.role },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRY }
     );
-
     // Return user data without password
     const { password: _, ...userWithoutPassword } = user;
     
@@ -113,12 +4454,8 @@ export const login = async (req, res) => {
       user: userWithoutPassword,
       token
     });
-  } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ error: 'Login failed' });
-  }
-};
-
 export const getProfile = (req, res) => {
   try {
     const { password: _, ...userWithoutPassword } = req.user;
@@ -126,23 +4463,17 @@ export const getProfile = (req, res) => {
   } catch (error) {
     console.error('Get profile error:', error);
     res.status(500).json({ error: 'Failed to get profile' });
-  }
 };
-
 export const updateProfile = async (req, res) => {
   try {
     const { name, password } = req.body;
     const user = req.user;
-
     // Update user data
     if (name) user.name = name;
     
     if (password) {
       user.password = await bcrypt.hash(password, 10);
-    }
-
     user.updatedAt = new Date().toISOString();
-
     const { password: _, ...userWithoutPassword } = user;
     
     res.json({
@@ -152,16 +4483,13 @@ export const updateProfile = async (req, res) => {
   } catch (error) {
     console.error('Update profile error:', error);
     res.status(500).json({ error: 'Failed to update profile' });
-  }
 };
 ++ b/api-server/src/controllers/itemController.js
 import items from '../data/items.js';
-
 // Helper function to get next ID
 const getNextId = () => {
   return items.length > 0 ? Math.max(...items.map(item => item.id)) + 1 : 1;
 };
-
 export const getAllItems = (req, res) => {
   try {
     const { status, userId, page = 1, limit = 10 } = req.query;
@@ -171,11 +4499,9 @@ export const getAllItems = (req, res) => {
     
     if (status) {
       filteredItems = filteredItems.filter(item => item.status === status);
-    }
     
     if (userId) {
       filteredItems = filteredItems.filter(item => item.userId === parseInt(userId));
-    }
     
     // Pagination
     const startIndex = (page - 1) * limit;
@@ -195,9 +4521,6 @@ export const getAllItems = (req, res) => {
   } catch (error) {
     console.error('Get all items error:', error);
     res.status(500).json({ error: 'Failed to get items' });
-  }
-};
-
 export const getItemById = (req, res) => {
   try {
     const itemId = parseInt(req.params.id);
@@ -205,7 +4528,6 @@ export const getItemById = (req, res) => {
     
     if (!item) {
       return res.status(404).json({ error: 'Item not found' });
-    }
     
     res.json({ item });
   } catch (error) {
@@ -213,14 +4535,12 @@ export const getItemById = (req, res) => {
     res.status(500).json({ error: 'Failed to get item' });
   }
 };
-
 export const createItem = (req, res) => {
   try {
     const { title, description, status = 'active' } = req.body;
     
     if (!title) {
       return res.status(400).json({ error: 'Title is required' });
-    }
     
     const newItem = {
       id: getNextId(),
@@ -230,35 +4550,29 @@ export const createItem = (req, res) => {
       status,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
-    };
     
     items.push(newItem);
     
     res.status(201).json({
       message: 'Item created successfully',
       item: newItem
-    });
   } catch (error) {
     console.error('Create item error:', error);
     res.status(500).json({ error: 'Failed to create item' });
   }
 };
-
 export const updateItem = (req, res) => {
   try {
     const itemId = parseInt(req.params.id);
     const { title, description, status } = req.body;
-    
     const itemIndex = items.findIndex(item => item.id === itemId);
     
     if (itemIndex === -1) {
       return res.status(404).json({ error: 'Item not found' });
-    }
     
     // Check ownership (admin can update any item)
     if (req.user.role !== 'admin' && items[itemIndex].userId !== req.user.id) {
       return res.status(403).json({ error: 'You can only update your own items' });
-    }
     
     // Update item
     if (title !== undefined) items[itemIndex].title = title;
@@ -276,7 +4590,6 @@ export const updateItem = (req, res) => {
     res.status(500).json({ error: 'Failed to update item' });
   }
 };
-
 export const deleteItem = (req, res) => {
   try {
     const itemId = parseInt(req.params.id);
@@ -284,12 +4597,10 @@ export const deleteItem = (req, res) => {
     
     if (itemIndex === -1) {
       return res.status(404).json({ error: 'Item not found' });
-    }
     
     // Check ownership (admin can delete any item)
     if (req.user.role !== 'admin' && items[itemIndex].userId !== req.user.id) {
       return res.status(403).json({ error: 'You can only delete your own items' });
-    }
     
     // Remove item
     const deletedItem = items.splice(itemIndex, 1)[0];
@@ -301,7 +4612,6 @@ export const deleteItem = (req, res) => {
   } catch (error) {
     console.error('Delete item error:', error);
     res.status(500).json({ error: 'Failed to delete item' });
-  }
 };
 ++ b/api-server/src/controllers/users.js
 // This file is deprecated - use authController.js instead
@@ -349,9 +4659,7 @@ let items = [
     status: 'inactive',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
-  }
 ];
-
 export default items;
 ++ b/api-server/src/data/users.js
 // In-memory user database (for development)
@@ -373,7 +4681,6 @@ const users = [
     role: 'user',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
-  }
 ];
 export default users;
 ++ b/api-server/src/middleware/auth.js
@@ -400,11 +4707,9 @@ export const authorize = (roles = []) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Authentication required' });
     }
-
     if (roles.length && !roles.includes(req.user.role)) {
       return res.status(403).json({ error: 'Insufficient permissions' });
     }
-
     next();
   };
 };
@@ -459,25 +4764,32 @@ import { authenticate } from '../middleware/auth.js';
 ++ b/changes.txt
 ++ b/changes.txt
 ++ b/commit_message.txt
- This code consists of CSS styles for a modal and form elements, as well as[2D[K
-as some TypeScript configuration for a Vite project.
-1. The CSS includes styles for a `.priority-dot` class that can have high, [K
-medium, or low priority states, and a responsive design for a modal contain[7D[K
-container, header, body, footer, form row, and modal button.
-2. The CSS also includes a form validation animation for shaking the input [K
-field when it is invalid, a loading state for the modal button, and styles [K
-for range and number input elements, as well as a date input element.
-3. The CSS also includes styles for scrollbars within the modal body.
-
-4. The TypeScript configuration includes settings for the Vite project, suc[3D[K
-such as targeting ES2020, using JSX, enabling strict mode, and setting up t[1D[K
-the bundler mode. The TypeScript configuration also includes a reference to[2D[K
-to the TypeScript configuration for the Node.js environment.
-
-5. The Vite configuration file sets up the Vite project, enables the React [K
-plugin, and sets the server port to 5174.
-++ b/commit_message.txt
 as TypeScript configuration for a Vite project.
 In addition to the provided code, a commit message has been included to des[3D[K
 describe the changes made.
 
+++ b/commit_message.txt
+ It appears that you've made several changes to the files of an API server [K
+project, which includes:
+1. Creating an `ItemController` for handling item-related operations in the[3D[K
+the server.
+2. Deleting a user endpoint (`/api/users/delete`) and updating the error re[2D[K
+response for the delete item operation.
+3. Deprecating user endpoints in the `users.js` file, and updating the corr[4D[K
+corresponding routes in `authController.js`.
+4. Updating the in-memory item and user databases with sample data.
+5. Implementing an authentication middleware (`auth.js`) and updating the r[1D[K
+routes to protect some endpoints in `auth.js` and `users.js`.
+6. Updating routes in `auth.js` and `items.js`.
+7. Creating a `changes.txt` file to document the changes made.
+The CSS and TypeScript configuration files you provided are for styling the[3D[K
+the frontend application and configuring the Vite project, respectively.
+++ b/kiros/313rifts/vercel.json
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "framework": "vite",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

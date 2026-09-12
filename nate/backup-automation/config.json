@@ -1,0 +1,29 @@
+{
+  "source_directories": [
+    "C:/Users/Lenovo/Documents",
+    "C:/Users/Lenovo/Desktop"
+  ],
+  "backup_destination": "C:/Users/Lenovo/Backups",
+  "backup_name_prefix": "backup",
+  "compression": {
+    "enabled": true,
+    "format": "zip"
+  },
+  "exclude_patterns": [
+    "__pycache__",
+    "*.tmp",
+    "*.log",
+    "node_modules",
+    ".git"
+  ],
+  "schedule": {
+    "enabled": false,
+    "interval_hours": 24,
+    "max_backups": 10
+  },
+  "logging": {
+    "enabled": true,
+    "log_file": "backup.log",
+    "verbose": false
+  }
+}

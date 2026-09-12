@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="primary">#FF6B6B</color>
+    <color name="primary_variant">#E05555</color>
+    <color name="secondary">#4ECDC4</color>
+    <color name="secondary_variant">#36B5AD</color>
+    <color name="background_dark">#1A1A2E</color>
+    <color name="background_card">#16213E</color>
+    <color name="surface">#0F3460</color>
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#B0B0B0</color>
+    <color name="accent_green">#10B981</color>
+    <color name="accent_red">#EF4444</color>
+    <color name="accent_yellow">#F59E0B</color>
+    <color name="moon_gradient_start">#667eea</color>
+    <color name="moon_gradient_end">#764ba2</color>
+</resources>

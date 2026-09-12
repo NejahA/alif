@@ -1,0 +1,28 @@
+helloDojo
+
+result is 15
+
+result is 18
+
+10
+15
+
+20
+15
+
+
+result is 16
+
+
+5
+8
+
+
+5
+8
+
+
+result is 13
+
+
+result is 19

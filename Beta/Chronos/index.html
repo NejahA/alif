@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chronos — Focus Timer</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="script.js" defer></script>
+</head>
+<body>
+
+  <!-- ====== BACKGROUND PARTICLES (pure CSS) ====== -->
+  <div class="particles" aria-hidden="true">
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+  </div>
+
+  <!-- ====== CONFETTI CANVAS ====== -->
+  <canvas id="confettiCanvas" aria-hidden="true"></canvas>
+
+  <div class="app">
+    <!-- ====== HEADER ====== -->
+    <header class="header">
+      <h1 class="logo">⏱ Chronos</h1>
+      <p class="tagline">Focus. Track. Achieve.</p>
+    </header>
+
+    <div class="dashboard">
+
+      <!-- ====== LEFT: FOCUS TIMER ====== -->
+      <section class="card timer-card">
+        <div class="card-header">
+          <h2>Focus Session</h2>
+          <div class="mode-badges">
+            <button class="mode-btn active" data-minutes="25">Focus</button>
+            <button class="mode-btn" data-minutes="5">Short</button>
+            <button class="mode-btn" data-minutes="15">Long</button>
+            <button class="mode-btn custom-btn" id="customModeBtn" title="Custom duration">✎</button>
+          </div>
+        </div>
+
+        <!-- Custom Duration Stepper -->
+        <div class="custom-duration" id="customDuration" hidden>
+          <button class="step-btn" id="decMinBtn" aria-label="Decrease">-</button>
+          <input type="number" id="customMinutes" min="1" max="180" value="25" />
+          <span class="min-label">min</span>
+          <button class="step-btn" id="incMinBtn" aria-label="Increase">+</button>
+          <button class="apply-btn" id="applyCustomBtn">Apply</button>
+        </div>
+
+        <div class="timer-circle" id="timerRing">
+          <svg viewBox="0 0 220 220" class="ring-svg">
+            <circle class="ring-bg" cx="110" cy="110" r="100" />
+            <circle class="ring-progress" id="ringProgress" cx="110" cy="110" r="100"
+              style="stroke-dasharray: 628.32; stroke-dashoffset: 0;" />
+            <circle class="ring-dot" id="ringDot" cx="110" cy="10" r="6" />
+          </svg>
+          <div class="timer-display">
+            <span id="timerDisplay">25:00</span>
+          </div>
+        </div>
+
+        <div class="timer-controls">
+          <button class="ctrl-btn primary" id="startBtn">▶ Start</button>
+          <button class="ctrl-btn" id="pauseBtn" disabled>⏸ Pause</button>
+          <button class="ctrl-btn danger" id="resetBtn">↺ Reset</button>
+        </div>
+
+        <div class="session-counter">
+          Sessions today: <strong id="sessionCount">0</strong>
+        </div>
+      </section>
+
+      <!-- ====== RIGHT: TASKS ====== -->
+      <section class="card tasks-card">
+        <div class="card-header">
+          <h2>Tasks</h2>
+          <span class="task-badge" id="taskCount">0</span>
+        </div>
+
+        <form class="task-form" id="taskForm">
+          <input type="text" id="taskInput" placeholder="What do you need to do?" autocomplete="off" />
+          <select id="taskPriority" class="priority-select" title="Priority">
+            <option value="low">Low</option>
+            <option value="med" selected>Med</option>
+            <option value="high">High</option>
+          </select>
+          <button type="submit" class="add-btn">+ Add</button>
+        </form>
+
+        <ul class="task-list" id="taskList">
+          <!-- Tasks rendered by JS -->
+        </ul>
+      </section>
+
+      <!-- ====== BOTTOM: STATS ====== -->
+      <section class="card stats-card">
+        <div class="card-header">
+          <h2>Today's Progress</h2>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <span class="stat-icon">🎯</span>
+            <span class="stat-value" id="statSessions">0</span>
+            <span class="stat-label">Sessions</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-icon">⏳</span>
+            <span class="stat-value" id="statMinutes">0</span>
+            <span class="stat-label">Minutes</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-icon">✅</span>
+            <span class="stat-value" id="statTasks">0</span>
+            <span class="stat-label">Done</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-icon">🔥</span>
+            <span class="stat-value" id="statStreak">0</span>
+            <span class="stat-label">Streak</span>
+          </div>
+        </div>
+
+        <!-- Weekly Focus Heatmap -->
+        <div class="weekly-wrap">
+          <div class="weekly-title">Last 7 Days</div>
+          <div class="weekly-bars" id="weeklyBars">
+            <!-- filled by JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ====== HISTORY ====== -->
+      <section class="card history-card">
+        <div class="card-header">
+          <h2>Session History</h2>
+          <button class="clear-btn" id="clearHistoryBtn" title="Clear all history">🗑 Clear</button>
+        </div>
+        <div class="history-list" id="historyList">
+          <p class="empty-msg">No sessions recorded yet. Start focusing!</p>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- ====== FOOTER ====== -->
+    <footer class="footer">
+      <p>Chronos &mdash; made with focus 🧘</p>
+    </footer>
+  </div>
+
+  <!-- ====== SOUND (hidden audio element) ====== -->
+  <audio id="bellSound" preload="auto"
+    src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACAf39/f4B/f39/gH9/f3+Af39/f3+Af39/f4B/f39/gH9/f3+Af39/f38=">
+  </audio>
+</body>
+</html>
