@@ -50,9 +50,14 @@ class HomeScreen extends StatelessWidget {
         ),
         body: Consumer<PrivacyShieldProvider>(
           builder: (context, provider, child) {
-            return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              child: Column(
+            return RefreshIndicator(
+              color: IlluminatiTheme.sacredGold,
+              backgroundColor: IlluminatiTheme.slateCard,
+              onRefresh: provider.checkStatus,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                child: Column(
                 children: [
                   // Status Banner
                   Container(
@@ -358,6 +363,13 @@ class HomeScreen extends StatelessWidget {
 
                   const SizedBox(height: 24),
 
+                    _buildPrivacyPostureCard(context, provider)
+                      .animate()
+                      .fadeIn(delay: 350.ms)
+                      .slideY(begin: 0.08, end: 0),
+
+                    const SizedBox(height: 24),
+
                   // Quick Action Buttons
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -398,6 +410,7 @@ class HomeScreen extends StatelessWidget {
                     ],
                   ).animate().fadeIn(delay: 400.ms),
                 ],
+                ),
               ),
             );
           },
@@ -466,6 +479,253 @@ class HomeScreen extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildPrivacyPostureCard(BuildContext context, PrivacyShieldProvider provider) {
+    var score = 0;
+    if (provider.cameraBlocked) score += 25;
+    if (provider.micBlocked) score += 25;
+    if (provider.volumeButtonsBlocked) score += 15;
+    if (provider.isDeviceAdminActive) score += 20;
+    if (provider.canDrawOverlays) score += 15;
+
+    final scoreColor = score >= 80
+        ? IlluminatiTheme.emeraldShield
+        : score >= 50
+            ? IlluminatiTheme.amberGlow
+            : IlluminatiTheme.crimsonSeal;
+    final status = score >= 80
+        ? 'FORTIFIED'
+        : score >= 50
+            ? 'PARTIALLY SEALED'
+            : 'EXPOSED';
+    final String? recommendation;
+    final VoidCallback? recommendationAction;
+    if (!provider.isDeviceAdminActive) {
+      recommendation = 'Activate device admin to strengthen hardware control';
+      recommendationAction = provider.requestDeviceAdmin;
+    } else if (!provider.cameraBlocked) {
+      recommendation = 'Seal the camera hardware';
+      recommendationAction = provider.toggleCameraShield;
+    } else if (!provider.micBlocked) {
+      recommendation = 'Seal microphone access';
+      recommendationAction = provider.toggleMicShield;
+    } else if (!provider.volumeButtonsBlocked) {
+      recommendation = 'Enable the volume button trap';
+      recommendationAction = provider.toggleVolumeButtonsShield;
+    } else if (!provider.canDrawOverlays) {
+      recommendation = 'Allow overlay access for the floating shield';
+      recommendationAction = provider.requestOverlayPermission;
+    } else {
+      recommendation = null;
+      recommendationAction = null;
+    }
+    final criticalThreatCount = provider.auditedApps
+        .where((app) => app.risk == ThreatLevel.critical)
+        .length;
+    final outstandingThreatCount = provider.auditedApps.where((app) => !app.acknowledged).length;
+    final acknowledgedThreatCount = provider.auditedApps.length - outstandingThreatCount;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'PRIVACY POSTURE',
+                        style: GoogleFonts.cinzel(
+                          color: IlluminatiTheme.sacredGold,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        status,
+                        style: GoogleFonts.orbitron(
+                          color: scoreColor,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Text(
+                  '$score%',
+                  style: GoogleFonts.orbitron(
+                    color: scoreColor,
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: LinearProgressIndicator(
+                value: score / 100,
+                minHeight: 8,
+                backgroundColor: Colors.white12,
+                valueColor: AlwaysStoppedAnimation<Color>(scoreColor),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _buildPostureIndicator('CAMERA', provider.cameraBlocked, scoreColor),
+                _buildPostureIndicator('MIC', provider.micBlocked, scoreColor),
+                _buildPostureIndicator('VOLUME', provider.volumeButtonsBlocked, scoreColor),
+                _buildPostureIndicator('ADMIN', provider.isDeviceAdminActive, scoreColor),
+                _buildPostureIndicator('OVERLAY', provider.canDrawOverlays, scoreColor),
+              ],
+            ),
+            const SizedBox(height: 12),
+            InkWell(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AppAuditScreen()),
+                );
+              },
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                decoration: BoxDecoration(
+                  color: outstandingThreatCount == 0
+                      ? IlluminatiTheme.emeraldShield.withValues(alpha: 0.10)
+                      : IlluminatiTheme.amberGlow.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: outstandingThreatCount == 0
+                        ? IlluminatiTheme.emeraldShield.withValues(alpha: 0.55)
+                        : IlluminatiTheme.amberGlow.withValues(alpha: 0.55),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      outstandingThreatCount == 0 ? Icons.verified : Icons.pending_actions,
+                      color: outstandingThreatCount == 0
+                          ? IlluminatiTheme.emeraldShield
+                          : IlluminatiTheme.amberGlow,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'AUDIT REVIEW  $acknowledgedThreatCount/${provider.auditedApps.length} COMPLETE',
+                        style: GoogleFonts.orbitron(
+                          color: outstandingThreatCount == 0
+                              ? IlluminatiTheme.emeraldShield
+                              : IlluminatiTheme.amberGlow,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const Icon(Icons.arrow_forward, size: 15, color: Colors.white54),
+                  ],
+                ),
+              ),
+            ),
+            if (recommendation != null && recommendationAction != null) ...[
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: recommendationAction,
+                  icon: const Icon(Icons.arrow_forward, size: 16),
+                  label: Text(
+                    recommendation,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.orbitron(fontSize: 10),
+                  ),
+                  style: TextButton.styleFrom(
+                    foregroundColor: IlluminatiTheme.sacredGold,
+                    padding: EdgeInsets.zero,
+                  ),
+                ),
+              ),
+            ],
+            if (criticalThreatCount > 0) ...[
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(
+                  color: IlluminatiTheme.crimsonSeal.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: IlluminatiTheme.crimsonSeal.withValues(alpha: 0.6)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.warning_amber_rounded, color: IlluminatiTheme.crimsonSeal, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '$criticalThreatCount CRITICAL VECTOR${criticalThreatCount == 1 ? '' : 'S'} DETECTED',
+                        style: GoogleFonts.orbitron(
+                          color: IlluminatiTheme.crimsonSeal,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const AppAuditScreen()),
+                        );
+                      },
+                      style: TextButton.styleFrom(
+                        foregroundColor: IlluminatiTheme.crimsonSeal,
+                        padding: EdgeInsets.zero,
+                        minimumSize: Size.zero,
+                      ),
+                      child: const Text('REVIEW'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPostureIndicator(String label, bool active, Color activeColor) {
+    final color = active ? activeColor : Colors.white38;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: active ? 0.14 : 0.06),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.55)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(active ? Icons.check : Icons.remove, color: color, size: 13),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: GoogleFonts.orbitron(color: color, fontSize: 9, fontWeight: FontWeight.bold),
+          ),
+        ],
       ),
     );
   }

@@ -14,3 +14,7 @@ class LockCameraEvent extends CameraEvent {}
 class UnlockCameraEvent extends CameraEvent {}
 
 class ToggleCameraSealEvent extends CameraEvent {}
+
+class SwitchCameraEvent extends CameraEvent {}
+
+class ToggleAudioCaptureEvent extends CameraEvent {}

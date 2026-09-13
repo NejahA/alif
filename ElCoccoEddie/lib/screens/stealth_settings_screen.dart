@@ -155,6 +155,48 @@ class StealthSettingsScreen extends StatelessWidget {
                   const SizedBox(height: 12),
 
                   _buildSettingTile(
+                    title: 'UNLOCK DELAY',
+                    subtitle: '${provider.unlockDelaySeconds}s before protected sensors restore',
+                    icon: Icons.lock_open,
+                    trailingWidget: SizedBox(
+                      width: 150,
+                      child: Slider(
+                        value: provider.unlockDelaySeconds.toDouble(),
+                        min: 0,
+                        max: 30,
+                        divisions: 30,
+                        activeColor: IlluminatiTheme.sacredGold,
+                        onChanged: (value) {
+                          provider.setPrivacyTimerSettings(
+                            lockDelaySeconds: provider.lockDelaySeconds,
+                            unlockDelaySeconds: value.round(),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      onPressed: () {
+                        provider.setPrivacyTimerSettings(
+                          lockDelaySeconds: 10,
+                          unlockDelaySeconds: 1,
+                        );
+                      },
+                      icon: const Icon(Icons.restore, size: 16),
+                      label: const Text('RESET TIMER DEFAULTS'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: IlluminatiTheme.sacredGold,
+                        textStyle: GoogleFonts.orbitron(fontSize: 10),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  _buildSettingTile(
                     title: 'SENSOR RESTORATION',
                     subtitle: 'Camera and microphone restore after confirmed unlock',
                     icon: Icons.sensors,
@@ -297,8 +339,7 @@ class StealthSettingsScreen extends StatelessWidget {
               activeThumbColor: IlluminatiTheme.emeraldShield,
               onChanged: onChanged,
             ),
-          if (trailingWidget != null)
-            trailingWidget,
+          ?trailingWidget,
         ],
       ),
     );

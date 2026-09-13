@@ -15,14 +15,16 @@ class CameraLoadingState extends CameraState {}
 class CameraReadyState extends CameraState {
   final CameraController controller;
   final List<CameraDescription> cameras;
+  final bool audioEnabled;
 
   const CameraReadyState({
     required this.controller,
     required this.cameras,
+    this.audioEnabled = false,
   });
 
   @override
-  List<Object?> get props => [controller, cameras];
+  List<Object?> get props => [controller, cameras, audioEnabled];
 }
 
 class CameraBlockedState extends CameraState {

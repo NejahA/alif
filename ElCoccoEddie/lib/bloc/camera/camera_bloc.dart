@@ -7,6 +7,7 @@ import 'camera_state.dart';
 class CameraBloc extends Bloc<CameraEvent, CameraState> {
   CameraController? _controller;
   List<CameraDescription> _cameras = [];
+  bool _audioEnabled = false;
 
   CameraController? get controller => _controller;
 
@@ -15,6 +16,8 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     on<LockCameraEvent>(_onLockCamera);
     on<UnlockCameraEvent>(_onUnlockCamera);
     on<ToggleCameraSealEvent>(_onToggleCameraSeal);
+    on<SwitchCameraEvent>(_onSwitchCamera);
+    on<ToggleAudioCaptureEvent>(_onToggleAudioCapture);
   }
 
   Future<void> _onInitializeCamera(
@@ -25,16 +28,24 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     try {
       final status = await Permission.camera.request();
       if (status.isGranted) {
+        if (_audioEnabled) {
+          final microphoneStatus = await Permission.microphone.request();
+          if (!microphoneStatus.isGranted) _audioEnabled = false;
+        }
         _cameras = await availableCameras();
         if (_cameras.isNotEmpty) {
           await _disposeController();
           _controller = CameraController(
             _cameras.first,
             ResolutionPreset.medium,
-            enableAudio: false,
+            enableAudio: _audioEnabled,
           );
           await _controller!.initialize();
-          emit(CameraReadyState(controller: _controller!, cameras: _cameras));
+          emit(CameraReadyState(
+            controller: _controller!,
+            cameras: _cameras,
+            audioEnabled: _audioEnabled,
+          ));
         } else {
           emit(const CameraErrorState(errorMessage: "No hardware cameras available."));
         }
@@ -70,6 +81,45 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     } else {
       add(LockCameraEvent());
     }
+  }
+
+  Future<void> _onSwitchCamera(
+    SwitchCameraEvent event,
+    Emitter<CameraState> emit,
+  ) async {
+    if (_controller == null || _cameras.length < 2) return;
+
+    final currentDirection = _controller!.description.lensDirection;
+    final nextCamera = _cameras.firstWhere(
+      (camera) => camera.lensDirection != currentDirection,
+      orElse: () => _cameras.first,
+    );
+
+    try {
+      emit(CameraLoadingState());
+      await _disposeController();
+      _controller = CameraController(
+        nextCamera,
+        ResolutionPreset.medium,
+        enableAudio: _audioEnabled,
+      );
+      await _controller!.initialize();
+      emit(CameraReadyState(
+        controller: _controller!,
+        cameras: _cameras,
+        audioEnabled: _audioEnabled,
+      ));
+    } catch (e) {
+      emit(CameraErrorState(errorMessage: "Camera switch error: $e"));
+    }
+  }
+
+  Future<void> _onToggleAudioCapture(
+    ToggleAudioCaptureEvent event,
+    Emitter<CameraState> emit,
+  ) async {
+    _audioEnabled = !_audioEnabled;
+    if (state is CameraReadyState) add(InitializeCameraEvent());
   }
 
   Future<void> _disposeController() async {

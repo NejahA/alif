@@ -149,11 +149,15 @@ class NativeBlockerService {
 
   static Future<Map<String, dynamic>> getPrivacyEngineStatus() async {
     try {
-      final result = await _channel.invokeMethod<Map<dynamic, dynamic>>('getPrivacyEngineStatus');
-      return result == null ? {} : Map<String, dynamic>.from(result);
+      final result = await _channel.invokeMethod<dynamic>('getPrivacyEngineStatus');
+      if (result is Map) {
+        return Map<String, dynamic>.from(result);
+      }
+    } on TypeError catch (e) {
+      print('Invalid privacy engine status response: $e');
     } on PlatformException catch (e) {
       print('Failed to read privacy engine status: ${e.message}');
-      return {};
     }
+    return {};
   }
 }

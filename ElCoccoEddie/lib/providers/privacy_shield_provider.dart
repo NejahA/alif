@@ -14,6 +14,7 @@ class AuditedApp {
   final bool hasMic;
   final ThreatLevel risk;
   final String lastAccessed;
+  bool acknowledged;
 
   AuditedApp({
     required this.name,
@@ -22,6 +23,19 @@ class AuditedApp {
     required this.hasMic,
     required this.risk,
     required this.lastAccessed,
+    this.acknowledged = false,
+  });
+}
+
+class AuditSnapshot {
+  final DateTime scannedAt;
+  final int outstandingCount;
+  final int criticalCount;
+
+  const AuditSnapshot({
+    required this.scannedAt,
+    required this.outstandingCount,
+    required this.criticalCount,
   });
 }
 
@@ -35,6 +49,8 @@ class PrivacyShieldProvider extends ChangeNotifier {
   bool _stealthMode = false;
   bool _isAuditing = false;
   int _blockedAttemptsCount = 14;
+  DateTime? _lastScanAt;
+  int _scanCount = 0;
   bool _isDeviceAdminActive = false;
   bool _canDrawOverlays = false;
   CameraFilter _cameraFilter = CameraFilter.fullScreen;
@@ -42,11 +58,13 @@ class PrivacyShieldProvider extends ChangeNotifier {
   bool _privacyAutomationEnabled = true;
   int _lockDelaySeconds = 10;
   int _unlockDelaySeconds = 1;
+  bool _hasLocalStateChanges = false;
 
   PermissionStatus _cameraPermissionStatus = PermissionStatus.denied;
   PermissionStatus _micPermissionStatus = PermissionStatus.denied;
 
   List<AuditedApp> _auditedApps = [];
+  final List<AuditSnapshot> _scanHistory = [];
 
   bool get cameraBlocked => _cameraBlocked;
   bool get micBlocked => _micBlocked;
@@ -57,6 +75,8 @@ class PrivacyShieldProvider extends ChangeNotifier {
   bool get stealthMode => _stealthMode;
   bool get isAuditing => _isAuditing;
   int get blockedAttemptsCount => _blockedAttemptsCount;
+  DateTime? get lastScanAt => _lastScanAt;
+  int get scanCount => _scanCount;
   bool get isDeviceAdminActive => _isDeviceAdminActive;
   bool get canDrawOverlays => _canDrawOverlays;
   CameraFilter get cameraFilter => _cameraFilter;
@@ -65,6 +85,12 @@ class PrivacyShieldProvider extends ChangeNotifier {
   int get lockDelaySeconds => _lockDelaySeconds;
   int get unlockDelaySeconds => _unlockDelaySeconds;
   List<AuditedApp> get auditedApps => _auditedApps;
+  List<AuditSnapshot> get scanHistory => List.unmodifiable(_scanHistory);
+
+  void clearScanHistory() {
+    _scanHistory.clear();
+    notifyListeners();
+  }
   PermissionStatus get cameraPermissionStatus => _cameraPermissionStatus;
   PermissionStatus get micPermissionStatus => _micPermissionStatus;
 
@@ -78,10 +104,13 @@ class PrivacyShieldProvider extends ChangeNotifier {
     final statusMap = await NativeBlockerService.getShieldStatus();
     _isDeviceAdminActive = statusMap['isAdminActive'] ?? false;
     _canDrawOverlays = statusMap['canDrawOverlays'] ?? false;
-    _cameraBlocked = statusMap['cameraBlocked'] ?? false;
-    _micBlocked = statusMap['micBlocked'] ?? false;
-    _volButtonsBlocked = statusMap['volButtonsBlocked'] ?? false;
-    _masterLockActive = _cameraBlocked && _micBlocked;
+    if (!_hasLocalStateChanges) {
+      _cameraBlocked = statusMap['cameraBlocked'] ?? false;
+      _micBlocked = statusMap['micBlocked'] ?? false;
+      _volButtonsBlocked = statusMap['volButtonsBlocked'] ?? false;
+      _masterLockActive = _cameraBlocked && _micBlocked;
+      _cameraFilter = _cameraBlocked ? CameraFilter.fullScreen : CameraFilter.none;
+    }
     await _loadPrivacyEngineStatus();
     _generateInitialAuditData();
     notifyListeners();
@@ -203,6 +232,7 @@ class PrivacyShieldProvider extends ChangeNotifier {
       return;
     }
 
+    _hasLocalStateChanges = true;
     _masterLockActive = !_masterLockActive;
     _cameraBlocked = _masterLockActive;
     _micBlocked = _masterLockActive;
@@ -215,16 +245,31 @@ class PrivacyShieldProvider extends ChangeNotifier {
   }
 
   Future<void> toggleCameraShield() async {
-    _cameraFilter = _cameraFilter == CameraFilter.fullScreen
-        ? CameraFilter.none
-        : CameraFilter.fullScreen;
-    _cameraBlocked = _cameraFilter == CameraFilter.fullScreen;
+    final adminActive = await NativeBlockerService.isDeviceAdminActive();
+    if (!adminActive) {
+      await NativeBlockerService.setCameraBlocked(!_cameraBlocked);
+      return;
+    }
+
+    final canActivate = await _ensureRequiredPermissions(requireCamera: true);
+    if (!canActivate) {
+      return;
+    }
+
+    _hasLocalStateChanges = true;
+    _cameraBlocked = !_cameraBlocked;
+    _cameraFilter = _cameraBlocked ? CameraFilter.fullScreen : CameraFilter.none;
+    final cameraApplied = await NativeBlockerService.setCameraBlocked(_cameraBlocked);
+    if (!cameraApplied) {
+      await checkStatus();
+      return;
+    }
     notifyListeners();
   }
 
   void setCameraFilter(CameraFilter filter) {
+    _hasLocalStateChanges = true;
     _cameraFilter = filter;
-    _cameraBlocked = filter == CameraFilter.fullScreen;
     notifyListeners();
   }
 
@@ -239,6 +284,7 @@ class PrivacyShieldProvider extends ChangeNotifier {
       return;
     }
 
+    _hasLocalStateChanges = true;
     _micBlocked = !_micBlocked;
     if (_cameraBlocked && _micBlocked) {
       _masterLockActive = true;
@@ -250,6 +296,7 @@ class PrivacyShieldProvider extends ChangeNotifier {
   }
 
   Future<void> toggleVolumeButtonsShield() async {
+    _hasLocalStateChanges = true;
     _volButtonsBlocked = !_volButtonsBlocked;
     await NativeBlockerService.setVolumeButtonsBlocked(_volButtonsBlocked);
     notifyListeners();
@@ -288,12 +335,63 @@ class PrivacyShieldProvider extends ChangeNotifier {
     await Future.delayed(const Duration(seconds: 2));
 
     _generateInitialAuditData();
+    _recordAuditSnapshot();
+    _recordAuditSnapshot();
     _isAuditing = false;
+    _lastScanAt = DateTime.now();
+    _scanCount += 1;
     _blockedAttemptsCount += 3;
     notifyListeners();
   }
 
+  void acknowledgeApp(AuditedApp app) {
+    app.acknowledged = true;
+    notifyListeners();
+  }
+
+  void toggleAppAcknowledgement(AuditedApp app) {
+    app.acknowledged = !app.acknowledged;
+    notifyListeners();
+  }
+
+  void _recordAuditSnapshot() {
+    _scanHistory.add(
+      AuditSnapshot(
+        scannedAt: DateTime.now(),
+        outstandingCount: _auditedApps.where((app) => !app.acknowledged).length,
+        criticalCount: _auditedApps.where((app) => app.risk == ThreatLevel.critical).length,
+      ),
+    );
+    if (_scanHistory.length > 20) _scanHistory.removeAt(0);
+  }
+
+  void acknowledgeApps(Iterable<AuditedApp> apps) {
+    var changed = false;
+    for (final app in apps) {
+      if (!app.acknowledged) {
+        app.acknowledged = true;
+        changed = true;
+      }
+    }
+    if (changed) notifyListeners();
+  }
+
+  void resetAcknowledgements(Iterable<AuditedApp> apps) {
+    var changed = false;
+    for (final app in apps) {
+      if (app.acknowledged) {
+        app.acknowledged = false;
+        changed = true;
+      }
+    }
+    if (changed) notifyListeners();
+  }
+
   void _generateInitialAuditData() {
+    final acknowledgedPackages = {
+      for (final app in _auditedApps)
+        if (app.acknowledged) app.packageName,
+    };
     _auditedApps = [
       AuditedApp(
         name: 'Social Cipher App',
@@ -302,6 +400,7 @@ class PrivacyShieldProvider extends ChangeNotifier {
         hasMic: true,
         risk: ThreatLevel.high,
         lastAccessed: '2 mins ago',
+        acknowledged: acknowledgedPackages.contains('com.social.cipher'),
       ),
       AuditedApp(
         name: 'Voice Assistant Background',
@@ -310,6 +409,7 @@ class PrivacyShieldProvider extends ChangeNotifier {
         hasMic: true,
         risk: ThreatLevel.critical,
         lastAccessed: 'Just now',
+        acknowledged: acknowledgedPackages.contains('com.voice.listener'),
       ),
       AuditedApp(
         name: 'Shadow Cam Tracker',
@@ -318,6 +418,7 @@ class PrivacyShieldProvider extends ChangeNotifier {
         hasMic: false,
         risk: ThreatLevel.high,
         lastAccessed: '14 mins ago',
+        acknowledged: acknowledgedPackages.contains('com.spy.shadowcam'),
       ),
       AuditedApp(
         name: 'Browser WebRTC Agent',
@@ -326,6 +427,7 @@ class PrivacyShieldProvider extends ChangeNotifier {
         hasMic: true,
         risk: ThreatLevel.medium,
         lastAccessed: '1 hour ago',
+        acknowledged: acknowledgedPackages.contains('com.net.browser'),
       ),
       AuditedApp(
         name: 'System Audio Service',
@@ -334,6 +436,7 @@ class PrivacyShieldProvider extends ChangeNotifier {
         hasMic: true,
         risk: ThreatLevel.low,
         lastAccessed: '3 hours ago',
+        acknowledged: acknowledgedPackages.contains('android.system.audio'),
       ),
     ];
   }

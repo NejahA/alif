@@ -132,6 +132,38 @@ class AcousticJammerScreen extends StatelessWidget {
                             provider.setJammerFrequency(val);
                           },
                         ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'QUICK PRESETS',
+                              style: GoogleFonts.orbitron(color: Colors.white54, fontSize: 9),
+                            ),
+                            ...[
+                              ('LOW', 18000.0),
+                              ('MID', 20000.0),
+                              ('HIGH', 22000.0),
+                            ].map(
+                              (preset) => OutlinedButton(
+                                onPressed: () => provider.setJammerFrequency(preset.$2),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: provider.jammerFrequency == preset.$2
+                                      ? IlluminatiTheme.cyberCyan
+                                      : Colors.white60,
+                                  side: BorderSide(
+                                    color: provider.jammerFrequency == preset.$2
+                                        ? IlluminatiTheme.cyberCyan
+                                        : Colors.white24,
+                                  ),
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                child: Text(preset.$1, style: GoogleFonts.orbitron(fontSize: 9)),
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ).animate().fadeIn(delay: 200.ms),

@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'theme/illuminati_theme.dart';
 import 'providers/privacy_shield_provider.dart';
 import 'bloc/camera/camera_bloc.dart';
-import 'screens/home_screen.dart';
+import 'screens/app_lock_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,7 +25,7 @@ class ElCoccoApp extends StatelessWidget {
         title: 'ElCocco - Privacy Shield',
         debugShowCheckedModeBanner: false,
         theme: IlluminatiTheme.darkTheme,
-        home: const HomeScreen(),
+        home: const AppLockGate(),
       ),
     );
   }
