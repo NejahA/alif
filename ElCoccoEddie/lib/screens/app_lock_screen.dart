@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/illuminati_theme.dart';
@@ -57,24 +59,64 @@ class AppLockScreen extends StatefulWidget {
 
 class _AppLockScreenState extends State<AppLockScreen> {
   static const _lockNumber = '999';
+  static const _maxAttempts = 5;
+  static const _lockoutDuration = 30;
   final _pinController = TextEditingController();
   String? _errorMessage;
+  Timer? _lockoutTimer;
+  int _failedAttempts = 0;
+  int _lockoutSecondsRemaining = 0;
+
+  bool get _isLockedOut => _lockoutSecondsRemaining > 0;
 
   @override
   void dispose() {
+    _lockoutTimer?.cancel();
     _pinController.dispose();
     super.dispose();
   }
 
   void _unlock() {
+    if (_isLockedOut) return;
+
     if (_pinController.text == _lockNumber) {
       FocusManager.instance.primaryFocus?.unfocus();
       widget.onUnlocked();
       return;
     }
+
+    _failedAttempts++;
     setState(() {
-      _errorMessage = 'INVALID LOCK NUMBER';
+      if (_failedAttempts >= _maxAttempts) {
+        _startLockout();
+      } else {
+        final remaining = _maxAttempts - _failedAttempts;
+        _errorMessage = 'INVALID LOCK NUMBER • $remaining ATTEMPTS REMAINING';
+      }
       _pinController.clear();
+    });
+  }
+
+  void _startLockout() {
+    _lockoutTimer?.cancel();
+    _lockoutSecondsRemaining = _lockoutDuration;
+    _errorMessage = 'TOO MANY ATTEMPTS • TRY AGAIN IN 30 SECONDS';
+    _lockoutTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        _lockoutSecondsRemaining--;
+        if (_lockoutSecondsRemaining == 0) {
+          timer.cancel();
+          _failedAttempts = 0;
+          _errorMessage = null;
+        } else {
+          _errorMessage =
+              'TOO MANY ATTEMPTS • TRY AGAIN IN $_lockoutSecondsRemaining SECONDS';
+        }
+      });
     });
   }
 
@@ -110,7 +152,8 @@ class _AppLockScreenState extends State<AppLockScreen> {
                 const SizedBox(height: 28),
                 TextField(
                   controller: _pinController,
-                  autofocus: true,
+                  autofocus: !_isLockedOut,
+                  enabled: !_isLockedOut,
                   obscureText: true,
                   keyboardType: TextInputType.number,
                   textAlign: TextAlign.center,
@@ -130,9 +173,13 @@ class _AppLockScreenState extends State<AppLockScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
-                    onPressed: _unlock,
-                    icon: const Icon(Icons.lock_open),
-                    label: const Text('UNLOCK EL COCCO'),
+                    onPressed: _isLockedOut ? null : _unlock,
+                    icon: Icon(_isLockedOut ? Icons.timer : Icons.lock_open),
+                    label: Text(
+                      _isLockedOut
+                          ? 'LOCKED $_lockoutSecondsRemaining S'
+                          : 'UNLOCK EL COCCO',
+                    ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: IlluminatiTheme.sacredGold,
                       foregroundColor: IlluminatiTheme.obsidianBlack,

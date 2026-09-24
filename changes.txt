@@ -1,3 +1,2535 @@
+++ b/ElCoccoEddie/lib/bloc/camera/camera_bloc.dart
+  bool _audioEnabled = false;
+    on<SwitchCameraEvent>(_onSwitchCamera);
+    on<ToggleAudioCaptureEvent>(_onToggleAudioCapture);
+        if (_audioEnabled) {
+          final microphoneStatus = await Permission.microphone.request();
+          if (!microphoneStatus.isGranted) _audioEnabled = false;
+        }
+            enableAudio: _audioEnabled,
+          emit(CameraReadyState(
+            controller: _controller!,
+            cameras: _cameras,
+            audioEnabled: _audioEnabled,
+          ));
+  Future<void> _onSwitchCamera(
+    SwitchCameraEvent event,
+    Emitter<CameraState> emit,
+  ) async {
+    if (_controller == null || _cameras.length < 2) return;
+
+    final currentDirection = _controller!.description.lensDirection;
+    final nextCamera = _cameras.firstWhere(
+      (camera) => camera.lensDirection != currentDirection,
+      orElse: () => _cameras.first,
+    );
+
+    try {
+      emit(CameraLoadingState());
+      await _disposeController();
+      _controller = CameraController(
+        nextCamera,
+        ResolutionPreset.medium,
+        enableAudio: _audioEnabled,
+      );
+      await _controller!.initialize();
+      emit(CameraReadyState(
+        controller: _controller!,
+        cameras: _cameras,
+        audioEnabled: _audioEnabled,
+      ));
+    } catch (e) {
+      emit(CameraErrorState(errorMessage: "Camera switch error: $e"));
+    }
+  }
+
+  Future<void> _onToggleAudioCapture(
+    ToggleAudioCaptureEvent event,
+    Emitter<CameraState> emit,
+  ) async {
+    _audioEnabled = !_audioEnabled;
+    if (state is CameraReadyState) add(InitializeCameraEvent());
+  }
+
+++ b/ElCoccoEddie/lib/bloc/camera/camera_event.dart
+
+class SwitchCameraEvent extends CameraEvent {}
+
+class ToggleAudioCaptureEvent extends CameraEvent {}
+++ b/ElCoccoEddie/lib/bloc/camera/camera_state.dart
+  final bool audioEnabled;
+    this.audioEnabled = false,
+  List<Object?> get props => [controller, cameras, audioEnabled];
+++ b/ElCoccoEddie/lib/main.dart
+import 'screens/app_lock_screen.dart';
+        home: const AppLockGate(),
+++ b/ElCoccoEddie/lib/providers/privacy_shield_provider.dart
+  bool acknowledged;
+    this.acknowledged = false,
+  });
+}
+
+class AuditSnapshot {
+  final DateTime scannedAt;
+  final int outstandingCount;
+  final int criticalCount;
+
+  const AuditSnapshot({
+    required this.scannedAt,
+    required this.outstandingCount,
+    required this.criticalCount,
+  DateTime? _lastScanAt;
+  int _scanCount = 0;
+  bool _hasLocalStateChanges = false;
+  final List<AuditSnapshot> _scanHistory = [];
+  DateTime? get lastScanAt => _lastScanAt;
+  int get scanCount => _scanCount;
+  List<AuditSnapshot> get scanHistory => List.unmodifiable(_scanHistory);
+
+  void clearScanHistory() {
+    _scanHistory.clear();
+    notifyListeners();
+  }
+    if (!_hasLocalStateChanges) {
+      _cameraBlocked = statusMap['cameraBlocked'] ?? false;
+      _micBlocked = statusMap['micBlocked'] ?? false;
+      _volButtonsBlocked = statusMap['volButtonsBlocked'] ?? false;
+      _masterLockActive = _cameraBlocked && _micBlocked;
+      _cameraFilter = _cameraBlocked ? CameraFilter.fullScreen : CameraFilter.none;
+    }
+    _hasLocalStateChanges = true;
+    final adminActive = await NativeBlockerService.isDeviceAdminActive();
+    if (!adminActive) {
+      await NativeBlockerService.setCameraBlocked(!_cameraBlocked);
+      return;
+    }
+
+    final canActivate = await _ensureRequiredPermissions(requireCamera: true);
+    if (!canActivate) {
+      return;
+    }
+
+    _hasLocalStateChanges = true;
+    _cameraBlocked = !_cameraBlocked;
+    _cameraFilter = _cameraBlocked ? CameraFilter.fullScreen : CameraFilter.none;
+    final cameraApplied = await NativeBlockerService.setCameraBlocked(_cameraBlocked);
+    if (!cameraApplied) {
+      await checkStatus();
+      return;
+    }
+    _hasLocalStateChanges = true;
+    _hasLocalStateChanges = true;
+    _hasLocalStateChanges = true;
+    _recordAuditSnapshot();
+    _recordAuditSnapshot();
+    _lastScanAt = DateTime.now();
+    _scanCount += 1;
+  void acknowledgeApp(AuditedApp app) {
+    app.acknowledged = true;
+    notifyListeners();
+  }
+
+  void toggleAppAcknowledgement(AuditedApp app) {
+    app.acknowledged = !app.acknowledged;
+    notifyListeners();
+  }
+
+  void _recordAuditSnapshot() {
+    _scanHistory.add(
+      AuditSnapshot(
+        scannedAt: DateTime.now(),
+        outstandingCount: _auditedApps.where((app) => !app.acknowledged).length,
+        criticalCount: _auditedApps.where((app) => app.risk == ThreatLevel.critical).length,
+      ),
+    );
+    if (_scanHistory.length > 20) _scanHistory.removeAt(0);
+  }
+
+  void acknowledgeApps(Iterable<AuditedApp> apps) {
+    var changed = false;
+    for (final app in apps) {
+      if (!app.acknowledged) {
+        app.acknowledged = true;
+        changed = true;
+      }
+    }
+    if (changed) notifyListeners();
+  }
+
+  void resetAcknowledgements(Iterable<AuditedApp> apps) {
+    var changed = false;
+    for (final app in apps) {
+      if (app.acknowledged) {
+        app.acknowledged = false;
+        changed = true;
+      }
+    }
+    if (changed) notifyListeners();
+  }
+
+    final acknowledgedPackages = {
+      for (final app in _auditedApps)
+        if (app.acknowledged) app.packageName,
+    };
+        acknowledged: acknowledgedPackages.contains('com.social.cipher'),
+        acknowledged: acknowledgedPackages.contains('com.voice.listener'),
+        acknowledged: acknowledgedPackages.contains('com.spy.shadowcam'),
+        acknowledged: acknowledgedPackages.contains('com.net.browser'),
+        acknowledged: acknowledgedPackages.contains('android.system.audio'),
+++ b/ElCoccoEddie/lib/screens/acoustic_jammer_screen.dart
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'QUICK PRESETS',
+                              style: GoogleFonts.orbitron(color: Colors.white54, fontSize: 9),
+                            ),
+                            ...[
+                              ('LOW', 18000.0),
+                              ('MID', 20000.0),
+                              ('HIGH', 22000.0),
+                            ].map(
+                              (preset) => OutlinedButton(
+                                onPressed: () => provider.setJammerFrequency(preset.$2),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: provider.jammerFrequency == preset.$2
+                                      ? IlluminatiTheme.cyberCyan
+                                      : Colors.white60,
+                                  side: BorderSide(
+                                    color: provider.jammerFrequency == preset.$2
+                                        ? IlluminatiTheme.cyberCyan
+                                        : Colors.white24,
+                                  ),
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                child: Text(preset.$1, style: GoogleFonts.orbitron(fontSize: 9)),
+                              ),
+                            ),
+                          ],
+                        ),
+++ b/ElCoccoEddie/lib/screens/app_audit_screen.dart
+import 'package:flutter/services.dart';
+enum AuditFilter { all, critical, high, medium, low, camera, microphone, outstanding, acknowledged }
+enum AuditSort { risk, recent, name, review }
+
+class AppAuditScreen extends StatefulWidget {
+  @override
+  State<AppAuditScreen> createState() => _AppAuditScreenState();
+}
+
+class _AppAuditScreenState extends State<AppAuditScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  AuditFilter _activeFilter = AuditFilter.all;
+  AuditSort _activeSort = AuditSort.risk;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<AuditedApp> _filteredApps(List<AuditedApp> apps) {
+    final query = _searchController.text.trim().toLowerCase();
+    final filtered = apps.where((app) {
+      final matchesSearch = query.isEmpty ||
+          app.name.toLowerCase().contains(query) ||
+          app.packageName.toLowerCase().contains(query);
+      final matchesFilter = switch (_activeFilter) {
+        AuditFilter.all => true,
+        AuditFilter.critical => app.risk == ThreatLevel.critical,
+        AuditFilter.high => app.risk == ThreatLevel.high,
+        AuditFilter.medium => app.risk == ThreatLevel.medium,
+        AuditFilter.low => app.risk == ThreatLevel.low,
+        AuditFilter.camera => app.hasCamera,
+        AuditFilter.microphone => app.hasMic,
+        AuditFilter.outstanding => !app.acknowledged,
+        AuditFilter.acknowledged => app.acknowledged,
+      };
+      return matchesSearch && matchesFilter;
+    }).toList();
+
+    filtered.sort((left, right) {
+      switch (_activeSort) {
+        case AuditSort.risk:
+          return _riskRank(right.risk).compareTo(_riskRank(left.risk));
+        case AuditSort.recent:
+          return _accessRank(left.lastAccessed).compareTo(_accessRank(right.lastAccessed));
+        case AuditSort.name:
+          return left.name.toLowerCase().compareTo(right.name.toLowerCase());
+        case AuditSort.review:
+          return (left.acknowledged ? 1 : 0).compareTo(right.acknowledged ? 1 : 0);
+      }
+    });
+    return filtered;
+  }
+
+  int _riskRank(ThreatLevel risk) => switch (risk) {
+        ThreatLevel.critical => 4,
+        ThreatLevel.high => 3,
+        ThreatLevel.medium => 2,
+        ThreatLevel.low => 1,
+      };
+
+  int _accessRank(String access) {
+    final value = access.toLowerCase();
+    if (value.contains('just now')) return 0;
+    if (value.contains('min')) return 1;
+    if (value.contains('hour')) return 2;
+    return 3;
+  }
+
+  Future<void> _showAuditHistory(List<AuditSnapshot> history) async {
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('AUDIT HISTORY'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: history.isEmpty
+              ? const Text('No scan history yet.')
+              : ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: history.length,
+                  itemBuilder: (context, index) {
+                    final snapshot = history[history.length - index - 1];
+                    return ListTile(
+                      dense: true,
+                      leading: const Icon(Icons.radar, color: IlluminatiTheme.sacredGold),
+                      title: Text(_formatScanTime(snapshot.scannedAt)),
+                      subtitle: Text(
+                        '${snapshot.outstandingCount} outstanding  •  ${snapshot.criticalCount} critical',
+                      ),
+                    );
+                  },
+                ),
+        ),
+        actions: [
+          if (history.isNotEmpty)
+            TextButton(
+              onPressed: () async {
+                final report = StringBuffer('EL COCCO AUDIT HISTORY\n');
+                for (final snapshot in history) {
+                  report.writeln(
+                    '${snapshot.scannedAt.toIso8601String()} | '
+                    'Outstanding: ${snapshot.outstandingCount} | '
+                    'Critical: ${snapshot.criticalCount}',
+                  );
+                }
+                await Clipboard.setData(ClipboardData(text: report.toString().trim()));
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('AUDIT HISTORY COPIED')),
+                  );
+                }
+              },
+              child: const Text('COPY'),
+            ),
+          if (history.isNotEmpty)
+            TextButton(
+              onPressed: () async {
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('CLEAR AUDIT HISTORY?'),
+                    content: const Text('Remove all in-session scan records?'),
+                    actions: [
+                      TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCEL')),
+                      FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('CLEAR')),
+                    ],
+                  ),
+                );
+                if (confirmed == true && context.mounted) {
+                  context.read<PrivacyShieldProvider>().clearScanHistory();
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text('CLEAR'),
+            ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('CLOSE')),
+        ],
+      ),
+    );
+  }
+
+            final filteredApps = _filteredApps(provider.auditedApps);
+            final history = provider.scanHistory;
+            final auditTrend = history.length > 1
+                ? history.last.outstandingCount - history[history.length - 2].outstandingCount
+                : 0;
+                          const SizedBox(height: 10),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.history, color: Colors.white38, size: 14),
+                              const SizedBox(width: 6),
+                              Text(
+                                provider.lastScanAt == null
+                                    ? 'NO SCAN RUN THIS SESSION'
+                                  : 'LAST SCAN ${_formatScanTime(provider.lastScanAt!)}  •  SESSION SCANS: ${provider.scanCount}',
+                                style: GoogleFonts.orbitron(color: Colors.white54, fontSize: 9),
+                              ),
+                              IconButton(
+                                tooltip: 'View audit history',
+                                onPressed: () => _showAuditHistory(provider.scanHistory),
+                                icon: const Icon(Icons.history, color: IlluminatiTheme.sacredGold, size: 18),
+                              ),
+                            ],
+                          ),
+                          if (history.length > 1) ...[
+                            const SizedBox(height: 6),
+                            Text(
+                              auditTrend == 0
+                                  ? 'NO CHANGE FROM PREVIOUS SCAN'
+                                  : '${auditTrend > 0 ? '+' : ''}$auditTrend OUTSTANDING VECTORS VS PREVIOUS SCAN',
+                              style: GoogleFonts.orbitron(
+                                color: auditTrend > 0 ? IlluminatiTheme.crimsonSeal : IlluminatiTheme.emeraldShield,
+                                fontSize: 8,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                  TextField(
+                    controller: _searchController,
+                    onChanged: (_) => setState(() {}),
+                    style: GoogleFonts.orbitron(color: Colors.white, fontSize: 12),
+                    decoration: InputDecoration(
+                      hintText: 'SEARCH PACKAGE OR APP NAME',
+                      hintStyle: GoogleFonts.orbitron(color: Colors.white38, fontSize: 10),
+                      prefixIcon: const Icon(Icons.search, color: IlluminatiTheme.sacredGold),
+                      suffixIcon: _searchController.text.isEmpty
+                          ? null
+                          : IconButton(
+                              tooltip: 'Clear search',
+                              icon: const Icon(Icons.clear, color: Colors.white54),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() {});
+                              },
+                            ),
+                      filled: true,
+                      fillColor: IlluminatiTheme.slateCard,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: IlluminatiTheme.sacredGold.withValues(alpha: 0.25)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: IlluminatiTheme.sacredGold.withValues(alpha: 0.25)),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  SizedBox(
+                    height: 34,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      children: [
+                        _buildFilterChip('ALL', AuditFilter.all),
+                        _buildFilterChip('CRITICAL', AuditFilter.critical),
+                        _buildFilterChip('HIGH', AuditFilter.high),
+                        _buildFilterChip('MEDIUM', AuditFilter.medium),
+                        _buildFilterChip('LOW', AuditFilter.low),
+                        _buildFilterChip('CAMERA', AuditFilter.camera),
+                        _buildFilterChip('MICROPHONE', AuditFilter.microphone),
+                        _buildFilterChip('OUTSTANDING', AuditFilter.outstanding),
+                        _buildFilterChip('ACKNOWLEDGED', AuditFilter.acknowledged),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'RISK PROFILE',
+                          style: GoogleFonts.cinzel(
+                            color: IlluminatiTheme.sacredGold,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      DropdownButtonHideUnderline(
+                        child: DropdownButton<AuditSort>(
+                          value: _activeSort,
+                          dropdownColor: IlluminatiTheme.slateCard,
+                          icon: const Icon(Icons.unfold_more, color: IlluminatiTheme.sacredGold, size: 18),
+                          style: GoogleFonts.orbitron(color: Colors.white70, fontSize: 10),
+                          onChanged: (sort) {
+                            if (sort != null) setState(() => _activeSort = sort);
+                          },
+                          items: const [
+                            DropdownMenuItem(value: AuditSort.risk, child: Text('SORT: RISK')),
+                            DropdownMenuItem(value: AuditSort.recent, child: Text('SORT: RECENT')),
+                            DropdownMenuItem(value: AuditSort.name, child: Text('SORT: NAME')),
+                            DropdownMenuItem(value: AuditSort.review, child: Text('SORT: REVIEW STATUS')),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _buildRiskSummary('CRITICAL', ThreatLevel.critical, provider.auditedApps),
+                      _buildRiskSummary('HIGH', ThreatLevel.high, provider.auditedApps),
+                      _buildRiskSummary('MEDIUM', ThreatLevel.medium, provider.auditedApps),
+                      _buildRiskSummary('LOW', ThreatLevel.low, provider.auditedApps),
+                    ],
+                  ),
+
+                  const SizedBox(height: 12),
+
+                        'MATCHING PACKAGES (${filteredApps.length})',
+                      TextButton.icon(
+                        onPressed: () => _copyAuditReport(filteredApps),
+                        icon: const Icon(Icons.copy_all, size: 15),
+                        label: const Text('COPY REPORT'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: IlluminatiTheme.sacredGold,
+                          padding: EdgeInsets.zero,
+                          textStyle: GoogleFonts.orbitron(fontSize: 9, fontWeight: FontWeight.bold),
+                      TextButton.icon(
+                        onPressed: filteredApps.every((app) => app.acknowledged)
+                            ? null
+                            : () {
+                                context.read<PrivacyShieldProvider>().acknowledgeApps(filteredApps);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Visible threat vectors acknowledged.')),
+                                );
+                              },
+                        icon: const Icon(Icons.done_all, size: 15),
+                        label: const Text('ACK ALL'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: IlluminatiTheme.sacredGold,
+                          disabledForegroundColor: Colors.white30,
+                          padding: EdgeInsets.zero,
+                          textStyle: GoogleFonts.orbitron(fontSize: 9, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Reset visible reviews',
+                        onPressed: filteredApps.any((app) => app.acknowledged)
+                            ? () {
+                                context.read<PrivacyShieldProvider>().resetAcknowledgements(filteredApps);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Visible reviews reset.')),
+                                );
+                              }
+                            : null,
+                        icon: const Icon(Icons.restart_alt, size: 18),
+                        color: IlluminatiTheme.sacredGold,
+                        disabledColor: Colors.white30,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 28),
+                      ),
+                  _buildReviewProgress(filteredApps),
+
+                  const SizedBox(height: 10),
+
+                    child: filteredApps.isEmpty
+                        ? _buildEmptyState()
+                        : ListView.builder(
+                            itemCount: filteredApps.length,
+                            itemBuilder: (context, index) {
+                              final app = filteredApps[index];
+                              return _buildAppItemCard(app, index);
+                            },
+                          ),
+  String _formatScanTime(DateTime time) {
+    final hour = time.hour % 12 == 0 ? 12 : time.hour % 12;
+    final minute = time.minute.toString().padLeft(2, '0');
+    final period = time.hour >= 12 ? 'PM' : 'AM';
+    return '$hour:$minute $period';
+  }
+
+  Future<void> _copyAuditReport(List<AuditedApp> apps) async {
+    final report = StringBuffer('EL COCCO THREAT MATRIX\n');
+    report.writeln('Generated: ${DateTime.now().toIso8601String()}');
+    report.writeln('Packages: ${apps.length}');
+    report.writeln('Outstanding: ${apps.where((app) => !app.acknowledged).length}');
+    report.writeln('Acknowledged: ${apps.where((app) => app.acknowledged).length}');
+    report.writeln();
+    for (final app in apps) {
+      report.writeln('${app.name} | ${app.risk.name.toUpperCase()}');
+      report.writeln('Package: ${app.packageName}');
+      report.writeln('Camera: ${app.hasCamera ? 'YES' : 'NO'} | Microphone: ${app.hasMic ? 'YES' : 'NO'}');
+      report.writeln('Last access: ${app.lastAccessed}');
+      report.writeln('Review: ${app.acknowledged ? 'ACKNOWLEDGED' : 'OUTSTANDING'}');
+      report.writeln();
+    }
+    await Clipboard.setData(ClipboardData(text: report.toString().trim()));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${apps.length} audit result${apps.length == 1 ? '' : 's'} copied.')),
+    );
+  }
+
+  Widget _buildRiskSummary(String label, ThreatLevel risk, List<AuditedApp> apps) {
+    final count = apps.where((app) => app.risk == risk).length;
+    final color = _riskColor(risk);
+    return GestureDetector(
+      onTap: () => setState(() => _activeFilter = switch (risk) {
+        ThreatLevel.critical => AuditFilter.critical,
+        ThreatLevel.high => AuditFilter.high,
+        ThreatLevel.medium => AuditFilter.medium,
+        ThreatLevel.low => AuditFilter.low,
+      }),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color.withValues(alpha: 0.55)),
+        ),
+        child: Text(
+          '$label  $count',
+          style: GoogleFonts.orbitron(color: color, fontSize: 9, fontWeight: FontWeight.bold),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.radar, color: Colors.white30, size: 46),
+          const SizedBox(height: 12),
+          Text(
+            'NO MATCHING THREATS',
+            style: GoogleFonts.cinzel(color: IlluminatiTheme.sacredGold, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Adjust the search or filter to view another vector.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.orbitron(color: Colors.white54, fontSize: 10),
+          ),
+          const SizedBox(height: 14),
+          OutlinedButton.icon(
+            onPressed: () {
+              _searchController.clear();
+              setState(() => _activeFilter = AuditFilter.all);
+            },
+            icon: const Icon(Icons.restart_alt, size: 16),
+            label: const Text('RESET FILTERS'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: IlluminatiTheme.sacredGold,
+              side: const BorderSide(color: IlluminatiTheme.sacredGold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReviewProgress(List<AuditedApp> apps) {
+    final acknowledgedCount = apps.where((app) => app.acknowledged).length;
+    final progress = apps.isEmpty ? 0.0 : acknowledgedCount / apps.length;
+    return Row(
+      children: [
+        Expanded(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 6,
+              backgroundColor: Colors.white12,
+              valueColor: const AlwaysStoppedAnimation<Color>(IlluminatiTheme.emeraldShield),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          'REVIEWED $acknowledgedCount/${apps.length}',
+          style: GoogleFonts.orbitron(
+            color: acknowledgedCount == apps.length
+                ? IlluminatiTheme.emeraldShield
+                : Colors.white54,
+            fontSize: 9,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Color _riskColor(ThreatLevel risk) => switch (risk) {
+        ThreatLevel.critical => IlluminatiTheme.crimsonSeal,
+        ThreatLevel.high => Colors.orangeAccent,
+        ThreatLevel.medium => IlluminatiTheme.amberGlow,
+        ThreatLevel.low => IlluminatiTheme.emeraldShield,
+      };
+
+  Widget _buildFilterChip(String label, AuditFilter filter) {
+    final isSelected = _activeFilter == filter;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: ChoiceChip(
+        label: Text(label),
+        selected: isSelected,
+        onSelected: (_) => setState(() => _activeFilter = filter),
+        labelStyle: GoogleFonts.orbitron(
+          color: isSelected ? IlluminatiTheme.obsidianBlack : Colors.white70,
+          fontSize: 9,
+          fontWeight: FontWeight.bold,
+        ),
+        selectedColor: IlluminatiTheme.sacredGold,
+        backgroundColor: IlluminatiTheme.slateCard,
+        side: BorderSide(color: IlluminatiTheme.sacredGold.withValues(alpha: 0.3)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+      ),
+    );
+  }
+
+        onTap: () => _showAppDetails(app),
+        isThreeLine: true,
+  void _showAppDetails(AuditedApp app) {
+    final riskColor = _riskColor(app.risk);
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: IlluminatiTheme.obsidianBlack,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 42,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        app.name,
+                        style: GoogleFonts.cinzel(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    _buildRiskBadge(app.risk, riskColor),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        app.packageName,
+                        style: GoogleFonts.orbitron(color: Colors.white54, fontSize: 11),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Copy package identifier',
+                      onPressed: () async {
+                        await Clipboard.setData(ClipboardData(text: app.packageName));
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Package identifier copied.')),
+                        );
+                      },
+                      icon: const Icon(Icons.copy, color: IlluminatiTheme.sacredGold, size: 18),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                _buildDetailRow(Icons.access_time, 'LAST ACCESS', app.lastAccessed),
+                _buildDetailRow(
+                  Icons.camera_alt_outlined,
+                  'CAMERA ACCESS',
+                  app.hasCamera ? 'DETECTED' : 'NOT DETECTED',
+                ),
+                _buildDetailRow(
+                  Icons.mic_none,
+                  'MICROPHONE ACCESS',
+                  app.hasMic ? 'DETECTED' : 'NOT DETECTED',
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      context.read<PrivacyShieldProvider>().toggleAppAcknowledgement(app);
+                      Navigator.pop(context);
+                    },
+                    icon: Icon(app.acknowledged ? Icons.verified : Icons.check_circle_outline),
+                    label: Text(app.acknowledged ? 'MARK AS OUTSTANDING' : 'ACKNOWLEDGE VECTOR'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: IlluminatiTheme.sacredGold,
+                      side: const BorderSide(color: IlluminatiTheme.sacredGold),
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildRiskBadge(ThreatLevel risk, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(7),
+        border: Border.all(color: color),
+      ),
+      child: Text(
+        risk.name.toUpperCase(),
+        style: GoogleFonts.orbitron(color: color, fontSize: 9, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          Icon(icon, color: IlluminatiTheme.sacredGold, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              label,
+              style: GoogleFonts.orbitron(color: Colors.white60, fontSize: 10),
+            ),
+          ),
+          Text(
+            value,
+            style: GoogleFonts.orbitron(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+
+++ b/ElCoccoEddie/lib/screens/app_lock_screen.dart
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../theme/illuminati_theme.dart';
+import '../widgets/sacred_geometry_background.dart';
+import 'home_screen.dart';
+
+class AppLockGate extends StatefulWidget {
+  const AppLockGate({super.key});
+
+  @override
+  State<AppLockGate> createState() => _AppLockGateState();
+}
+
+class _AppLockGateState extends State<AppLockGate>
+    with WidgetsBindingObserver {
+  bool _unlocked = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      if (mounted && _unlocked) {
+        setState(() => _unlocked = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_unlocked) return const HomeScreen();
+    return AppLockScreen(
+      onUnlocked: () => setState(() => _unlocked = true),
+    );
+  }
+}
+
+class AppLockScreen extends StatefulWidget {
+  final VoidCallback onUnlocked;
+
+  const AppLockScreen({required this.onUnlocked, super.key});
+
+  @override
+  State<AppLockScreen> createState() => _AppLockScreenState();
+}
+
+class _AppLockScreenState extends State<AppLockScreen> {
+  static const _lockNumber = '999';
+  final _pinController = TextEditingController();
+  String? _errorMessage;
+
+  @override
+  void dispose() {
+    _pinController.dispose();
+    super.dispose();
+  }
+
+  void _unlock() {
+    if (_pinController.text == _lockNumber) {
+      FocusManager.instance.primaryFocus?.unfocus();
+      widget.onUnlocked();
+      return;
+    }
+    setState(() {
+      _errorMessage = 'INVALID LOCK NUMBER';
+      _pinController.clear();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SacredGeometryBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.lock, color: IlluminatiTheme.sacredGold, size: 68),
+                const SizedBox(height: 22),
+                Text(
+                  'EL COCCO SEALED',
+                  style: GoogleFonts.cinzelDecorative(
+                    color: IlluminatiTheme.sacredGold,
+                    fontSize: 23,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 2,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'ENTER LOCK NUMBER TO CONTINUE',
+                  style: GoogleFonts.orbitron(color: Colors.white70, fontSize: 11),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 28),
+                TextField(
+                  controller: _pinController,
+                  autofocus: true,
+                  obscureText: true,
+                  keyboardType: TextInputType.number,
+                  textAlign: TextAlign.center,
+                  maxLength: 3,
+                  onSubmitted: (_) => _unlock(),
+                  style: GoogleFonts.orbitron(color: Colors.white, fontSize: 24, letterSpacing: 8),
+                  decoration: InputDecoration(
+                    counterText: '',
+                    hintText: '•••',
+                    hintStyle: const TextStyle(color: Colors.white30),
+                    filled: true,
+                    fillColor: IlluminatiTheme.slateCard,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _unlock,
+                    icon: const Icon(Icons.lock_open),
+                    label: const Text('UNLOCK EL COCCO'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: IlluminatiTheme.sacredGold,
+                      foregroundColor: IlluminatiTheme.obsidianBlack,
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                    ),
+                  ),
+                ),
+                if (_errorMessage != null) ...[
+                  const SizedBox(height: 14),
+                  Text(
+                    _errorMessage!,
+                    style: GoogleFonts.orbitron(color: IlluminatiTheme.crimsonSeal, fontSize: 10),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+++ b/ElCoccoEddie/lib/screens/camera_filter_screen.dart
+import 'dart:async';
+import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
+import 'media_library_screen.dart';
+  bool _mirrorPreview = false;
+  late bool _cameraWasBlocked;
+
+    _cameraWasBlocked = context.read<PrivacyShieldProvider>().cameraBlocked;
+    if (!_cameraWasBlocked) {
+      context.read<CameraBloc>().add(InitializeCameraEvent());
+    }
+    final cameraBlocked = context.watch<PrivacyShieldProvider>().cameraBlocked;
+    if (cameraBlocked != _cameraWasBlocked) {
+      _cameraWasBlocked = cameraBlocked;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        context.read<CameraBloc>().add(
+              cameraBlocked ? LockCameraEvent() : InitializeCameraEvent(),
+            );
+      });
+    }
+          IconButton(
+            tooltip: 'Open media vault',
+            icon: const Icon(Icons.video_library, color: IlluminatiTheme.sacredGold),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const MediaLibraryScreen()),
+              );
+            },
+          ),
+                if (cameraBlocked) {
+                  return const Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.no_photography, color: IlluminatiTheme.crimsonSeal, size: 54),
+                        SizedBox(height: 14),
+                        Text(
+                          'CAMERA HARDWARE SEALED',
+                          style: TextStyle(color: IlluminatiTheme.crimsonSeal, fontWeight: FontWeight.bold),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'Unlock the privacy shield to use the camera.',
+                          style: TextStyle(color: Colors.white60),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                  return _FilteredPreview(
+                    controller: state.controller,
+                    mirrored: _mirrorPreview,
+                    canSwitchCamera: state.cameras.length > 1,
+                    audioEnabled: state.audioEnabled,
+                  );
+          _FilterControls(
+            mirrored: _mirrorPreview,
+            onMirrorChanged: (mirrored) => setState(() => _mirrorPreview = mirrored),
+          ),
+class _FilteredPreview extends StatefulWidget {
+  final bool mirrored;
+  final bool canSwitchCamera;
+  final bool audioEnabled;
+
+  const _FilteredPreview({
+    required this.controller,
+    required this.mirrored,
+    required this.canSwitchCamera,
+    required this.audioEnabled,
+  });
+
+  @override
+  State<_FilteredPreview> createState() => _FilteredPreviewState();
+}
+
+class _FilteredPreviewState extends State<_FilteredPreview> {
+  bool _torchEnabled = false;
+  bool _isCapturing = false;
+  bool _gridEnabled = false;
+  bool _focusLocked = false;
+  bool _isRecording = false;
+  Timer? _recordingTimer;
+  Duration _recordingDuration = Duration.zero;
+  String? _lastVideoPath;
+  String? _lastSavedMediaPath;
+  int _timerSeconds = 0;
+  int _countdown = 0;
+  int _aspectRatioIndex = 0;
+  int _maxRecordingSeconds = 0;
+  Uint8List? _lastPhotoBytes;
+  final List<Uint8List> _photoHistory = [];
+  Offset? _focusPoint;
+  double _zoomLevel = 1.0;
+  double _minZoom = 1.0;
+  double _maxZoom = 1.0;
+  double _exposureOffset = 0.0;
+  double _minExposure = 0.0;
+  double _maxExposure = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadZoomBounds();
+  }
+
+  @override
+  void didUpdateWidget(covariant _FilteredPreview oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      _torchEnabled = false;
+      _zoomLevel = 1.0;
+      _exposureOffset = 0.0;
+      _focusLocked = false;
+      _recordingTimer?.cancel();
+      _recordingDuration = Duration.zero;
+      _loadZoomBounds();
+    }
+  }
+
+  Future<void> _loadZoomBounds() async {
+    try {
+      final minZoom = await widget.controller.getMinZoomLevel();
+      final maxZoom = await widget.controller.getMaxZoomLevel();
+      final minExposure = await widget.controller.getMinExposureOffset();
+      final maxExposure = await widget.controller.getMaxExposureOffset();
+      if (!mounted) return;
+      setState(() {
+        _minZoom = minZoom;
+        _maxZoom = maxZoom;
+        _zoomLevel = minZoom;
+        _minExposure = minExposure;
+        _maxExposure = maxExposure;
+        _exposureOffset = 0.0.clamp(minExposure, maxExposure);
+      });
+    } on CameraException {
+      if (mounted) setState(() => _maxZoom = 1.0);
+    }
+  }
+
+  Future<void> _setZoom(double value) async {
+    try {
+      await widget.controller.setZoomLevel(value);
+      if (mounted) setState(() => _zoomLevel = value);
+    } on CameraException {
+      // Some camera implementations expose zoom bounds but reject changes.
+    }
+  }
+
+  Future<void> _setExposure(double value) async {
+    try {
+      await widget.controller.setExposureOffset(value);
+      if (mounted) setState(() => _exposureOffset = value);
+    } on CameraException {
+      // Some camera implementations do not support exposure adjustment.
+    }
+  }
+
+  Future<void> _resetCameraControls() async {
+    try {
+      await widget.controller.setZoomLevel(_minZoom);
+      await widget.controller.setExposureOffset(0.0);
+      await widget.controller.setFlashMode(FlashMode.off);
+      await widget.controller.setFocusMode(FocusMode.auto);
+      if (!mounted) return;
+      setState(() {
+        _zoomLevel = _minZoom;
+        _exposureOffset = 0.0.clamp(_minExposure, _maxExposure);
+        _torchEnabled = false;
+        _gridEnabled = false;
+        _focusLocked = false;
+      });
+    } on CameraException {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Some camera controls could not be reset.')),
+        );
+      }
+    }
+  }
+
+  Future<void> _toggleTorch() async {
+    final nextValue = !_torchEnabled;
+    try {
+      await widget.controller.setFlashMode(nextValue ? FlashMode.torch : FlashMode.off);
+      if (mounted) setState(() => _torchEnabled = nextValue);
+    } on CameraException {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Torch control is unavailable on this camera.')),
+      );
+    }
+  }
+
+  Future<void> _focusAt(Offset point, Size size) async {
+    if (_focusLocked) return;
+    final normalizedPoint = Offset(
+      (point.dx / size.width).clamp(0.0, 1.0),
+      (point.dy / size.height).clamp(0.0, 1.0),
+    );
+    try {
+      await widget.controller.setFocusPoint(normalizedPoint);
+      if (!mounted) return;
+      setState(() => _focusPoint = point);
+      await Future<void>.delayed(const Duration(milliseconds: 900));
+      if (mounted) setState(() => _focusPoint = null);
+    } on CameraException {
+      if (mounted) setState(() => _focusPoint = null);
+    }
+  }
+
+  Future<void> _toggleFocusLock() async {
+    final nextLocked = !_focusLocked;
+    try {
+      await widget.controller.setFocusMode(nextLocked ? FocusMode.locked : FocusMode.auto);
+      if (mounted) setState(() => _focusLocked = nextLocked);
+    } on CameraException {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Focus lock is unavailable on this camera.')),
+        );
+      }
+    }
+  }
+  Future<void> _capturePhoto() async {
+    if (_isCapturing || _isRecording || !widget.controller.value.isInitialized) return;
+    setState(() => _isCapturing = true);
+    try {
+      for (var remaining = _timerSeconds; remaining > 0; remaining--) {
+        if (!mounted) return;
+        setState(() => _countdown = remaining);
+        await Future<void>.delayed(const Duration(seconds: 1));
+      }
+      if (mounted) setState(() => _countdown = 0);
+      final photo = await widget.controller.takePicture();
+      final bytes = await photo.readAsBytes();
+      if (!mounted) return;
+      setState(() {
+        _lastPhotoBytes = bytes;
+        _photoHistory.insert(0, bytes);
+        if (_photoHistory.length > 5) _photoHistory.removeLast();
+      });
+      await _saveCapturedMedia(photo, 'photo');
+      await showDialog<void>(
+        context: context,
+        builder: (context) => _PhotoEditorDialog(bytes: bytes),
+      );
+    } on CameraException {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Photo capture is unavailable on this camera.')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isCapturing = false;
+          _countdown = 0;
+        });
+      }
+    }
+  }
+
+  Future<void> _toggleVideoRecording() async {
+    if (!widget.controller.value.isInitialized || _isCapturing) return;
+    try {
+      if (_isRecording) {
+        final video = await widget.controller.stopVideoRecording();
+        await _saveCapturedMedia(video, 'video');
+        _recordingTimer?.cancel();
+        if (mounted) {
+          setState(() {
+            _isRecording = false;
+            _recordingDuration = Duration.zero;
+            _lastVideoPath = _lastSavedMediaPath ?? video.path;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('VIDEO CAPTURED. Use the video button to copy its path.')),
+          );
+        }
+      } else {
+        await widget.controller.startVideoRecording();
+        if (mounted) {
+          setState(() {
+            _isRecording = true;
+            _recordingDuration = Duration.zero;
+          });
+          _recordingTimer?.cancel();
+          _recordingTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+            if (mounted) {
+              setState(() => _recordingDuration += const Duration(seconds: 1));
+              if (_maxRecordingSeconds > 0 && _recordingDuration.inSeconds >= _maxRecordingSeconds) {
+                _toggleVideoRecording();
+              }
+            }
+          });
+        }
+      }
+    } on CameraException {
+      _recordingTimer?.cancel();
+      if (mounted) {
+        setState(() {
+          _isRecording = false;
+          _recordingDuration = Duration.zero;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Video recording is unavailable on this camera.')),
+        );
+      }
+    }
+  }
+
+  void _cycleTimer() {
+    const options = [0, 3, 5, 10];
+    final nextIndex = (options.indexOf(_timerSeconds) + 1) % options.length;
+    setState(() => _timerSeconds = options[nextIndex]);
+  }
+
+  void _cycleAspectRatio() {
+    setState(() => _aspectRatioIndex = (_aspectRatioIndex + 1) % 4);
+  }
+
+  void _cycleRecordingLimit() {
+    const options = [0, 30, 60, 300];
+    final nextIndex = (options.indexOf(_maxRecordingSeconds) + 1) % options.length;
+    setState(() => _maxRecordingSeconds = options[nextIndex]);
+  }
+
+  String get _recordingLimitLabel => _maxRecordingSeconds == 0
+      ? 'MAX'
+      : _maxRecordingSeconds >= 60
+          ? '${_maxRecordingSeconds ~/ 60}M'
+          : '${_maxRecordingSeconds}S';
+
+  double? get _selectedAspectRatio => switch (_aspectRatioIndex) {
+        0 => null,
+        1 => 1.0,
+        2 => 4 / 3,
+        _ => 16 / 9,
+      };
+
+  String get _aspectRatioLabel => const ['FIT', '1:1', '4:3', '16:9'][_aspectRatioIndex];
+
+  String _formatRecordingDuration() {
+    final minutes = _recordingDuration.inMinutes.toString().padLeft(2, '0');
+    final seconds = (_recordingDuration.inSeconds % 60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
+  }
+
+  @override
+  void dispose() {
+    _recordingTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _showLastPhoto() async {
+    if (_photoHistory.isEmpty) return;
+    await showDialog<void>(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: IlluminatiTheme.voidDark,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                height: 240,
+                child: PageView.builder(
+                  itemCount: _photoHistory.length,
+                  itemBuilder: (context, index) => Image.memory(
+                    _photoHistory[index],
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '${_photoHistory.length} RECENT PHOTO${_photoHistory.length == 1 ? '' : 'S'}',
+                style: GoogleFonts.orbitron(color: Colors.white70, fontSize: 10),
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _photoHistory.clear();
+                        _lastPhotoBytes = null;
+                      });
+                      Navigator.pop(context);
+                    },
+                    child: const Text('CLEAR HISTORY'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('CLOSE'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _copyLastVideoPath() async {
+    final path = _lastVideoPath;
+    if (path == null) return;
+    await Clipboard.setData(ClipboardData(text: path));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Video path copied to clipboard.')),
+      );
+    }
+  }
+
+  Future<void> _saveCapturedMedia(XFile media, String type) async {
+    try {
+      final directory = await getApplicationDocumentsDirectory();
+      final extension = type == 'photo' ? 'jpg' : 'mp4';
+      final filename = 'elcocco_${type}_${DateTime.now().millisecondsSinceEpoch}.$extension';
+      final destination = '${directory.path}/$filename';
+      await media.saveTo(destination);
+      if (mounted) {
+        setState(() => _lastSavedMediaPath = destination);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${type.toUpperCase()} SAVED LOCALLY')),
+        );
+      }
+    } on UnsupportedError {
+      // Web keeps using the temporary XFile supplied by the camera plugin.
+    } on MissingPluginException {
+      // Some platforms do not expose an application documents directory.
+    } on Object {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('The capture was created but could not be saved.')),
+        );
+      }
+    }
+  }
+    Widget preview = CameraPreview(widget.controller);
+    if (widget.mirrored) {
+      preview = Transform(
+        alignment: Alignment.center,
+        transform: Matrix4.identity()..scaleByDouble(-1.0, 1.0, 1.0, 1.0),
+        child: preview,
+      );
+    }
+
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final previewSize = Size(constraints.maxWidth, constraints.maxHeight);
+              return GestureDetector(
+                onTapDown: (details) => _focusAt(details.localPosition, previewSize),
+                child: Center(
+                  child: AspectRatio(
+                    aspectRatio: _selectedAspectRatio ?? widget.controller.value.aspectRatio,
+                    child: preview,
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        if (_focusPoint != null)
+          Positioned(
+            left: _focusPoint!.dx - 28,
+            top: _focusPoint!.dy - 28,
+            child: IgnorePointer(
+              child: Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  border: Border.all(color: IlluminatiTheme.sacredGold, width: 2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ),
+        Positioned(
+          top: 16,
+          left: 16,
+          child: Row(
+            children: [
+              if (widget.canSwitchCamera)
+                IconButton.filled(
+                  tooltip: 'Switch camera',
+                  onPressed: () => context.read<CameraBloc>().add(SwitchCameraEvent()),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.black54,
+                    foregroundColor: Colors.white,
+                  ),
+                  icon: const Icon(Icons.flip_camera_android),
+                ),
+              const SizedBox(width: 8),
+              IconButton.filled(
+                tooltip: _torchEnabled ? 'Turn torch off' : 'Turn torch on',
+                onPressed: _toggleTorch,
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.black54,
+                  foregroundColor: _torchEnabled ? IlluminatiTheme.sacredGold : Colors.white,
+                ),
+                icon: Icon(_torchEnabled ? Icons.flash_on : Icons.flash_off),
+              ),
+              const SizedBox(width: 8),
+              IconButton.filled(
+                tooltip: _gridEnabled ? 'Hide framing grid' : 'Show framing grid',
+                onPressed: () => setState(() => _gridEnabled = !_gridEnabled),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.black54,
+                  foregroundColor: _gridEnabled ? IlluminatiTheme.sacredGold : Colors.white,
+                ),
+                icon: const Icon(Icons.grid_3x3),
+              ),
+              const SizedBox(width: 8),
+              IconButton.filled(
+                tooltip: _focusLocked ? 'Unlock focus' : 'Lock focus',
+                onPressed: _toggleFocusLock,
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.black54,
+                  foregroundColor: _focusLocked ? IlluminatiTheme.sacredGold : Colors.white,
+                ),
+                icon: Icon(_focusLocked ? Icons.lock : Icons.lock_open),
+              ),
+              const SizedBox(width: 8),
+              IconButton.filled(
+                tooltip: _timerSeconds == 0 ? 'Set self-timer' : 'Self-timer: ${_timerSeconds}s',
+                onPressed: _isCapturing ? null : _cycleTimer,
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.black54,
+                  foregroundColor: _timerSeconds > 0 ? IlluminatiTheme.sacredGold : Colors.white,
+                ),
+                icon: Text(
+                  _timerSeconds == 0 ? '0s' : '${_timerSeconds}s',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton.filled(
+                tooltip: 'Aspect ratio: $_aspectRatioLabel',
+                onPressed: _isCapturing || _isRecording ? null : _cycleAspectRatio,
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.black54,
+                  foregroundColor: _aspectRatioIndex == 0 ? Colors.white : IlluminatiTheme.sacredGold,
+                ),
+                icon: Text(_aspectRatioLabel, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+              ),
+              const SizedBox(width: 8),
+              IconButton.filled(
+                tooltip: _maxRecordingSeconds == 0
+                    ? 'Unlimited recording'
+                    : 'Auto-stop after $_recordingLimitLabel',
+                onPressed: _isCapturing || _isRecording ? null : _cycleRecordingLimit,
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.black54,
+                  foregroundColor: _maxRecordingSeconds == 0 ? Colors.white : IlluminatiTheme.sacredGold,
+                ),
+                icon: Text(_recordingLimitLabel, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+              ),
+              const SizedBox(width: 8),
+              IconButton.filled(
+                tooltip: 'Reset camera controls',
+                onPressed: _isCapturing || _isRecording ? null : _resetCameraControls,
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.black54,
+                  foregroundColor: Colors.white,
+                ),
+                icon: const Icon(Icons.restart_alt),
+              ),
+              const SizedBox(width: 8),
+              IconButton.filled(
+                tooltip: _isRecording ? 'Stop video recording' : 'Start video recording',
+                onPressed: _isCapturing ? null : _toggleVideoRecording,
+                style: IconButton.styleFrom(
+                  backgroundColor: _isRecording ? IlluminatiTheme.crimsonSeal : Colors.black54,
+                  foregroundColor: Colors.white,
+                ),
+                icon: _isRecording
+                    ? Text(
+                        _formatRecordingDuration(),
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                      )
+                    : const Icon(Icons.videocam),
+              ),
+              const SizedBox(width: 8),
+              IconButton.filled(
+                tooltip: widget.audioEnabled ? 'Disable video audio' : 'Enable video audio',
+                onPressed: _isCapturing || _isRecording
+                    ? null
+                    : () => context.read<CameraBloc>().add(ToggleAudioCaptureEvent()),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.black54,
+                  foregroundColor: widget.audioEnabled ? IlluminatiTheme.sacredGold : Colors.white,
+                ),
+                icon: Icon(widget.audioEnabled ? Icons.mic : Icons.mic_off),
+              ),
+              if (_lastVideoPath != null) ...[
+                const SizedBox(width: 8),
+                IconButton.filled(
+                  tooltip: 'Copy last video path',
+                  onPressed: _isCapturing || _isRecording ? null : _copyLastVideoPath,
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.black54,
+                    foregroundColor: Colors.white,
+                  ),
+                  icon: const Icon(Icons.content_copy),
+                ),
+              ],
+            ],
+          ),
+        ),
+        if (_gridEnabled)
+          const Positioned.fill(
+            child: IgnorePointer(child: CustomPaint(painter: _FramingGridPainter())),
+          ),
+        if (_lastPhotoBytes != null)
+          Positioned(
+            left: 16,
+            bottom: _maxZoom > _minZoom || _maxExposure > _minExposure ? 120 : 16,
+            child: GestureDetector(
+              onTap: _showLastPhoto,
+              child: Container(
+                width: 58,
+                height: 58,
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  color: Colors.black87,
+                  border: Border.all(color: IlluminatiTheme.sacredGold, width: 1.5),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(5),
+                  child: Image.memory(_lastPhotoBytes!, fit: BoxFit.cover),
+                ),
+              ),
+            ),
+          ),
+        Positioned(
+          bottom: _maxZoom > _minZoom || _maxExposure > _minExposure ? 92 : 16,
+          left: 0,
+          right: 0,
+          child: Center(
+            child: IconButton.filled(
+              tooltip: 'Take photo',
+              onPressed: _isCapturing || _isRecording ? null : _capturePhoto,
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.black,
+                disabledBackgroundColor: Colors.white54,
+                padding: const EdgeInsets.all(16),
+              ),
+              icon: _isCapturing
+                  ? _countdown > 0
+                      ? Text(
+                          '$_countdown',
+                          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                        )
+                      : const SizedBox(
+                          width: 26,
+                          height: 26,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                        )
+                  : const Icon(Icons.camera_alt, size: 28),
+            ),
+          ),
+        ),
+        if (_maxZoom > _minZoom || _maxExposure > _minExposure)
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: 16,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  if (_maxZoom > _minZoom)
+                    Row(
+                      children: [
+                        const Icon(Icons.zoom_out, color: Colors.white70, size: 18),
+                        Expanded(
+                          child: Slider(
+                            value: _zoomLevel.clamp(_minZoom, _maxZoom),
+                            min: _minZoom,
+                            max: _maxZoom,
+                            onChanged: _setZoom,
+                            activeColor: IlluminatiTheme.sacredGold,
+                            inactiveColor: Colors.white30,
+                          ),
+                        ),
+                        Text(
+                          '${_zoomLevel.toStringAsFixed(1)}x',
+                          style: GoogleFonts.orbitron(color: Colors.white, fontSize: 10),
+                        ),
+                      ],
+                    ),
+                  if (_maxExposure > _minExposure)
+                    Row(
+                      children: [
+                        const Icon(Icons.brightness_6, color: Colors.white70, size: 18),
+                        Expanded(
+                          child: Slider(
+                            value: _exposureOffset.clamp(_minExposure, _maxExposure),
+                            min: _minExposure,
+                            max: _maxExposure,
+                            onChanged: _setExposure,
+                            activeColor: IlluminatiTheme.cyberCyan,
+                            inactiveColor: Colors.white30,
+                          ),
+                        ),
+                        Text(
+                          _exposureOffset.toStringAsFixed(1),
+                          style: GoogleFonts.orbitron(color: Colors.white, fontSize: 10),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _FramingGridPainter extends CustomPainter {
+  const _FramingGridPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.45)
+      ..strokeWidth = 1;
+    final verticalThird = size.width / 3;
+    final horizontalThird = size.height / 3;
+    canvas.drawLine(Offset(verticalThird, 0), Offset(verticalThird, size.height), paint);
+    canvas.drawLine(Offset(verticalThird * 2, 0), Offset(verticalThird * 2, size.height), paint);
+    canvas.drawLine(Offset(0, horizontalThird), Offset(size.width, horizontalThird), paint);
+    canvas.drawLine(Offset(0, horizontalThird * 2), Offset(size.width, horizontalThird * 2), paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _FramingGridPainter oldDelegate) => false;
+}
+
+class _PhotoEditorDialog extends StatefulWidget {
+  final Uint8List bytes;
+
+  const _PhotoEditorDialog({required this.bytes});
+
+  @override
+  State<_PhotoEditorDialog> createState() => _PhotoEditorDialogState();
+}
+
+class _PhotoEditorDialogState extends State<_PhotoEditorDialog> {
+  int _quarterTurns = 0;
+  int _filterIndex = 0;
+
+  static const _filterNames = ['ORIGINAL', 'MONOCHROME', 'NIGHT', 'THERMAL'];
+
+  Widget _filteredImage() {
+    Widget image = Image.memory(widget.bytes, fit: BoxFit.contain);
+    switch (_filterIndex) {
+      case 1:
+        image = ColorFiltered(
+          colorFilter: const ColorFilter.matrix(<double>[
+            0.2126, 0.7152, 0.0722, 0, 0,
+            0.2126, 0.7152, 0.0722, 0, 0,
+            0.2126, 0.7152, 0.0722, 0, 0,
+            0, 0, 0, 1, 0,
+          ]),
+          child: image,
+        );
+      case 2:
+        image = ColorFiltered(
+          colorFilter: const ColorFilter.mode(Color(0xFF37FF88), BlendMode.modulate),
+          child: image,
+        );
+      case 3:
+        image = ColorFiltered(
+          colorFilter: const ColorFilter.matrix(<double>[
+            1.5, 0, 0, 0, 0,
+            0, 0.35, 0, 0, 35,
+            0, 0, 1.5, 0, 35,
+            0, 0, 0, 1, 0,
+          ]),
+          child: image,
+        );
+    }
+    return RotatedBox(quarterTurns: _quarterTurns, child: image);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: IlluminatiTheme.voidDark,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(height: 280, child: _filteredImage()),
+            const SizedBox(height: 8),
+            Text(
+              _filterNames[_filterIndex],
+              style: GoogleFonts.orbitron(color: IlluminatiTheme.sacredGold, fontSize: 10),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  tooltip: 'Rotate photo',
+                  onPressed: () => setState(() => _quarterTurns = (_quarterTurns + 1) % 4),
+                  icon: const Icon(Icons.rotate_right, color: IlluminatiTheme.sacredGold),
+                ),
+                TextButton(
+                  onPressed: () => setState(() => _filterIndex = (_filterIndex + 1) % _filterNames.length),
+                  child: const Text('CHANGE FILTER'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('CLOSE'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  final bool mirrored;
+  final ValueChanged<bool> onMirrorChanged;
+
+  const _FilterControls({required this.mirrored, required this.onMirrorChanged});
+            const SizedBox(height: 10),
+            SwitchListTile.adaptive(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              value: mirrored,
+              onChanged: onMirrorChanged,
+              activeThumbColor: IlluminatiTheme.sacredGold,
+              title: const Text(
+                'MIRROR LIVE PREVIEW',
+                style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
+              ),
+              secondary: const Icon(Icons.flip, color: IlluminatiTheme.sacredGold, size: 20),
+            ),
+++ b/ElCoccoEddie/lib/screens/home_screen.dart
+            return RefreshIndicator(
+              color: IlluminatiTheme.sacredGold,
+              backgroundColor: IlluminatiTheme.slateCard,
+              onRefresh: provider.checkStatus,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                child: Column(
+                    _buildPrivacyPostureCard(context, provider)
+                      .animate()
+                      .fadeIn(delay: 350.ms)
+                      .slideY(begin: 0.08, end: 0),
+
+                    const SizedBox(height: 24),
+
+                ),
+  Widget _buildPrivacyPostureCard(BuildContext context, PrivacyShieldProvider provider) {
+    var score = 0;
+    if (provider.cameraBlocked) score += 25;
+    if (provider.micBlocked) score += 25;
+    if (provider.volumeButtonsBlocked) score += 15;
+    if (provider.isDeviceAdminActive) score += 20;
+    if (provider.canDrawOverlays) score += 15;
+
+    final scoreColor = score >= 80
+        ? IlluminatiTheme.emeraldShield
+        : score >= 50
+            ? IlluminatiTheme.amberGlow
+            : IlluminatiTheme.crimsonSeal;
+    final status = score >= 80
+        ? 'FORTIFIED'
+        : score >= 50
+            ? 'PARTIALLY SEALED'
+            : 'EXPOSED';
+    final String? recommendation;
+    final VoidCallback? recommendationAction;
+    if (!provider.isDeviceAdminActive) {
+      recommendation = 'Activate device admin to strengthen hardware control';
+      recommendationAction = provider.requestDeviceAdmin;
+    } else if (!provider.cameraBlocked) {
+      recommendation = 'Seal the camera hardware';
+      recommendationAction = provider.toggleCameraShield;
+    } else if (!provider.micBlocked) {
+      recommendation = 'Seal microphone access';
+      recommendationAction = provider.toggleMicShield;
+    } else if (!provider.volumeButtonsBlocked) {
+      recommendation = 'Enable the volume button trap';
+      recommendationAction = provider.toggleVolumeButtonsShield;
+    } else if (!provider.canDrawOverlays) {
+      recommendation = 'Allow overlay access for the floating shield';
+      recommendationAction = provider.requestOverlayPermission;
+    } else {
+      recommendation = null;
+      recommendationAction = null;
+    }
+    final criticalThreatCount = provider.auditedApps
+        .where((app) => app.risk == ThreatLevel.critical)
+        .length;
+    final outstandingThreatCount = provider.auditedApps.where((app) => !app.acknowledged).length;
+    final acknowledgedThreatCount = provider.auditedApps.length - outstandingThreatCount;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'PRIVACY POSTURE',
+                        style: GoogleFonts.cinzel(
+                          color: IlluminatiTheme.sacredGold,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        status,
+                        style: GoogleFonts.orbitron(
+                          color: scoreColor,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Text(
+                  '$score%',
+                  style: GoogleFonts.orbitron(
+                    color: scoreColor,
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: LinearProgressIndicator(
+                value: score / 100,
+                minHeight: 8,
+                backgroundColor: Colors.white12,
+                valueColor: AlwaysStoppedAnimation<Color>(scoreColor),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _buildPostureIndicator('CAMERA', provider.cameraBlocked, scoreColor),
+                _buildPostureIndicator('MIC', provider.micBlocked, scoreColor),
+                _buildPostureIndicator('VOLUME', provider.volumeButtonsBlocked, scoreColor),
+                _buildPostureIndicator('ADMIN', provider.isDeviceAdminActive, scoreColor),
+                _buildPostureIndicator('OVERLAY', provider.canDrawOverlays, scoreColor),
+              ],
+            ),
+            const SizedBox(height: 12),
+            InkWell(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AppAuditScreen()),
+                );
+              },
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                decoration: BoxDecoration(
+                  color: outstandingThreatCount == 0
+                      ? IlluminatiTheme.emeraldShield.withValues(alpha: 0.10)
+                      : IlluminatiTheme.amberGlow.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: outstandingThreatCount == 0
+                        ? IlluminatiTheme.emeraldShield.withValues(alpha: 0.55)
+                        : IlluminatiTheme.amberGlow.withValues(alpha: 0.55),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      outstandingThreatCount == 0 ? Icons.verified : Icons.pending_actions,
+                      color: outstandingThreatCount == 0
+                          ? IlluminatiTheme.emeraldShield
+                          : IlluminatiTheme.amberGlow,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'AUDIT REVIEW  $acknowledgedThreatCount/${provider.auditedApps.length} COMPLETE',
+                        style: GoogleFonts.orbitron(
+                          color: outstandingThreatCount == 0
+                              ? IlluminatiTheme.emeraldShield
+                              : IlluminatiTheme.amberGlow,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const Icon(Icons.arrow_forward, size: 15, color: Colors.white54),
+                  ],
+                ),
+              ),
+            ),
+            if (recommendation != null && recommendationAction != null) ...[
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: recommendationAction,
+                  icon: const Icon(Icons.arrow_forward, size: 16),
+                  label: Text(
+                    recommendation,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.orbitron(fontSize: 10),
+                  ),
+                  style: TextButton.styleFrom(
+                    foregroundColor: IlluminatiTheme.sacredGold,
+                    padding: EdgeInsets.zero,
+                  ),
+                ),
+              ),
+            ],
+            if (criticalThreatCount > 0) ...[
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(
+                  color: IlluminatiTheme.crimsonSeal.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: IlluminatiTheme.crimsonSeal.withValues(alpha: 0.6)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.warning_amber_rounded, color: IlluminatiTheme.crimsonSeal, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '$criticalThreatCount CRITICAL VECTOR${criticalThreatCount == 1 ? '' : 'S'} DETECTED',
+                        style: GoogleFonts.orbitron(
+                          color: IlluminatiTheme.crimsonSeal,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const AppAuditScreen()),
+                        );
+                      },
+                      style: TextButton.styleFrom(
+                        foregroundColor: IlluminatiTheme.crimsonSeal,
+                        padding: EdgeInsets.zero,
+                        minimumSize: Size.zero,
+                      ),
+                      child: const Text('REVIEW'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPostureIndicator(String label, bool active, Color activeColor) {
+    final color = active ? activeColor : Colors.white38;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: active ? 0.14 : 0.06),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.55)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(active ? Icons.check : Icons.remove, color: color, size: 13),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: GoogleFonts.orbitron(color: color, fontSize: 9, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+
+++ b/ElCoccoEddie/lib/screens/media_library_screen.dart
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../services/media_storage.dart';
+import '../theme/illuminati_theme.dart';
+import '../widgets/sacred_geometry_background.dart';
+
+class MediaLibraryScreen extends StatefulWidget {
+  const MediaLibraryScreen({super.key});
+
+  @override
+  State<MediaLibraryScreen> createState() => _MediaLibraryScreenState();
+}
+
+class _MediaLibraryScreenState extends State<MediaLibraryScreen> {
+  late Future<List<SavedMedia>> _mediaFuture;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+  String _mediaType = 'ALL';
+  String _sortMode = 'NEWEST';
+
+  String _formatSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _reload();
+  }
+
+  void _reload() {
+    _mediaFuture = listSavedMedia();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _deleteMedia(SavedMedia media) async {
+    final deleted = await deleteSavedMedia(media);
+    if (!mounted) return;
+    setState(_reload);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(deleted ? 'MEDIA DELETED' : 'MEDIA COULD NOT BE DELETED')),
+    );
+  }
+
+  Future<void> _deleteFilteredMedia() async {
+    final allMedia = await _mediaFuture;
+    final matching = allMedia
+        .where((item) => item.name.toLowerCase().contains(_searchQuery))
+        .where((item) => _mediaType == 'ALL' || (_mediaType == 'VIDEOS' ? item.isVideo : !item.isVideo))
+        .toList();
+    if (!mounted || matching.isEmpty) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('DELETE MEDIA?'),
+        content: Text('Remove ${matching.length} matching capture${matching.length == 1 ? '' : 's'}?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCEL')),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('DELETE')),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    for (final media in matching) {
+      await deleteSavedMedia(media);
+    }
+    if (!mounted) return;
+    setState(_reload);
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('MATCHING MEDIA DELETED')));
+  }
+
+  Future<void> _previewPhoto(SavedMedia media) async {
+    final bytes = await readSavedMedia(media);
+    if (!mounted || bytes == null) return;
+    await showDialog<void>(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: IlluminatiTheme.voidDark,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.memory(bytes, fit: BoxFit.contain),
+              TextButton(onPressed: () => Navigator.pop(context), child: const Text('CLOSE')),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SacredGeometryBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          title: Text(
+            'MEDIA VAULT',
+            style: GoogleFonts.cinzel(color: IlluminatiTheme.sacredGold, fontSize: 18),
+          ),
+          actions: [
+            IconButton(
+              tooltip: 'Reset media filters',
+              onPressed: () => setState(() {
+                _searchController.clear();
+                _searchQuery = '';
+                _mediaType = 'ALL';
+                _sortMode = 'NEWEST';
+              }),
+              icon: const Icon(Icons.filter_alt_off, color: IlluminatiTheme.sacredGold),
+            ),
+            IconButton(
+              tooltip: 'Delete filtered media',
+              onPressed: _deleteFilteredMedia,
+              icon: const Icon(Icons.delete_sweep, color: IlluminatiTheme.crimsonSeal),
+            ),
+            IconButton(
+              tooltip: 'Refresh media vault',
+              onPressed: () => setState(_reload),
+              icon: const Icon(Icons.refresh, color: IlluminatiTheme.sacredGold),
+            ),
+          ],
+        ),
+        body: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: TextField(
+                controller: _searchController,
+                onChanged: (value) => setState(() => _searchQuery = value.toLowerCase()),
+                style: GoogleFonts.orbitron(color: Colors.white, fontSize: 11),
+                decoration: InputDecoration(
+                  hintText: 'SEARCH SAVED MEDIA',
+                  prefixIcon: const Icon(Icons.search, color: IlluminatiTheme.sacredGold),
+                  filled: true,
+                  fillColor: IlluminatiTheme.slateCard,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  const Text('MEDIA TYPE', style: TextStyle(color: Colors.white60, fontSize: 10)),
+                  const Spacer(),
+                  DropdownButton<String>(
+                    value: _mediaType,
+                    underline: const SizedBox.shrink(),
+                    dropdownColor: IlluminatiTheme.slateCard,
+                    style: GoogleFonts.orbitron(color: IlluminatiTheme.sacredGold, fontSize: 10),
+                    onChanged: (value) => setState(() => _mediaType = value ?? _mediaType),
+                    items: const [
+                      DropdownMenuItem(value: 'ALL', child: Text('ALL')),
+                      DropdownMenuItem(value: 'PHOTOS', child: Text('PHOTOS')),
+                      DropdownMenuItem(value: 'VIDEOS', child: Text('VIDEOS')),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  const Text('SORT BY', style: TextStyle(color: Colors.white60, fontSize: 10)),
+                  const Spacer(),
+                  DropdownButton<String>(
+                    value: _sortMode,
+                    underline: const SizedBox.shrink(),
+                    dropdownColor: IlluminatiTheme.slateCard,
+                    style: GoogleFonts.orbitron(color: IlluminatiTheme.sacredGold, fontSize: 10),
+                    onChanged: (value) => setState(() => _sortMode = value ?? _sortMode),
+                    items: const [
+                      DropdownMenuItem(value: 'NEWEST', child: Text('NEWEST')),
+                      DropdownMenuItem(value: 'OLDEST', child: Text('OLDEST')),
+                      DropdownMenuItem(value: 'NAME', child: Text('NAME')),
+                      DropdownMenuItem(value: 'TYPE', child: Text('TYPE')),
+                      DropdownMenuItem(value: 'SIZE', child: Text('SIZE')),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: FutureBuilder<List<SavedMedia>>(
+                future: _mediaFuture,
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+                  final allMedia = snapshot.data!;
+                  final totalBytes = allMedia.fold<int>(0, (sum, item) => sum + item.sizeBytes);
+                  final photoCount = allMedia.where((item) => !item.isVideo).length;
+                  final videoCount = allMedia.where((item) => item.isVideo).length;
+                  final media = snapshot.data!
+                      .where((item) => item.name.toLowerCase().contains(_searchQuery))
+                      .where((item) => _mediaType == 'ALL' || (_mediaType == 'VIDEOS' ? item.isVideo : !item.isVideo))
+                      .toList();
+                  media.sort((left, right) {
+                    switch (_sortMode) {
+                      case 'OLDEST':
+                        return left.name.compareTo(right.name);
+                      case 'NAME':
+                        return left.name.toLowerCase().compareTo(right.name.toLowerCase());
+                      case 'TYPE':
+                        return (left.isVideo ? 1 : 0).compareTo(right.isVideo ? 1 : 0);
+                      case 'SIZE':
+                        return right.sizeBytes.compareTo(left.sizeBytes);
+                      default:
+                        return right.name.compareTo(left.name);
+                    }
+                  });
+                  if (media.isEmpty) {
+                    return const Center(
+                      child: Text('NO MATCHING CAPTURES', style: TextStyle(color: Colors.white60)),
+                    );
+                  }
+                  return ListView.separated(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: media.length + 1,
+                    separatorBuilder: (_, __) => const SizedBox(height: 10),
+                    itemBuilder: (context, index) {
+                      if (index == 0) {
+                        return Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(14),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.storage, color: IlluminatiTheme.sacredGold),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    '$photoCount PHOTOS  •  $videoCount VIDEOS\n${_formatSize(totalBytes)} USED  •  ${media.length} SHOWN',
+                                    style: GoogleFonts.orbitron(color: Colors.white70, fontSize: 10, height: 1.6),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+                      final item = media[index - 1];
+                      return Card(
+                        child: ListTile(
+                          onTap: item.isVideo ? null : () => _previewPhoto(item),
+                          leading: Icon(
+                            item.isVideo ? Icons.video_file : Icons.image,
+                            color: item.isVideo ? IlluminatiTheme.crimsonSeal : IlluminatiTheme.cyberCyan,
+                          ),
+                          title: Text(item.name, style: GoogleFonts.orbitron(fontSize: 10)),
+                          subtitle: Text('${item.isVideo ? 'VIDEO' : 'PHOTO'}  •  ${_formatSize(item.sizeBytes)}'),
+                          trailing: PopupMenuButton<String>(
+                            onSelected: (action) async {
+                              if (action == 'copy') {
+                                await Clipboard.setData(ClipboardData(text: item.path));
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('MEDIA PATH COPIED')),
+                                  );
+                                }
+                              } else if (action == 'delete') {
+                                await _deleteMedia(item);
+                              }
+                            },
+                            itemBuilder: (_) => const [
+                              PopupMenuItem(value: 'copy', child: Text('COPY PATH')),
+                              PopupMenuItem(value: 'delete', child: Text('DELETE')),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+++ b/ElCoccoEddie/lib/screens/stealth_settings_screen.dart
+                  _buildSettingTile(
+                    title: 'UNLOCK DELAY',
+                    subtitle: '${provider.unlockDelaySeconds}s before protected sensors restore',
+                    icon: Icons.lock_open,
+                    trailingWidget: SizedBox(
+                      width: 150,
+                      child: Slider(
+                        value: provider.unlockDelaySeconds.toDouble(),
+                        min: 0,
+                        max: 30,
+                        divisions: 30,
+                        activeColor: IlluminatiTheme.sacredGold,
+                        onChanged: (value) {
+                          provider.setPrivacyTimerSettings(
+                            lockDelaySeconds: provider.lockDelaySeconds,
+                            unlockDelaySeconds: value.round(),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      onPressed: () {
+                        provider.setPrivacyTimerSettings(
+                          lockDelaySeconds: 10,
+                          unlockDelaySeconds: 1,
+                        );
+                      },
+                      icon: const Icon(Icons.restore, size: 16),
+                      label: const Text('RESET TIMER DEFAULTS'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: IlluminatiTheme.sacredGold,
+                        textStyle: GoogleFonts.orbitron(fontSize: 10),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+          ?trailingWidget,
+++ b/ElCoccoEddie/lib/services/media_storage.dart
+import 'media_storage_stub.dart'
+    if (dart.library.io) 'media_storage_io.dart';
+
+export 'media_storage_stub.dart'
+    if (dart.library.io) 'media_storage_io.dart';
+++ b/ElCoccoEddie/lib/services/media_storage_io.dart
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:path_provider/path_provider.dart';
+import 'media_storage_stub.dart';
+
+export 'media_storage_stub.dart' show SavedMedia;
+
+Future<List<SavedMedia>> listSavedMedia() async {
+  final directory = await getApplicationDocumentsDirectory();
+  final files = await directory
+      .list()
+      .where((entity) => entity is File && entity.path.contains('elcocco_'))
+      .map((entity) {
+        final path = entity.path;
+        return SavedMedia(
+          name: path.split(Platform.pathSeparator).last,
+          path: path,
+          isVideo: path.toLowerCase().endsWith('.mp4'),
+          sizeBytes: (entity as File).lengthSync(),
+        );
+      })
+      .toList();
+  files.sort((left, right) => right.name.compareTo(left.name));
+  return files;
+}
+
+Future<bool> deleteSavedMedia(SavedMedia media) async {
+  try {
+    final file = File(media.path);
+    if (!await file.exists()) return false;
+    await file.delete();
+    return true;
+  } on FileSystemException {
+    return false;
+  }
+}
+
+Future<Uint8List?> readSavedMedia(SavedMedia media) async {
+  try {
+    if (media.isVideo) return null;
+    return await File(media.path).readAsBytes();
+  } on FileSystemException {
+    return null;
+  }
+}
+++ b/ElCoccoEddie/lib/services/media_storage_stub.dart
+import 'dart:typed_data';
+
+class SavedMedia {
+  final String name;
+  final String path;
+  final bool isVideo;
+  final int sizeBytes;
+
+  const SavedMedia({required this.name, required this.path, required this.isVideo, this.sizeBytes = 0});
+}
+
+Future<List<SavedMedia>> listSavedMedia() async => const [];
+
+Future<bool> deleteSavedMedia(SavedMedia media) async => false;
+
+Future<Uint8List?> readSavedMedia(SavedMedia media) async => null;
+++ b/ElCoccoEddie/lib/services/native_blocker_service.dart
+      final result = await _channel.invokeMethod<dynamic>('getPrivacyEngineStatus');
+      if (result is Map) {
+        return Map<String, dynamic>.from(result);
+      }
+    } on TypeError catch (e) {
+      print('Invalid privacy engine status response: $e');
+    return {};
+++ b/ElCoccoEddie/pubspec.yaml
+  path_provider: ^2.1.5
+++ b/changes.txt
 ++ b/.gitignore
 # Disposable editor and placeholder artifacts
 **/*.tmp
@@ -61,17 +2593,13 @@ app.*.map.json
 # Server Configuration
 PORT=3001
 NODE_ENV=development
-
 # MongoDB Connection
 MONGODB_URI=mongodb+srv://achrefhamdi:21960975@cluster0.qd9v5k1.mongodb.net/313riftst?retryWrites=true&w=majority
-
 # JWT Configuration
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
 JWT_EXPIRES_IN=7d
-
 # CORS Configuration
 CORS_ORIGIN=http://localhost:3000
-
 # Rate Limiting
 RATE_LIMIT_WINDOW_MS=900000 # 15 minutes
 RATE_LIMIT_MAX_REQUESTS=100
@@ -197,11 +2725,9 @@ const validateRegistration = (req, res, next) => {
       message: 'Validation failed',
       errors
     });
-  }
   
   next();
 };
-
 const validateLogin = (req, res, next) => {
   const { error } = loginSchema.validate(req.body, { abortEarly: false });
   
@@ -215,11 +2741,9 @@ const validateLogin = (req, res, next) => {
       message: 'Validation failed',
       errors
     });
-  }
   
   next();
 };
-
 const validateProfileUpdate = (req, res, next) => {
   const { error } = profileUpdateSchema.validate(req.body, { abortEarly: false });
   
@@ -233,13 +2757,10 @@ const validateProfileUpdate = (req, res, next) => {
       message: 'Validation failed',
       errors
     });
-  }
   
   next();
 };
-
 const jwt = require('jsonwebtoken');
-
 // Auth middleware for protected routes
 const authMiddleware = (req, res, next) => {
   try {
@@ -249,7 +2770,6 @@ const authMiddleware = (req, res, next) => {
       return res.status(401).json({ 
         message: 'Authentication required' 
       });
-    }
     
     const decoded = jwt.verify(token, process.env.JWT_SECRET || '313rifts-secret-key-change-this-in-production');
     req.userId = decoded.userId;
@@ -267,14 +2787,11 @@ const authMiddleware = (req, res, next) => {
       return res.status(401).json({ 
         message: 'Token expired' 
       });
-    }
     
     res.status(401).json({ 
       message: 'Authentication failed' 
     });
-  }
 };
-
 module.exports = {
   validateRegistration,
   validateLogin,
@@ -384,7 +2901,6 @@ const articleSchema = new mongoose.Schema({
   updatedAt: {
     type: Date,
     default: Date.now
-  }
 }, {
   timestamps: true,
   toJSON: { virtuals: true },
@@ -414,21 +2930,18 @@ articleSchema.statics.findPopular = function(limit = 10) {
     .sort({ popularityScore: -1, pageViews: -1 })
     .limit(limit);
 };
-
 // Static method to find trending articles
 articleSchema.statics.findTrending = function(limit = 10) {
   return this.find()
     .sort({ trendingScore: -1, pageViews: -1 })
     .limit(limit);
 };
-
 // Static method to find articles by language
 articleSchema.statics.findByLanguage = function(language, limit = 20) {
   return this.find({ language })
     .sort({ popularityScore: -1 })
     .limit(limit);
 };
-
 // Update popularity score
 articleSchema.methods.updatePopularityScore = function() {
   this.popularityScore = 
@@ -439,7 +2952,6 @@ articleSchema.methods.updatePopularityScore = function() {
   
   return this.save();
 };
-
 // Indexes
 articleSchema.index({ title: 'text', summary: 'text' });
 articleSchema.index({ language: 1, popularityScore: -1 });
@@ -606,13 +3118,11 @@ userSchema.pre('save', async function() {
 userSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
-
 // Method to update last login
 userSchema.methods.updateLastLogin = async function() {
   this.lastLogin = new Date();
   await this.save();
 };
-
 // Virtual for user's reading progress
 userSchema.virtual('readingProgress').get(function() {
   const stats = this.readingStats;
@@ -624,11 +3134,9 @@ userSchema.virtual('readingProgress').get(function() {
       : 0
   };
 });
-
 // Indexes
 userSchema.index({ createdAt: -1 });
 userSchema.index({ 'readingHistory.timestamp': -1 });
-
 const User = mongoose.model('User', userSchema);
 
 module.exports = User;
@@ -662,7 +3170,6 @@ module.exports = User;
     "mongodb-memory-server": "^11.2.0",
     "nodemon": "^3.1.14"
   }
-}
 ++ b/313rifts-backend/routes/article.routes.js
 const express = require('express');
 const router = express.Router();
@@ -680,11 +3187,9 @@ router.get('/popular', async (req, res) => {
     if (language) {
       query.language = language;
     }
-
     const articles = await Article.find(query)
       .sort({ popularityScore: -1, pageViews: -1 })
       .limit(parseInt(limit));
-
     res.json({
       articles: articles.map(article => ({
         id: article._id,
@@ -710,7 +3215,6 @@ router.get('/popular', async (req, res) => {
     });
   }
 });
-
 // Get trending articles
 router.get('/trending', async (req, res) => {
   try {
@@ -720,12 +3224,10 @@ router.get('/trending', async (req, res) => {
     if (language) {
       query.language = language;
     }
-
     // Trending articles are those with recent activity
     const articles = await Article.find(query)
       .sort({ trendingScore: -1, pageViews: -1 })
       .limit(parseInt(limit));
-
     res.json({
       articles: articles.map(article => ({
         id: article._id,
@@ -752,7 +3254,6 @@ router.get('/trending', async (req, res) => {
     });
   }
 });
-
 // Search articles
 router.get('/search', async (req, res) => {
   try {
@@ -763,15 +3264,12 @@ router.get('/search', async (req, res) => {
         message: 'Search query is required' 
       });
     }
-
     const searchOptions = {
       $text: { $search: query }
     };
-
     if (language) {
       searchOptions.language = language;
     }
-
     const articles = await Article.find(searchOptions)
       .sort({ score: { $meta: 'textScore' }, popularityScore: -1 })
       .limit(parseInt(limit));
@@ -786,7 +3284,6 @@ router.get('/search', async (req, res) => {
         ]
       });
     }
-
     res.json({
       articles: articles.map(article => ({
         id: article._id,
@@ -815,7 +3312,6 @@ router.get('/search', async (req, res) => {
     });
   }
 });
-
 // Get article by ID
 router.get('/:id', async (req, res, next) => {
   try {
@@ -832,11 +3328,9 @@ router.get('/:id', async (req, res, next) => {
         message: 'Article not found' 
       });
     }
-
     // Increment page views
     article.pageViews += 1;
     await article.updatePopularityScore();
-
     res.json({
       article: {
         id: article._id,
@@ -866,9 +3360,7 @@ router.get('/:id', async (req, res, next) => {
       message: 'Failed to get article', 
       error: error.message 
     });
-  }
 });
-
 // Get article by Wikipedia ID
 router.get('/wikipedia/:wikipediaId', async (req, res) => {
   try {
@@ -881,11 +3373,9 @@ router.get('/wikipedia/:wikipediaId', async (req, res) => {
         message: 'Article not found in database' 
       });
     }
-
     // Increment page views
     article.pageViews += 1;
     await article.updatePopularityScore();
-
     res.json({
       article: {
         id: article._id,
@@ -916,7 +3406,6 @@ router.get('/wikipedia/:wikipediaId', async (req, res) => {
     });
   }
 });
-
 // Record article read (authenticated)
 router.post('/:id/read', authMiddleware, async (req, res) => {
   try {
@@ -930,7 +3419,6 @@ router.post('/:id/read', authMiddleware, async (req, res) => {
         message: 'Article not found' 
       });
     }
-
     const user = await User.findById(req.userId);
     
     if (!user) {
@@ -938,12 +3426,10 @@ router.post('/:id/read', authMiddleware, async (req, res) => {
         message: 'User not found' 
       });
     }
-
     // Check if user already read this article (update timestamp)
     const existingIndex = article.readByUsers.findIndex(
       record => record.userId.toString() === req.userId
     );
-
     if (existingIndex !== -1) {
       article.readByUsers[existingIndex].timestamp = new Date();
       article.readByUsers[existingIndex].readingTime = readingTime || 0;
@@ -954,7 +3440,6 @@ router.post('/:id/read', authMiddleware, async (req, res) => {
         readingTime: readingTime || 0
       });
     }
-
     // Update article popularity
     await article.updatePopularityScore();
     
@@ -963,7 +3448,6 @@ router.post('/:id/read', authMiddleware, async (req, res) => {
       user.readingStats.totalReadingTime += readingTime;
     }
     await user.save();
-
     res.json({
       message: 'Reading recorded',
       article: {
@@ -980,9 +3464,7 @@ router.post('/:id/read', authMiddleware, async (req, res) => {
       message: 'Failed to record reading', 
       error: error.message 
     });
-  }
 });
-
 // Get popular articles
 router.get('/popular', async (req, res) => {
   try {
@@ -992,11 +3474,9 @@ router.get('/popular', async (req, res) => {
     if (language) {
       query.language = language;
     }
-
     const articles = await Article.find(query)
       .sort({ popularityScore: -1, pageViews: -1 })
       .limit(parseInt(limit));
-
     res.json({
       articles: articles.map(article => ({
         id: article._id,
@@ -1020,9 +3500,7 @@ router.get('/popular', async (req, res) => {
       message: 'Failed to get popular articles', 
       error: error.message 
     });
-  }
 });
-
 // Get trending articles
 router.get('/trending', async (req, res) => {
   try {
@@ -1031,8 +3509,6 @@ router.get('/trending', async (req, res) => {
     let query = {};
     if (language) {
       query.language = language;
-    }
-
     // Trending articles are those with recent activity
     const articles = await Article.find(query)
       .sort({ trendingScore: -1, pageViews: -1 })
@@ -1062,9 +3538,7 @@ router.get('/trending', async (req, res) => {
       message: 'Failed to get trending articles', 
       error: error.message 
     });
-  }
 });
-
 // Get articles by language
 router.get('/language/:language', async (req, res) => {
   try {
@@ -1087,12 +3561,9 @@ router.get('/language/:language', async (req, res) => {
         break;
       default:
         sortOptions = { popularityScore: -1 };
-    }
-
     const articles = await Article.find({ language })
       .sort(sortOptions)
       .limit(parseInt(limit));
-
     res.json({
       language,
       articles: articles.map(article => ({
@@ -1116,9 +3587,7 @@ router.get('/language/:language', async (req, res) => {
       message: 'Failed to get articles by language', 
       error: error.message 
     });
-  }
 });
-
 // Save article (authenticated)
 router.post('/:id/save', authMiddleware, async (req, res) => {
   try {
@@ -1130,27 +3599,20 @@ router.post('/:id/save', authMiddleware, async (req, res) => {
       return res.status(404).json({ 
         message: 'Article not found' 
       });
-    }
-
     const user = await User.findById(req.userId);
     
     if (!user) {
       return res.status(404).json({ 
         message: 'User not found' 
       });
-    }
-
     // Check if article already saved by user
     const alreadySaved = article.savedByUsers.some(
       userId => userId.toString() === req.userId
     );
-
     if (alreadySaved) {
       return res.status(400).json({ 
         message: 'Article already saved' 
       });
-    }
-
     // Add user to savedByUsers
     article.savedByUsers.push(req.userId);
     
@@ -1164,16 +3626,13 @@ router.post('/:id/save', authMiddleware, async (req, res) => {
       language: article.language,
       savedAt: new Date()
     });
-
     await Promise.all([article.save(), user.save()]);
-
     res.json({
       message: 'Article saved successfully',
       article: {
         id: article._id,
         title: article.title,
         totalSaves: article.totalSaves
-      }
     });
   } catch (error) {
     console.error('Save article error:', error);
@@ -1235,7 +3694,6 @@ router.delete('/:id/save', authMiddleware, async (req, res) => {
         id: article._id,
         title: article.title,
         totalSaves: article.totalSaves
-      }
     });
   } catch (error) {
     console.error('Unsaved article error:', error);
@@ -1257,8 +3715,6 @@ router.get('/:id/stats', async (req, res) => {
       return res.status(404).json({ 
         message: 'Article not found' 
       });
-    }
-
     // Get reader demographics
     const readers = await User.find({
       _id: { $in: article.readByUsers.map(r => r.userId) }
@@ -1293,9 +3749,7 @@ router.get('/:id/stats', async (req, res) => {
       message: 'Failed to get article statistics', 
       error: error.message 
     });
-  }
 });
-
 // Sync/Upsert article from frontend Wikipedia fetch
 router.post('/sync', async (req, res) => {
   try {
@@ -1303,8 +3757,6 @@ router.post('/sync', async (req, res) => {
     
     if (!title) {
       return res.status(400).json({ message: 'Title is required' });
-    }
-
     const wikipediaId = pageid ? String(pageid) : String(title.toLowerCase().replace(/\s+/g, '-'));
     
     let article = await Article.findOne({ wikipediaId });
@@ -1330,14 +3782,11 @@ router.post('/sync', async (req, res) => {
       article.pageViews += 1;
       article.popularityScore += 1;
       article.trendingScore += 1;
-    }
-
     await article.save();
     res.json({ message: 'Article synced successfully', article });
   } catch (error) {
     console.error('Sync article error:', error);
     res.status(500).json({ message: 'Failed to sync article', error: error.message });
-  }
 });
 
 module.exports = router;
@@ -1359,12 +3808,10 @@ const generateToken = (userId) => {
     { expiresIn: '7d' }
   );
 };
-
 // Register user
 router.post('/register', validateRegistration, async (req, res) => {
   try {
     const { username, email, password } = req.body;
-
     // Check if user already exists
     const existingUser = await User.findOne({ 
       $or: [{ email }, { username }] 
@@ -1416,9 +3863,7 @@ router.post('/register', validateRegistration, async (req, res) => {
       message: 'Registration failed', 
       error: error.message 
     });
-  }
 });
-
 // Login user
 router.post('/login', validateLogin, async (req, res) => {
   try {
@@ -1431,16 +3876,12 @@ router.post('/login', validateLogin, async (req, res) => {
       return res.status(401).json({ 
         message: 'Invalid credentials' 
       });
-    }
-
     // Check password
     const isPasswordValid = await user.comparePassword(password);
     if (!isPasswordValid) {
       return res.status(401).json({ 
         message: 'Invalid credentials' 
       });
-    }
-
     // Generate token
     const token = generateToken(user._id);
 
@@ -1469,9 +3910,7 @@ router.post('/login', validateLogin, async (req, res) => {
       message: 'Login failed', 
       error: error.message 
     });
-  }
 });
-
 // Get current user profile
 router.get('/profile', async (req, res) => {
   try {
@@ -1533,9 +3972,7 @@ router.get('/profile', async (req, res) => {
       message: 'Failed to get profile', 
       error: error.message 
     });
-  }
 });
-
 // Update user profile
 router.put('/profile', async (req, res) => {
   try {
@@ -1593,9 +4030,7 @@ router.put('/profile', async (req, res) => {
       message: 'Failed to update profile', 
       error: error.message 
     });
-  }
 });
-
 // Logout (client-side operation, but we can invalidate tokens here if needed)
 router.post('/logout', (req, res) => {
   res.json({ 
@@ -1636,16 +4071,13 @@ router.post('/verify', async (req, res) => {
       valid: false, 
       message: 'Invalid token' 
     });
-  }
 });
-
 module.exports = router;
 ++ b/313rifts-backend/routes/user.routes.js
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User.model');
 const { authMiddleware } = require('../middleware/validation');
-
 // Get user reading history
 router.get('/history', authMiddleware, async (req, res) => {
   try {
@@ -1668,9 +4100,7 @@ router.get('/history', authMiddleware, async (req, res) => {
       message: 'Failed to get reading history', 
       error: error.message 
     });
-  }
 });
-
 // Add to reading history
 router.post('/history', authMiddleware, async (req, res) => {
   try {
@@ -1681,7 +4111,6 @@ router.post('/history', authMiddleware, async (req, res) => {
         message: 'Article title and ID are required' 
       });
     }
-
     const user = await User.findById(req.userId);
     
     if (!user) {
@@ -1689,7 +4118,6 @@ router.post('/history', authMiddleware, async (req, res) => {
         message: 'User not found' 
       });
     }
-
     // Check if article already in history (update timestamp if exists)
     const existingIndex = user.readingHistory.findIndex(
       item => item.articleId === articleId && item.language === language
@@ -1745,9 +4173,7 @@ router.post('/history', authMiddleware, async (req, res) => {
       message: 'Failed to update history', 
       error: error.message 
     });
-  }
 });
-
 // Clear reading history
 router.delete('/history', authMiddleware, async (req, res) => {
   try {
@@ -1758,13 +4184,11 @@ router.delete('/history', authMiddleware, async (req, res) => {
         message: 'User not found' 
       });
     }
-
     user.readingHistory = [];
     user.readingStats.totalArticlesRead = 0;
     user.readingStats.totalReadingTime = 0;
     
     await user.save();
-
     res.json({
       message: 'Reading history cleared',
       history: [],
@@ -1778,7 +4202,6 @@ router.delete('/history', authMiddleware, async (req, res) => {
     });
   }
 });
-
 // Get user favorite articles
 router.get('/favorites', authMiddleware, async (req, res) => {
   try {
@@ -1789,7 +4212,6 @@ router.get('/favorites', authMiddleware, async (req, res) => {
         message: 'User not found' 
       });
     }
-
     res.json({
       favorites: user.favoriteArticles,
       total: user.favoriteArticles.length
@@ -1802,7 +4224,6 @@ router.get('/favorites', authMiddleware, async (req, res) => {
     });
   }
 });
-
 // Add article to favorites
 router.post('/favorites', authMiddleware, async (req, res) => {
   try {
@@ -1813,7 +4234,6 @@ router.post('/favorites', authMiddleware, async (req, res) => {
         message: 'Article title and ID are required' 
       });
     }
-
     const user = await User.findById(req.userId);
     
     if (!user) {
@@ -1821,18 +4241,14 @@ router.post('/favorites', authMiddleware, async (req, res) => {
         message: 'User not found' 
       });
     }
-
     // Check if already in favorites
     const alreadyFavorite = user.favoriteArticles.some(
       fav => fav.articleId === articleId && fav.language === language
-    );
-
     if (alreadyFavorite) {
       return res.status(400).json({ 
         message: 'Article already in favorites' 
       });
     }
-
     // Add to favorites
     user.favoriteArticles.push({
       articleTitle,
@@ -1840,9 +4256,7 @@ router.post('/favorites', authMiddleware, async (req, res) => {
       language: language || 'en',
       savedAt: new Date()
     });
-
     await user.save();
-
     res.json({
       message: 'Article added to favorites',
       favorites: user.favoriteArticles
@@ -1853,15 +4267,12 @@ router.post('/favorites', authMiddleware, async (req, res) => {
       message: 'Failed to add to favorites', 
       error: error.message 
     });
-  }
 });
-
 // Remove article from favorites
 router.delete('/favorites/:articleId', authMiddleware, async (req, res) => {
   try {
     const { articleId } = req.params;
     const { language } = req.query;
-
     const user = await User.findById(req.userId);
     
     if (!user) {
@@ -1874,7 +4285,6 @@ router.delete('/favorites/:articleId', authMiddleware, async (req, res) => {
     
     user.favoriteArticles = user.favoriteArticles.filter(fav => 
       !(fav.articleId === articleId && (!language || fav.language === language))
-    );
 
     if (user.favoriteArticles.length === initialLength) {
       return res.status(404).json({ 
@@ -1894,9 +4304,7 @@ router.delete('/favorites/:articleId', authMiddleware, async (req, res) => {
       message: 'Failed to remove from favorites', 
       error: error.message 
     });
-  }
 });
-
 // Get user statistics
 router.get('/stats', authMiddleware, async (req, res) => {
   try {
@@ -1907,17 +4315,14 @@ router.get('/stats', authMiddleware, async (req, res) => {
         message: 'User not found' 
       });
     }
-
     // Calculate additional stats
     const languages = {};
     user.readingHistory.forEach(item => {
       languages[item.language] = (languages[item.language] || 0) + 1;
     });
-
     const languageStats = Object.entries(languages)
       .map(([language, count]) => ({ language, count }))
       .sort((a, b) => b.count - a.count);
-
     res.json({
       readingStats: user.readingStats,
       readingProgress: user.readingProgress,
@@ -1934,7 +4339,6 @@ router.get('/stats', authMiddleware, async (req, res) => {
     });
   }
 });
-
 // Update reading time
 router.put('/reading-time', authMiddleware, async (req, res) => {
   try {
@@ -1945,7 +4349,6 @@ router.put('/reading-time', authMiddleware, async (req, res) => {
         message: 'Valid reading time is required' 
       });
     }
-
     const user = await User.findById(req.userId);
     
     if (!user) {
@@ -1953,10 +4356,8 @@ router.put('/reading-time', authMiddleware, async (req, res) => {
         message: 'User not found' 
       });
     }
-
     user.readingStats.totalReadingTime += minutes;
     await user.save();
-
     res.json({
       message: 'Reading time updated',
       readingStats: user.readingStats
@@ -2112,12 +4513,10 @@ async function seedArticles() {
       console.log(`✅ Successfully seeded ${sampleArticles.length} initial articles!`);
     } else {
       console.log(`ℹ️ Database already contains ${count} articles. Skipping seed.`);
-    }
   } catch (err) {
     console.error('❌ Error seeding articles:', err.message);
   }
 }
-
 module.exports = seedArticles;
 ++ b/313rifts-backend/server.js
 const express = require('express');
@@ -2208,7 +4607,6 @@ app.get('/', (req, res) => {
       users: '/api/users',
       articles: '/api/articles',
       health: '/api/health'
-    }
   });
 });
 
@@ -2284,7 +4682,6 @@ app.listen(PORT, () => {
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  }
 }
 ++ b/313rifts/public/index.html
 <!DOCTYPE html>
@@ -2405,7 +4802,6 @@ app.listen(PORT, () => {
   display: flex;
   flex-direction: column;
 }
-
 /* Header Styles */
 .app-header {
   background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
@@ -2634,19 +5030,14 @@ app.listen(PORT, () => {
   .content-grid {
     grid-template-columns: 2fr 1fr;
     gap: 0;
-  }
-}
-
 .article-content {
   padding: 1.5rem;
   border-right: 1px solid var(--border-color);
 }
-
 .translation-sidebar {
   padding: 1.5rem;
   background-color: rgba(79, 70, 229, 0.02);
 }
-
 /* Welcome Section */
 .welcome-section {
   background-color: var(--surface-color);
@@ -2656,12 +5047,10 @@ app.listen(PORT, () => {
   text-align: center;
   margin-top: 2rem;
 }
-
 .welcome-content {
   max-width: 800px;
   margin: 0 auto;
 }
-
 .welcome-title {
   font-size: 2rem;
   font-weight: 700;
@@ -2671,7 +5060,6 @@ app.listen(PORT, () => {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
-
 .welcome-description {
   font-size: 1.125rem;
   color: var(--text-secondary);
@@ -2689,9 +5077,7 @@ app.listen(PORT, () => {
 @media (min-width: 768px) {
   .feature-list {
     grid-template-columns: repeat(3, 1fr);
-  }
 }
-
 .feature {
   display: flex;
   flex-direction: column;
@@ -2702,48 +5088,37 @@ app.listen(PORT, () => {
   border-radius: var(--radius);
   transition: var(--transition);
 }
-
 .feature:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
 }
-
 .feature-icon {
   font-size: 2rem;
   margin-bottom: 1rem;
 }
-
 .feature-text h4 {
   font-size: 1.125rem;
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: 0.5rem;
-}
-
 .feature-text p {
   font-size: 0.875rem;
   color: var(--text-secondary);
   line-height: 1.5;
 }
-
 .example-searches {
   margin-top: 2rem;
-}
-
 .examples-title {
   font-size: 1rem;
   font-weight: 600;
   color: var(--text-secondary);
   margin-bottom: 1rem;
 }
-
 .example-tags {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
   justify-content: center;
-}
-
 .example-tag {
   padding: 0.5rem 1rem;
   background-color: var(--background-color);
@@ -2755,13 +5130,11 @@ app.listen(PORT, () => {
   cursor: pointer;
   transition: var(--transition);
 }
-
 .example-tag:hover {
   background-color: var(--primary-color);
   color: white;
   border-color: var(--primary-color);
 }
-
 /* Footer */
 .app-footer {
   background-color: var(--surface-color);
@@ -2769,42 +5142,33 @@ app.listen(PORT, () => {
   padding: 1.5rem 0;
   margin-top: auto;
 }
-
 .footer-content {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
 }
-
 .footer-text {
   font-size: 0.875rem;
   color: var(--text-secondary);
   text-align: center;
-}
-
 .footer-links {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   font-size: 0.875rem;
 }
-
 .footer-links a {
   color: var(--primary-color);
   text-decoration: none;
   transition: var(--transition);
 }
-
 .footer-links a:hover {
   color: var(--primary-dark);
   text-decoration: underline;
 }
-
 .separator {
   color: var(--text-secondary);
-}
-
 /* Button Styles */
 .btn {
   padding: 0.75rem 1.5rem;
@@ -2815,12 +5179,10 @@ app.listen(PORT, () => {
   transition: var(--transition);
   cursor: pointer;
 }
-
 .btn-primary {
   background-color: var(--primary-color);
   color: white;
 }
-
 .btn-primary:hover {
   background-color: var(--primary-dark);
 }
@@ -2856,9 +5218,6 @@ app.listen(PORT, () => {
   
   .welcome-section {
     padding: 2rem 1rem;
-  }
-}
-
 /* Header Controls & Navigation */
 .header-controls {
   display: flex;
@@ -2868,14 +5227,12 @@ app.listen(PORT, () => {
   gap: 1rem;
   margin-top: 1rem;
 }
-
 .main-nav {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
   align-items: center;
 }
-
 .nav-link {
   padding: 0.375rem 0.75rem;
   color: rgba(255, 255, 255, 0.9);
@@ -2885,24 +5242,20 @@ app.listen(PORT, () => {
   border-radius: 0.375rem;
   transition: var(--transition);
 }
-
 .nav-link:hover {
   background-color: rgba(255, 255, 255, 0.1);
   color: white;
 }
-
 .btn-logout {
   background: none;
   border: none;
   cursor: pointer;
   font-family: inherit;
 }
-
 .header-link {
   color: white;
   text-decoration: none;
 }
-
 /* Article Controls */
 .article-controls {
   display: flex;
@@ -2912,18 +5265,15 @@ app.listen(PORT, () => {
   justify-content: space-between;
   margin-top: 1rem;
 }
-
 /* Feature enhancements */
 .feature-icon {
   font-size: 2rem;
   margin-bottom: 1rem;
   transition: transform 0.3s ease;
 }
-
 .feature:hover .feature-icon {
   transform: scale(1.1);
 }
-
 /* Responsive navigation */
 /* Home Dashboard & Featured Articles */
 .home-dashboard {
@@ -2932,7 +5282,6 @@ app.listen(PORT, () => {
   gap: 2rem;
   padding-bottom: 2rem;
 }
-
 .hero-banner {
   background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
   color: white;
@@ -2940,7 +5289,6 @@ app.listen(PORT, () => {
   padding: 2.5rem 2rem;
   box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.3);
 }
-
 .hero-tag {
   display: inline-block;
   background: rgba(255, 255, 255, 0.2);
@@ -2951,20 +5299,17 @@ app.listen(PORT, () => {
   margin-bottom: 0.75rem;
   backdrop-filter: blur(4px);
 }
-
 .hero-title {
   font-size: 2rem;
   font-weight: 800;
   margin-bottom: 0.5rem;
 }
-
 .hero-subtitle {
   font-size: 1.05rem;
   opacity: 0.9;
   max-width: 650px;
   line-height: 1.5;
 }
-
 /* Featured Section */
 .articles-container-section {
   background: var(--card-bg, #ffffff);
@@ -2972,8 +5317,6 @@ app.listen(PORT, () => {
   border-radius: 16px;
   padding: 2rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
-}
-
 .section-header-row {
   display: flex;
   justify-content: space-between;
@@ -2982,25 +5325,21 @@ app.listen(PORT, () => {
   gap: 1rem;
   margin-bottom: 1.5rem;
 }
-
 .section-title {
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 0.25rem;
 }
-
 .section-subtitle {
   font-size: 0.9rem;
   color: var(--text-secondary);
 }
-
 .category-tabs {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
 }
-
 .category-tab {
   border: 1px solid var(--border-color, #e5e7eb);
   background: transparent;
@@ -3012,20 +5351,17 @@ app.listen(PORT, () => {
   cursor: pointer;
   transition: all 0.2s ease;
 }
-
 .category-tab.active, .category-tab:hover {
   background: var(--primary-color, #4f46e5);
   color: white;
   border-color: var(--primary-color, #4f46e5);
 }
-
 /* Cards Grid */
 .article-cards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 1.5rem;
 }
-
 .article-card {
   border: 1px solid var(--border-color, #e5e7eb);
   border-radius: 12px;
@@ -3036,25 +5372,21 @@ app.listen(PORT, () => {
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
-
 .article-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 12px 24px -6px rgba(0, 0, 0, 0.1);
   border-color: var(--primary-color, #4f46e5);
 }
-
 .card-image-wrapper {
   height: 140px;
   overflow: hidden;
   background: #f3f4f6;
 }
-
 .card-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
-
 .card-image-placeholder {
   height: 120px;
   background: linear-gradient(135deg, #ede9fe 0%, #e0e7ff 100%);
@@ -3062,49 +5394,40 @@ app.listen(PORT, () => {
   align-items: center;
   justify-content: center;
 }
-
 .placeholder-icon {
   font-size: 2.5rem;
 }
-
 .card-body {
   padding: 1.25rem;
   display: flex;
   flex-direction: column;
   flex: 1;
 }
-
 .card-badges {
   display: flex;
   gap: 0.5rem;
   margin-bottom: 0.75rem;
 }
-
 .badge {
   font-size: 0.75rem;
   font-weight: 600;
   padding: 0.2rem 0.6rem;
   border-radius: 6px;
 }
-
 .category-badge {
   background: rgba(79, 70, 229, 0.1);
   color: #4f46e5;
 }
-
 .lang-badge {
   background: rgba(16, 185, 129, 0.1);
   color: #10b981;
 }
-
 .card-title {
   font-size: 1.15rem;
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 0.5rem;
   line-height: 1.3;
-}
-
 .card-summary {
   font-size: 0.88rem;
   color: var(--text-secondary);
@@ -3116,7 +5439,6 @@ app.listen(PORT, () => {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-
 .card-footer {
   display: flex;
   justify-content: space-between;
@@ -3124,13 +5446,11 @@ app.listen(PORT, () => {
   padding-top: 0.75rem;
   border-top: 1px solid var(--border-color, #f3f4f6);
 }
-
 .card-views {
   font-size: 0.8rem;
   color: var(--text-secondary);
   font-weight: 500;
 }
-
 .btn-read-now {
   background: transparent;
   border: none;
@@ -3141,12 +5461,10 @@ app.listen(PORT, () => {
   padding: 0;
   transition: color 0.2s ease;
 }
-
 .btn-read-now:hover {
   color: #3730a3;
   text-decoration: underline;
 }
-
 /* Features Banner */
 .features-banner {
   display: grid;
@@ -3156,20 +5474,17 @@ app.listen(PORT, () => {
   border-radius: 16px;
   padding: 1.75rem;
 }
-
 .feature-item {
   display: flex;
   gap: 1rem;
   align-items: flex-start;
 }
-
 .feature-item h5 {
   font-size: 1rem;
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 0.25rem;
 }
-
 .feature-item p {
   font-size: 0.85rem;
   color: var(--text-secondary);
@@ -3209,7 +5524,6 @@ const ProtectedRoute = ({ children }) => {
   const isAuthenticated = authService.isAuthenticated();
   return isAuthenticated ? children : <Navigate to="/login" />;
 };
-
 function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [article, setArticle] = useState(null);
@@ -3233,11 +5547,9 @@ function App() {
         }
       } catch (err) {
         console.warn('Could not fetch popular articles from backend:', err);
-      }
     };
     loadPopular();
   }, []);
-
   // Fetch article when search query changes
   useEffect(() => {
     const fetchArticle = async () => {
@@ -3262,7 +5574,6 @@ function App() {
         setIsLoading(false);
       }
     };
-
     const debounceTimer = setTimeout(() => {
       fetchArticle();
     }, 500);
@@ -3277,7 +5588,6 @@ function App() {
     setShowSearchResults(false);
     setSelectedLanguage(lang);
     
-    try {
       // Fetch the article content
       const articleData = await fetchWikipediaArticle(title, lang);
       setArticle(articleData);
@@ -3293,9 +5603,7 @@ function App() {
       setError(`Failed to load article: ${err.message}`);
     } finally {
       setIsLoading(false);
-    }
   };
-
   // Handle language change
   const handleLanguageChange = async (langCode) => {
     if (!article) return;
@@ -3303,23 +5611,19 @@ function App() {
     setIsLoading(true);
     setSelectedLanguage(langCode);
     
-    try {
       const articleData = await fetchWikipediaArticle(article.title, langCode);
       setArticle(articleData);
     } catch (err) {
       setError(`Failed to load article in ${getLanguageName(langCode)}: ${err.message}`);
     } finally {
       setIsLoading(false);
-    }
   };
-
   // Handle search input change
   const handleSearchChange = (value) => {
     setSearchQuery(value);
     if (!value.trim()) {
       setShowSearchResults(false);
       setSearchResults([]);
-    }
   };
 
   // Handle clear search
@@ -3444,8 +5748,6 @@ function App() {
       </div>
     </Router>
   );
-}
-
 export default App;
 ++ b/313rifts/src/components/ArticleViewer.css
 .article-viewer {
@@ -3455,14 +5757,11 @@ export default App;
   overflow: hidden;
   color: #000000 !important;
 }
-
 .article-viewer.empty {
   padding: 60px;
   text-align: center;
   color: #000000 !important;
   font-size: 16px;
-}
-
 .article-content {
   padding: 32px;
   max-height: 600px;
@@ -3470,7 +5769,6 @@ export default App;
   line-height: 1.6;
   color: #000000 !important;
 }
-
 .article-content *,
 .article-content p,
 .article-content div,
@@ -3482,60 +5780,48 @@ export default App;
 .article-content dd {
   color: #000000 !important;
 }
-
 .article-content h1,
 .article-content h2,
 .article-content h3 {
   margin-top: 24px;
   margin-bottom: 16px;
   color: #000000 !important;
-}
-
 .article-content h1 {
   font-size: 28px;
   border-bottom: 2px solid #e0e0e0;
   padding-bottom: 12px;
 }
-
 .article-content h2 {
   font-size: 24px;
   border-bottom: 1px solid #e0e0e0;
   padding-bottom: 8px;
 }
-
 .article-content p {
   margin-bottom: 20px;
   color: #000000 !important;
 }
-
 .article-content ul,
 .article-content ol {
   margin-left: 24px;
   margin-bottom: 20px;
-}
-
 .article-content li {
   margin-bottom: 8px;
   color: #000000 !important;
 }
-
 .article-content a {
   color: #2563eb !important;
   text-decoration: none;
   transition: color 0.2s;
 }
-
 .article-content a:hover {
   color: #1d4ed8 !important;
   text-decoration: underline;
 }
-
 .article-content table {
   width: 100%;
   border-collapse: collapse;
   margin: 20px 0;
 }
-
 .article-content th,
 .article-content td {
   border: 1px solid #e0e0e0;
@@ -3543,12 +5829,10 @@ export default App;
   text-align: left;
   color: #000000 !important;
 }
-
 .article-content th {
   background-color: #f8f9fa;
   font-weight: 600;
 }
-
 .article-content blockquote {
   border-left: 4px solid #2563eb;
   margin: 20px 0;
@@ -3556,14 +5840,12 @@ export default App;
   font-style: italic;
   color: #000000 !important;
 }
-
 .article-content img {
   max-width: 100%;
   height: auto;
   border-radius: 8px;
   margin: 20px 0;
 }
-
 .article-content code {
   background-color: #f8f9fa;
   padding: 2px 6px;
@@ -3572,7 +5854,6 @@ export default App;
   font-size: 14px;
   color: #000000 !important;
 }
-
 .article-content pre {
   background-color: #f8f9fa;
   padding: 16px;
@@ -3581,14 +5862,12 @@ export default App;
   margin: 20px 0;
   color: #000000 !important;
 }
-
 .article-info {
   border-top: 1px solid #e0e0e0;
   padding: 24px;
   background-color: #f8f9fa;
   color: #000000 !important;
 }
-
 .info-section h4,
 .links-section h4 {
   margin: 0 0 16px 0;
@@ -3596,38 +5875,32 @@ export default App;
   font-size: 16px;
   font-weight: 600;
 }
-
 .info-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 16px;
   margin-bottom: 24px;
 }
-
 .info-item {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
-
 .info-label {
   font-size: 14px;
   color: #000000 !important;
   font-weight: 500;
 }
-
 .info-value {
   font-size: 15px;
   color: #000000 !important;
   font-weight: 600;
 }
-
 .links-grid {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
 }
-
 .article-link {
   display: inline-block;
   padding: 8px 16px;
@@ -3639,14 +5912,12 @@ export default App;
   text-decoration: none;
   transition: all 0.2s;
 }
-
 .article-link:hover {
   background-color: #2563eb;
   color: #fff !important;
   border-color: #2563eb;
   text-decoration: none;
 }
-
 @media (max-width: 768px) {
   .article-content {
     padding: 20px;
@@ -3672,9 +5943,7 @@ const ArticleViewer = ({ article }) => {
       <div className="article-viewer empty">
         <p>No article selected</p>
       </div>
-    );
   }
-
   return (
     <div className="article-viewer">
       <div className="article-content" dangerouslySetInnerHTML={{ __html: article.content }} />
@@ -3728,7 +5997,6 @@ const ArticleViewer = ({ article }) => {
     </div>
   );
 };
-
 export default ArticleViewer;
 ++ b/313rifts/src/components/Auth.css
 /* Authentication Components Styles */
@@ -3741,7 +6009,6 @@ export default ArticleViewer;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 20px;
 }
-
 .auth-card {
   background: white;
   border-radius: 12px;
@@ -3750,7 +6017,6 @@ export default ArticleViewer;
   width: 100%;
   max-width: 400px;
 }
-
 .auth-card h2 {
   margin-bottom: 30px;
   color: #333;
@@ -3758,11 +6024,9 @@ export default ArticleViewer;
   font-size: 24px;
   font-weight: 600;
 }
-
 .form-group {
   margin-bottom: 20px;
 }
-
 .form-group label {
   display: block;
   margin-bottom: 8px;
@@ -3770,7 +6034,6 @@ export default ArticleViewer;
   font-weight: 500;
   font-size: 14px;
 }
-
 .form-group input {
   width: 100%;
   padding: 12px 16px;
@@ -3778,18 +6041,14 @@ export default ArticleViewer;
   border-radius: 8px;
   font-size: 16px;
   transition: border-color 0.3s ease;
-}
-
 .form-group input:focus {
   outline: none;
   border-color: #667eea;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
-
 .form-group input::placeholder {
   color: #999;
 }
-
 .btn {
   width: 100%;
   padding: 14px;
@@ -3799,83 +6058,66 @@ export default ArticleViewer;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-}
-
 .btn-primary {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
 }
-
 .btn-primary:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
 }
-
 .btn-primary:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
-
 .alert {
   padding: 12px 16px;
   border-radius: 8px;
   margin-bottom: 20px;
   font-size: 14px;
-}
-
 .alert-error {
   background-color: #fee;
   border: 1px solid #fcc;
   color: #c00;
 }
-
 .auth-links {
   margin-top: 25px;
   text-align: center;
   font-size: 14px;
   color: #666;
 }
-
 .auth-links p {
   margin: 10px 0;
 }
-
 .auth-links .link {
   color: #667eea;
   text-decoration: none;
   font-weight: 500;
 }
-
 .auth-links .link:hover {
   text-decoration: underline;
 }
-
 .password-strength {
   margin-top: 8px;
   font-size: 12px;
   color: #666;
 }
-
 .password-strength.weak {
   color: #f44336;
 }
-
 .password-strength.medium {
   color: #ff9800;
 }
-
 .password-strength.strong {
   color: #4caf50;
 }
 ++ b/313rifts/src/components/Dashboard.css
 /* Dashboard Component Styles */
-
 .dashboard-container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 30px;
 }
-
 /* Loading State */
 .dashboard-loading {
   display: flex;
@@ -3885,7 +6127,6 @@ export default ArticleViewer;
   min-height: 100vh;
   background: #f8f9fa;
 }
-
 .loading-spinner {
   width: 50px;
   height: 50px;
@@ -3899,9 +6140,6 @@ export default ArticleViewer;
 @keyframes spin {
   to {
     transform: rotate(360deg);
-  }
-}
-
 /* Header */
 .dashboard-header {
   display: flex;
@@ -3911,19 +6149,15 @@ export default ArticleViewer;
   padding-bottom: 20px;
   border-bottom: 2px solid #f0f0f0;
 }
-
 .header-content h1 {
   font-size: 32px;
   font-weight: 700;
   color: #333;
   margin-bottom: 8px;
 }
-
 .header-content p {
   font-size: 16px;
   color: #666;
-}
-
 .btn-logout {
   background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
   color: white;
@@ -3934,12 +6168,10 @@ export default ArticleViewer;
   cursor: pointer;
   transition: all 0.3s ease;
 }
-
 .btn-logout:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 20px rgba(255, 107, 107, 0.3);
 }
-
 /* Stats Grid */
 .stats-grid {
   display: grid;
@@ -3947,7 +6179,6 @@ export default ArticleViewer;
   gap: 24px;
   margin-bottom: 40px;
 }
-
 .stat-card {
   background: white;
   border-radius: 12px;
@@ -3957,11 +6188,9 @@ export default ArticleViewer;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
   transition: transform 0.3s ease;
 }
-
 .stat-card:hover {
   transform: translateY(-5px);
 }
-
 .stat-icon {
   width: 60px;
   height: 60px;
@@ -3973,37 +6202,30 @@ export default ArticleViewer;
   font-size: 24px;
   color: white;
 }
-
 .stat-icon.total-items {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
-
 .stat-icon.active-items {
   background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
 }
-
 .stat-icon.user-items {
   background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
 }
-
 .stat-icon.user-role {
   background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
 }
-
 .stat-content h3 {
   font-size: 28px;
   font-weight: 700;
   color: #333;
   margin-bottom: 4px;
 }
-
 .stat-content p {
   font-size: 14px;
   color: #666;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
-
 /* Recent Items Section */
 .recent-items-section {
   background: white;
@@ -4012,20 +6234,17 @@ export default ArticleViewer;
   margin-bottom: 40px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
 }
-
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
 }
-
 .section-header h2 {
   font-size: 24px;
   font-weight: 600;
   color: #333;
 }
-
 .btn-create {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
@@ -4035,16 +6254,12 @@ export default ArticleViewer;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-}
-
 .btn-create:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
 }
-
 .btn-create i {
   margin-right: 8px;
-}
 
 /* Empty State */
 .empty-state {
@@ -4268,7 +6483,6 @@ const Dashboard = () => {
     if (!currentUser) {
       navigate('/login');
       return;
-    }
     
     setUser(currentUser);
     loadDashboardData();
@@ -4331,7 +6545,6 @@ const Dashboard = () => {
         <p>Loading dashboard...</p>
       </div>
     );
-  }
 
   return (
     <div className="dashboard-container">
@@ -4484,7 +6697,6 @@ export default Dashboard;
 .history-page {
   max-width: 1200px;
   margin: 0 auto;
-}
 
 .history-page-header {
   text-align: center;
@@ -25829,201 +28041,6 @@ class AppDelegate: FlutterAppDelegate {
                                 </menu>
                             </menuItem>
                             <menuItem title="Spelling and Grammar" id="Dv1-io-Yv7">
-                                <modifierMask key="keyEquivalentModifierMask"/>
-                                <menu key="submenu" title="Spelling" id="3IN-sU-3Bg">
-                                    <items>
-                                        <menuItem title="Show Spelling and Grammar" keyEquivalent=":" id="HFo-cy-zxI">
-                                            <connections>
-                                                <action selector="showGuessPanel:" target="-1" id="vFj-Ks-hy3"/>
-                                            </connections>
-                                        </menuItem>
-                                        <menuItem title="Check Document Now" keyEquivalent=";" id="hz2-CU-CR7">
-                                            <connections>
-                                                <action selector="checkSpelling:" target="-1" id="fz7-VC-reM"/>
-                                            </connections>
-                                        </menuItem>
-                                        <menuItem isSeparatorItem="YES" id="bNw-od-mp5"/>
-                                        <menuItem title="Check Spelling While Typing" id="rbD-Rh-wIN">
-                                            <modifierMask key="keyEquivalentModifierMask"/>
-                                            <connections>
-                                                <action selector="toggleContinuousSpellChecking:" target="-1" id="7w6-Qz-0kB"/>
-                                            </connections>
-                                        </menuItem>
-                                        <menuItem title="Check Grammar With Spelling" id="mK6-2p-4JG">
-                                            <modifierMask key="keyEquivalentModifierMask"/>
-                                            <connections>
-                                                <action selector="toggleGrammarChecking:" target="-1" id="muD-Qn-j4w"/>
-                                            </connections>
-                                        </menuItem>
-                                        <menuItem title="Correct Spelling Automatically" id="78Y-hA-62v">
-                                            <modifierMask key="keyEquivalentModifierMask"/>
-                                            <connections>
-                                                <action selector="toggleAutomaticSpellingCorrection:" target="-1" id="2lM-Qi-WAP"/>
-                                            </connections>
-                                        </menuItem>
-                                    </items>
-                                </menu>
-                            </menuItem>
-                            <menuItem title="Substitutions" id="9ic-FL-obx">
-                                <modifierMask key="keyEquivalentModifierMask"/>
-                                <menu key="submenu" title="Substitutions" id="FeM-D8-WVr">
-                                    <items>
-                                        <menuItem title="Show Substitutions" id="z6F-FW-3nz">
-                                            <modifierMask key="keyEquivalentModifierMask"/>
-                                            <connections>
-                                                <action selector="orderFrontSubstitutionsPanel:" target="-1" id="oku-mr-iSq"/>
-                                            </connections>
-                                        </menuItem>
-                                        <menuItem isSeparatorItem="YES" id="gPx-C9-uUO"/>
-                                        <menuItem title="Smart Copy/Paste" id="9yt-4B-nSM">
-                                            <modifierMask key="keyEquivalentModifierMask"/>
-                                            <connections>
-                                                <action selector="toggleSmartInsertDelete:" target="-1" id="3IJ-Se-DZD"/>
-                                            </connections>
-                                        </menuItem>
-                                        <menuItem title="Smart Quotes" id="hQb-2v-fYv">
-                                            <modifierMask key="keyEquivalentModifierMask"/>
-                                            <connections>
-                                                <action selector="toggleAutomaticQuoteSubstitution:" target="-1" id="ptq-xd-QOA"/>
-                                            </connections>
-                                        </menuItem>
-                                        <menuItem title="Smart Dashes" id="rgM-f4-ycn">
-                                            <modifierMask key="keyEquivalentModifierMask"/>
-                                            <connections>
-                                                <action selector="toggleAutomaticDashSubstitution:" target="-1" id="oCt-pO-9gS"/>
-                                            </connections>
-                                        </menuItem>
-                                        <menuItem title="Smart Links" id="cwL-P1-jid">
-                                            <modifierMask key="keyEquivalentModifierMask"/>
-                                            <connections>
-                                                <action selector="toggleAutomaticLinkDetection:" target="-1" id="Gip-E3-Fov"/>
-                                            </connections>
-                                        </menuItem>
-                                        <menuItem title="Data Detectors" id="tRr-pd-1PS">
-                                            <modifierMask key="keyEquivalentModifierMask"/>
-                                            <connections>
-                                                <action selector="toggleAutomaticDataDetection:" target="-1" id="R1I-Nq-Kbl"/>
-                                            </connections>
-                                        </menuItem>
-                                        <menuItem title="Text Replacement" id="HFQ-gK-NFA">
-                                            <modifierMask key="keyEquivalentModifierMask"/>
-                                            <connections>
-                                                <action selector="toggleAutomaticTextReplacement:" target="-1" id="DvP-Fe-Py6"/>
-                                            </connections>
-                                        </menuItem>
-                                    </items>
-                                </menu>
-                            </menuItem>
-                            <menuItem title="Transformations" id="2oI-Rn-ZJC">
-                                <modifierMask key="keyEquivalentModifierMask"/>
-                                <menu key="submenu" title="Transformations" id="c8a-y6-VQd">
-                                    <items>
-                                        <menuItem title="Make Upper Case" id="vmV-6d-7jI">
-                                            <modifierMask key="keyEquivalentModifierMask"/>
-                                            <connections>
-                                                <action selector="uppercaseWord:" target="-1" id="sPh-Tk-edu"/>
-                                            </connections>
-                                        </menuItem>
-                                        <menuItem title="Make Lower Case" id="d9M-CD-aMd">
-                                            <modifierMask key="keyEquivalentModifierMask"/>
-                                            <connections>
-                                                <action selector="lowercaseWord:" target="-1" id="iUZ-b5-hil"/>
-                                            </connections>
-                                        </menuItem>
-                                        <menuItem title="Capitalize" id="UEZ-Bs-lqG">
-                                            <modifierMask key="keyEquivalentModifierMask"/>
-                                            <connections>
-                                                <action selector="capitalizeWord:" target="-1" id="26H-TL-nsh"/>
-                                            </connections>
-                                        </menuItem>
-                                    </items>
-                                </menu>
-                            </menuItem>
-                            <menuItem title="Speech" id="xrE-MZ-jX0">
-                                <modifierMask key="keyEquivalentModifierMask"/>
-                                <menu key="submenu" title="Speech" id="3rS-ZA-NoH">
-                                    <items>
-                                        <menuItem title="Start Speaking" id="Ynk-f8-cLZ">
-                                            <modifierMask key="keyEquivalentModifierMask"/>
-                                            <connections>
-                                                <action selector="startSpeaking:" target="-1" id="654-Ng-kyl"/>
-                                            </connections>
-                                        </menuItem>
-                                        <menuItem title="Stop Speaking" id="Oyz-dy-DGm">
-                                            <modifierMask key="keyEquivalentModifierMask"/>
-                                            <connections>
-                                                <action selector="stopSpeaking:" target="-1" id="dX8-6p-jy9"/>
-                                            </connections>
-                                        </menuItem>
-                                    </items>
-                                </menu>
-                            </menuItem>
-                        </items>
-                    </menu>
-                </menuItem>
-                <menuItem title="View" id="H8h-7b-M4v">
-                    <modifierMask key="keyEquivalentModifierMask"/>
-                    <menu key="submenu" title="View" id="HyV-fh-RgO">
-                        <items>
-                            <menuItem title="Enter Full Screen" keyEquivalent="f" id="4J7-dP-txa">
-                                <modifierMask key="keyEquivalentModifierMask" control="YES" command="YES"/>
-                                <connections>
-                                    <action selector="toggleFullScreen:" target="-1" id="dU3-MA-1Rq"/>
-                                </connections>
-                            </menuItem>
-                        </items>
-                    </menu>
-                </menuItem>
-                <menuItem title="Window" id="aUF-d1-5bR">
-                    <modifierMask key="keyEquivalentModifierMask"/>
-                    <menu key="submenu" title="Window" systemMenu="window" id="Td7-aD-5lo">
-                        <items>
-                            <menuItem title="Minimize" keyEquivalent="m" id="OY7-WF-poV">
-                                <connections>
-                                    <action selector="performMiniaturize:" target="-1" id="VwT-WD-YPe"/>
-                                </connections>
-                            </menuItem>
-                            <menuItem title="Zoom" id="R4o-n2-Eq4">
-                                <modifierMask key="keyEquivalentModifierMask"/>
-                                <connections>
-                                    <action selector="performZoom:" target="-1" id="DIl-cC-cCs"/>
-                                </connections>
-                            </menuItem>
-                            <menuItem isSeparatorItem="YES" id="eu3-7i-yIM"/>
-                            <menuItem title="Bring All to Front" id="LE2-aR-0XJ">
-                                <modifierMask key="keyEquivalentModifierMask"/>
-                                <connections>
-                                    <action selector="arrangeInFront:" target="-1" id="DRN-fu-gQh"/>
-                                </connections>
-                            </menuItem>
-                        </items>
-                    </menu>
-                </menuItem>
-                <menuItem title="Help" id="EPT-qC-fAb">
-                    <modifierMask key="keyEquivalentModifierMask"/>
-                    <menu key="submenu" title="Help" systemMenu="help" id="rJ0-wn-3NY"/>
-                </menuItem>
-            </items>
-            <point key="canvasLocation" x="142" y="-258"/>
-        </menu>
-        <window title="APP_NAME" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" animationBehavior="default" id="QvC-M9-y7g" customClass="MainFlutterWindow" customModule="Runner" customModuleProvider="target">
-            <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES"/>
-            <rect key="contentRect" x="335" y="390" width="800" height="600"/>
-            <rect key="screenRect" x="0.0" y="0.0" width="2560" height="1577"/>
-            <view key="contentView" wantsLayer="YES" id="EiT-Mj-1SZ">
-                <rect key="frame" x="0.0" y="0.0" width="800" height="600"/>
-                <autoresizingMask key="autoresizingMask"/>
-            </view>
-        </window>
-    </objects>
-</document>
-++ b/ElCoccoEddie/macos/Runner/Configs/AppInfo.xcconfig
-// Application-level settings for the Runner target.
-//
-// This may be replaced with something auto-generated from metadata (e.g., pubspec.yaml) in the
-// future. If not, the values below would default to using the project name when this becomes a
-// 'flutter create' template.
-
 // The application's name. By default this is also the title of the Flutter window.
 PRODUCT_NAME = elcoccoeddy
 
@@ -43661,22 +45678,17 @@ class PrivacyFlipWidgetToggleReceiver : BroadcastReceiver() {
         private const val TAG = "PrivacyFlipWidgetToggle"
         const val ACTION_TOGGLE_PRIVACY = "io.github.dorumrr.privacyflip.TOGGLE_PRIVACY"
     }
-
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != ACTION_TOGGLE_PRIVACY) {
             return
         }
-
         Log.d(TAG, "Widget toggle privacy action received")
-
         try {
             val preferenceManager = PreferenceManager.getInstance(context)
-
             // Toggle global privacy state
             val currentState = preferenceManager.isGlobalPrivacyEnabled
             val newState = !currentState
             preferenceManager.isGlobalPrivacyEnabled = newState
-
             Log.d(TAG, "Global privacy toggled from widget: $currentState -> $newState")
 
             // Update all widgets to reflect new state
@@ -47918,13 +49930,9 @@ class _GuideGrid extends StatelessWidget {
         );
       },
     );
-  }
-}
-
 class _BottomNote extends StatelessWidget {
   const _BottomNote({required this.compact});
   final bool compact;
-
   @override
   Widget build(BuildContext context) {
     return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -47932,17 +49940,13 @@ class _BottomNote extends StatelessWidget {
       const SizedBox(width: 12),
       Expanded(child: Text(compact ? 'Small steps count. Come back whenever you are ready.' : 'Small steps count. Serenity remembers where you are, so you can come back whenever you are ready.', style: const TextStyle(fontSize: 13, height: 1.5, color: Color(0xFF75827D)))),
     ]);
-  }
 }
-
 class _Eyebrow extends StatelessWidget {
   const _Eyebrow({required this.label});
   final String label;
 
   @override
   Widget build(BuildContext context) => Text(label, style: const TextStyle(letterSpacing: 1.8, fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFFEE6A4A)));
-}
-
 class _GuideStep {
   const _GuideStep(this.number, this.title, this.description, this.icon, this.duration);
   final String number;
@@ -47956,93 +49960,25 @@ name: serenity
 description: "A new Flutter project."
 publish_to: 'none'
 version: 0.1.0
-
-environment:
-  sdk: ^3.10.4
-
-dependencies:
-  flutter:
-    sdk: flutter
-
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  flutter_lints: ^6.0.0
-
-flutter:
-  uses-material-design: true
 ++ b/serenity/web/index.html
-<!DOCTYPE html>
-<html>
-<head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
-  <base href="$FLUTTER_BASE_HREF">
-
-  <meta charset="UTF-8">
-  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
-
-  <!-- iOS meta tags & icons -->
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="serenity">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
-
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
-
   <title>serenity</title>
-  <link rel="manifest" href="manifest.json">
-</head>
-<body>
-  <script src="flutter_bootstrap.js" async></script>
-</body>
-</html>
 ++ b/serenity/web/manifest.json
-{
     "name": "serenity",
     "short_name": "serenity",
-    "start_url": ".",
-    "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
-    "orientation": "portrait-primary",
-    "prefer_related_applications": false,
-    "icons": [
-        {
-            "src": "icons/Icon-192.png",
-            "sizes": "192x192",
-            "type": "image/png"
-        },
-        {
-            "src": "icons/Icon-512.png",
-            "sizes": "512x512",
-            "type": "image/png"
-        },
-        {
-            "src": "icons/Icon-maskable-192.png",
-            "sizes": "192x192",
-            "type": "image/png",
-            "purpose": "maskable"
-        },
-        {
-            "src": "icons/Icon-maskable-512.png",
-            "sizes": "512x512",
-            "type": "image/png",
-            "purpose": "maskable"
-        }
-    ]
-}
+++ b/commit_message.txt
+ It looks like you have provided a Flutter code for a guide screen in a mob[3D[K
+mobile app. The code includes a `GuideScreen` widget that displays a list o[1D[K
+of steps for a user to follow. The steps are displayed as cards in a grid, [K
+with each card containing the step number, title, description, and an icon.[5D[K
+icon. The active step is highlighted with a different color and border.
+The `GuideScreen` also includes an `_Eyebrow` widget that displays a title [K
+for the guide, and a `_BottomNote` widget that displays a note below the gu[2D[K
+guide.
+In addition to the Flutter code, there are also changes to the project's `p[2D[K
+`pubspec.yaml`, `index.html`, and `manifest.json` files for a web build of [K
+the app.
+
+Overall, this code appears to be well-organized and follows Flutter best pr[2D[K
+practices for building user interfaces. It is easy to understand and custom[6D[K
+customize for different use cases.

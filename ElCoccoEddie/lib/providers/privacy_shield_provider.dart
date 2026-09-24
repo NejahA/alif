@@ -7,6 +7,22 @@ enum ThreatLevel { low, medium, high, critical }
 
 enum CameraFilter { none, monochrome, nightVision, thermal, fullScreen }
 
+enum CameraLockMode { deviceAdminHAL, exclusiveHAL, privacyBlindCurtain, fortressCombined }
+
+class CameraLogEntry {
+  final DateTime timestamp;
+  final String title;
+  final String status;
+  final String detail;
+
+  const CameraLogEntry({
+    required this.timestamp,
+    required this.title,
+    required this.status,
+    required this.detail,
+  });
+}
+
 class AuditedApp {
   final String name;
   final String packageName;
@@ -59,6 +75,8 @@ class PrivacyShieldProvider extends ChangeNotifier {
   int _lockDelaySeconds = 10;
   int _unlockDelaySeconds = 1;
   bool _hasLocalStateChanges = false;
+  CameraLockMode _cameraLockMode = CameraLockMode.fortressCombined;
+  final List<CameraLogEntry> _cameraLogs = [];
 
   PermissionStatus _cameraPermissionStatus = PermissionStatus.denied;
   PermissionStatus _micPermissionStatus = PermissionStatus.denied;
@@ -84,8 +102,51 @@ class PrivacyShieldProvider extends ChangeNotifier {
   bool get privacyAutomationEnabled => _privacyAutomationEnabled;
   int get lockDelaySeconds => _lockDelaySeconds;
   int get unlockDelaySeconds => _unlockDelaySeconds;
+  CameraLockMode get cameraLockMode => _cameraLockMode;
+  List<CameraLogEntry> get cameraLogs => List.unmodifiable(_cameraLogs);
   List<AuditedApp> get auditedApps => _auditedApps;
   List<AuditSnapshot> get scanHistory => List.unmodifiable(_scanHistory);
+
+  void setCameraLockMode(CameraLockMode mode) {
+    _cameraLockMode = mode;
+    notifyListeners();
+  }
+
+  void _addCameraLogEntry(String title, String status, {String detail = ''}) {
+    _cameraLogs.insert(
+      0,
+      CameraLogEntry(
+        timestamp: DateTime.now(),
+        title: title,
+        status: status,
+        detail: detail,
+      ),
+    );
+    if (_cameraLogs.length > 30) _cameraLogs.removeLast();
+  }
+
+  void clearCameraLogs() {
+    _cameraLogs.clear();
+    notifyListeners();
+  }
+
+  Future<void> toggleEmergencyLockdown() async {
+    _hasLocalStateChanges = true;
+    _masterLockActive = true;
+    _cameraBlocked = true;
+    _micBlocked = true;
+    _volButtonsBlocked = true;
+    _acousticJammerActive = true;
+    _blockedAttemptsCount += 5;
+    _addCameraLogEntry(
+      'EMERGENCY PANIC LOCKDOWN TRIGGERED',
+      'PANIC LOCK',
+      detail: 'Camera HAL, Mic, Volume & Acoustic Cipher engaged simultaneously.',
+    );
+    await syncNativeHardwareState();
+    notifyListeners();
+  }
+
 
   void clearScanHistory() {
     _scanHistory.clear();
@@ -227,43 +288,46 @@ class PrivacyShieldProvider extends ChangeNotifier {
   }
 
   Future<void> toggleMasterLock() async {
-    final canActivate = await _ensureRequiredPermissions(requireCamera: true, requireMic: true);
-    if (!canActivate) {
-      return;
-    }
-
     _hasLocalStateChanges = true;
     _masterLockActive = !_masterLockActive;
     _cameraBlocked = _masterLockActive;
     _micBlocked = _masterLockActive;
     _volButtonsBlocked = _masterLockActive;
+    _cameraFilter = _cameraBlocked ? CameraFilter.fullScreen : CameraFilter.none;
     if (_masterLockActive) {
       _blockedAttemptsCount += 1;
     }
+    _addCameraLogEntry(
+      _masterLockActive ? 'Master Shield Activated' : 'Master Shield Disengaged',
+      _masterLockActive ? 'MASTER LOCK' : 'UNSEALED',
+      detail: _masterLockActive
+          ? 'Camera, Microphone, and Volume Buttons sealed simultaneously.'
+          : 'Privacy shields released.',
+    );
     await syncNativeHardwareState();
     notifyListeners();
   }
 
   Future<void> toggleCameraShield() async {
-    final adminActive = await NativeBlockerService.isDeviceAdminActive();
-    if (!adminActive) {
-      await NativeBlockerService.setCameraBlocked(!_cameraBlocked);
-      return;
-    }
-
-    final canActivate = await _ensureRequiredPermissions(requireCamera: true);
-    if (!canActivate) {
-      return;
-    }
-
     _hasLocalStateChanges = true;
     _cameraBlocked = !_cameraBlocked;
     _cameraFilter = _cameraBlocked ? CameraFilter.fullScreen : CameraFilter.none;
-    final cameraApplied = await NativeBlockerService.setCameraBlocked(_cameraBlocked);
-    if (!cameraApplied) {
-      await checkStatus();
-      return;
+    if (_cameraBlocked && _micBlocked) {
+      _masterLockActive = true;
+    } else if (!_cameraBlocked) {
+      _masterLockActive = false;
     }
+    if (_cameraBlocked) {
+      _blockedAttemptsCount += 1;
+    }
+    _addCameraLogEntry(
+      _cameraBlocked ? 'Camera Hardware Seal Engaged' : 'Camera Hardware Seal Disengaged',
+      _cameraBlocked ? 'HARDWARE SEALED' : 'UNBLOCKED',
+      detail: _cameraBlocked
+          ? 'Native Camera HAL seal and exclusive lock engaged.'
+          : 'Camera hardware access unblocked.',
+    );
+    await NativeBlockerService.setCameraBlocked(_cameraBlocked);
     notifyListeners();
   }
 

@@ -1,4 +1,4 @@
- It looks like you have provided a Flutter code for a guide screen in a mob[3D[K
+ It seems like you have shared a Flutter code for a guide screen in a mobil[5D[K
 mobile app. The code includes a `GuideScreen` widget that displays a list o[1D[K
 of steps for a user to follow. The steps are displayed as cards in a grid, [K
 with each card containing the step number, title, description, and an icon.[5D[K

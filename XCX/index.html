@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>XCX • Cyber Sudoku</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div id="app-container">
+    <!-- Navbar Header -->
+    <header>
+      <div class="brand-title">
+        <span class="brand-badge">XCX</span>
+        <span class="brand-tag">CYBER SUDOKU</span>
+      </div>
+
+      <div class="header-stats">
+        <div class="stat-item">
+          <span class="stat-label">TIME</span>
+          <span class="stat-value" id="timer-display">00:00</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">MISTAKES</span>
+          <span class="stat-value" id="mistakes-display">0 / 3</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">SCORE</span>
+          <span class="stat-value" id="score-display">0</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <main>
+      <!-- Left Sidebar: Modes & Toggles -->
+      <div class="sidebar">
+        <div class="panel-card">
+          <div class="panel-title">
+            <span>DIFFICULTY LEVEL</span>
+            <i class="fa-solid fa-layer-group"></i>
+          </div>
+          <div class="difficulty-selector">
+            <button class="diff-btn active" data-diff="easy">EASY</button>
+            <button class="diff-btn" data-diff="medium">MEDIUM</button>
+            <button class="diff-btn" data-diff="hard">HARD</button>
+            <button class="diff-btn" data-diff="expert">EXPERT</button>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-title">
+            <span>GAME SETTINGS</span>
+            <i class="fa-solid fa-sliders"></i>
+          </div>
+          
+          <div class="toggle-row">
+            <span class="toggle-label">Auto-Check Mistakes</span>
+            <label class="switch">
+              <input type="checkbox" id="toggle-auto-check" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="toggle-row">
+            <span class="toggle-label">Highlight Same Numbers</span>
+            <label class="switch">
+              <input type="checkbox" id="toggle-highlight-same" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="toggle-row">
+            <span class="toggle-label">Sound Effects</span>
+            <label class="switch">
+              <input type="checkbox" id="toggle-sound" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <button class="btn-primary" id="btn-new-game">
+          <i class="fa-solid fa-rotate-right"></i> NEW GAME
+        </button>
+      </div>
+
+      <!-- Center: 9x9 Sudoku Board -->
+      <div class="board-container">
+        <div id="sudoku-board">
+          <!-- 81 Cells dynamically created by app.js -->
+        </div>
+      </div>
+
+      <!-- Right Panel: Controls & Numpad -->
+      <div class="control-panel">
+        <div class="panel-card">
+          <div class="panel-title">
+            <span>QUICK TOOLS</span>
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+          </div>
+          <div class="action-tools">
+            <button class="tool-btn" id="btn-undo" title="Undo">
+              <i class="fa-solid fa-rotate-left"></i>
+              <span>Undo</span>
+            </button>
+            <button class="tool-btn" id="btn-erase" title="Erase">
+              <i class="fa-solid fa-eraser"></i>
+              <span>Erase</span>
+            </button>
+            <button class="tool-btn" id="btn-pencil" title="Pencil Notes">
+              <i class="fa-solid fa-pencil"></i>
+              <span>Notes</span>
+            </button>
+            <button class="tool-btn" id="btn-hint" title="Smart Hint">
+              <i class="fa-solid fa-lightbulb"></i>
+              <span>Hint</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 1-9 Number Keypad -->
+        <div class="numpad">
+          <button class="num-btn" data-num="1">1</button>
+          <button class="num-btn" data-num="2">2</button>
+          <button class="num-btn" data-num="3">3</button>
+          <button class="num-btn" data-num="4">4</button>
+          <button class="num-btn" data-num="5">5</button>
+          <button class="num-btn" data-num="6">6</button>
+          <button class="num-btn" data-num="7">7</button>
+          <button class="num-btn" data-num="8">8</button>
+          <button class="num-btn" data-num="9">9</button>
+        </div>
+
+        <div class="game-actions">
+          <button class="btn-secondary" id="btn-solve">
+            <i class="fa-solid fa-robot"></i> AUTO-SOLVE PUZZLE
+          </button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Victory Celebration Modal Overlay -->
+  <div class="modal-overlay" id="victory-modal">
+    <div class="modal-card">
+      <div class="victory-title">PUZZLE SOLVED!</div>
+      <div class="victory-subtitle">Masterful Cyber Sudoku Execution</div>
+
+      <div class="header-stats" style="justify-content: center; margin-bottom: 24px;">
+        <div class="stat-item">
+          <span class="stat-label">TIME</span>
+          <span class="stat-value" id="final-time">02:45</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">FINAL SCORE</span>
+          <span class="stat-value" id="final-score">1,450</span>
+        </div>
+      </div>
+
+      <button class="btn-primary" id="btn-modal-new-game">PLAY NEXT PUZZLE</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

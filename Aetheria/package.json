@@ -1,0 +1,22 @@
+{
+  "name": "aetheria-audio-workstation",
+  "version": "1.0.0",
+  "description": "Cyberpunk Digital Audio Workstation & Real-Time Audio Visualizer",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "keywords": [
+    "synthesizer",
+    "sequencer",
+    "visualizer",
+    "audio",
+    "electron",
+    "cyberpunk"
+  ],
+  "author": "Antigravity",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.2.0"
+  }
+}

@@ -20,7 +20,7 @@ class CameraReadyState extends CameraState {
   const CameraReadyState({
     required this.controller,
     required this.cameras,
-    this.audioEnabled = false,
+    this.audioEnabled = false, 
   });
 
   @override

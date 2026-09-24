@@ -7,6 +7,7 @@ import '../providers/privacy_shield_provider.dart';
 import '../widgets/illuminati_eye_painter.dart';
 import '../widgets/sacred_geometry_background.dart';
 import '../services/native_blocker_service.dart';
+import 'camera_shield_dashboard_screen.dart';
 import 'camera_filter_screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/camera/camera_bloc.dart';
@@ -14,6 +15,12 @@ import '../bloc/camera/camera_state.dart';
 import 'app_audit_screen.dart';
 import 'acoustic_jammer_screen.dart';
 import 'stealth_settings_screen.dart';
+import 'microphone_shield_screen.dart';
+import 'network_privacy_screen.dart';
+import 'sensor_privacy_screen.dart';
+import 'clipboard_guard_screen.dart';
+import 'screen_shield_screen.dart';
+import 'threat_radar_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -37,6 +44,22 @@ class HomeScreen extends StatelessWidget {
             ),
           ),
           actions: [
+            IconButton(
+              tooltip: 'Emergency Panic Lockdown',
+              icon: const Icon(Icons.warning_amber_rounded, color: IlluminatiTheme.crimsonSeal),
+              onPressed: () async {
+                final provider = context.read<PrivacyShieldProvider>();
+                await provider.toggleEmergencyLockdown();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('🚨 EMERGENCY PANIC LOCKDOWN ACTIVATED! ALL SHIELDS SEALED!'),
+                      backgroundColor: IlluminatiTheme.crimsonSeal,
+                    ),
+                  );
+                }
+              },
+            ),
             IconButton(
               icon: const Icon(Icons.security, color: IlluminatiTheme.sacredGold),
               onPressed: () {
@@ -263,6 +286,23 @@ class HomeScreen extends StatelessWidget {
                   Row(
                     children: [
                       Expanded(
+                        child: _buildShieldToggleCard(
+                          context: context,
+                          title: 'CAM BLOCK',
+                          subtitle: provider.cameraBlocked ? 'SEALED' : 'EXPOSED',
+                          icon: provider.cameraBlocked ? Icons.no_photography : Icons.camera_alt,
+                          isActive: provider.cameraBlocked,
+                          activeColor: IlluminatiTheme.emeraldShield,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const CameraShieldDashboardScreen()),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
                         child: BlocConsumer<CameraBloc, CameraState>(
                           listener: (context, cameraState) {},
                           builder: (context, cameraState) {
@@ -272,9 +312,9 @@ class HomeScreen extends StatelessWidget {
                               subtitle: provider.cameraFilter == CameraFilter.fullScreen
                                   ? 'FULL SCREEN'
                                   : provider.cameraFilter.name.toUpperCase(),
-                              icon: Icons.camera_alt,
+                              icon: Icons.filter_b_and_w,
                               isActive: provider.cameraFilter != CameraFilter.none,
-                              activeColor: IlluminatiTheme.emeraldShield,
+                              activeColor: IlluminatiTheme.sacredGold,
                               onTap: () {
                                 Navigator.push(
                                   context,
@@ -285,7 +325,7 @@ class HomeScreen extends StatelessWidget {
                           },
                         ),
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: _buildShieldToggleCard(
                           context: context,
@@ -294,10 +334,15 @@ class HomeScreen extends StatelessWidget {
                           icon: Icons.mic_off,
                           isActive: provider.micBlocked,
                           activeColor: IlluminatiTheme.cyberCyan,
-                          onTap: provider.toggleMicShield,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const MicrophoneShieldScreen()),
+                            );
+                          },
                         ),
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: _buildShieldToggleCard(
                           context: context,
@@ -370,10 +415,105 @@ class HomeScreen extends StatelessWidget {
 
                     const SizedBox(height: 24),
 
-                  // Quick Action Buttons
+                  // Quick Action Buttons - Grid Row 1
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
+                      _buildQuickActionButton(
+                        context: context,
+                        icon: Icons.no_photography,
+                        label: 'Cam Blocker',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const CameraShieldDashboardScreen()),
+                          );
+                        },
+                      ),
+                      _buildQuickActionButton(
+                        context: context,
+                        icon: Icons.mic_off,
+                        label: 'Mic Guard',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const MicrophoneShieldScreen()),
+                          );
+                        },
+                      ),
+                      _buildQuickActionButton(
+                        context: context,
+                        icon: Icons.wifi_tethering,
+                        label: 'Net Shield',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const NetworkPrivacyScreen()),
+                          );
+                        },
+                      ),
+                    ],
+                  ).animate().fadeIn(delay: 400.ms),
+
+                  const SizedBox(height: 12),
+
+                  // Quick Action Buttons - Grid Row 2
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildQuickActionButton(
+                        context: context,
+                        icon: Icons.sensors_off,
+                        label: 'Sensor Matrix',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const SensorPrivacyScreen()),
+                          );
+                        },
+                      ),
+                      _buildQuickActionButton(
+                        context: context,
+                        icon: Icons.assignment_turned_in,
+                        label: 'Clipboard Vault',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const ClipboardGuardScreen()),
+                          );
+                        },
+                      ),
+                      _buildQuickActionButton(
+                        context: context,
+                        icon: Icons.screenshot_monitor,
+                        label: 'Screen Shield',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const ScreenShieldScreen()),
+                          );
+                        },
+                      ),
+                    ],
+                  ).animate().fadeIn(delay: 450.ms),
+
+                  const SizedBox(height: 12),
+
+                  // Quick Action Buttons - Grid Row 3
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildQuickActionButton(
+                        context: context,
+                        icon: Icons.verified_user,
+                        label: 'Threat Radar',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const ThreatRadarScreen()),
+                          );
+                        },
+                      ),
                       _buildQuickActionButton(
                         context: context,
                         icon: Icons.radar,
@@ -388,7 +528,7 @@ class HomeScreen extends StatelessWidget {
                       _buildQuickActionButton(
                         context: context,
                         icon: Icons.graphic_eq,
-                        label: 'Acoustic Jammer',
+                        label: 'Acoustic Jam',
                         onTap: () {
                           Navigator.push(
                             context,
@@ -396,19 +536,8 @@ class HomeScreen extends StatelessWidget {
                           );
                         },
                       ),
-                      _buildQuickActionButton(
-                        context: context,
-                        icon: Icons.lock_clock,
-                        label: 'Stealth Vault',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const StealthSettingsScreen()),
-                          );
-                        },
-                      ),
                     ],
-                  ).animate().fadeIn(delay: 400.ms),
+                  ).animate().fadeIn(delay: 500.ms),
                 ],
                 ),
               ),

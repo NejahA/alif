@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AETHERIA // Audio Workstation</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Custom Frameless Titlebar -->
+  <header class="titlebar">
+    <div class="brand">
+      <div class="logo-icon"></div>
+      <span class="brand-name">AETHERIA</span>
+      <span class="version-tag">v2.4 // CYBER-AUDIO</span>
+    </div>
+
+    <div class="titlebar-center">
+      <div class="preset-selector">
+        <label>PRESET:</label>
+        <select id="preset-select">
+          <option value="cyberpunk">Cyberpunk Runner</option>
+          <option value="synthwave">Synthwave Dream</option>
+          <option value="ambient">Deep Space Cabin</option>
+          <option value="lofi">Neon Rain Lo-Fi</option>
+          <option value="industrial">Heavy Industrial</option>
+        </select>
+      </div>
+
+      <div class="recorder-bar">
+        <button id="btn-record" class="btn-rec">
+          <span class="rec-dot"></span> <span id="rec-label">REC</span>
+        </button>
+        <span id="rec-timer" class="rec-timer">00:00</span>
+      </div>
+    </div>
+
+    <div class="window-controls">
+      <button id="btn-min" class="win-btn">─</button>
+      <button id="btn-max" class="win-btn">▢</button>
+      <button id="btn-close" class="win-btn close-btn">✕</button>
+    </div>
+  </header>
+
+  <!-- Main Workstation Layout -->
+  <div class="app-container">
+
+    <!-- Audio Visualizer Canvas Container -->
+    <section class="visualizer-section">
+      <div class="vis-header">
+        <div class="vis-title">
+          <span class="status-pulse"></span>
+          REAL-TIME FREQUENCY VISUALIZER
+        </div>
+        <div class="vis-modes">
+          <button class="vis-btn active" data-mode="spectrum">SPECTRUM</button>
+          <button class="vis-btn" data-mode="particles">PARTICLES</button>
+          <button class="vis-btn" data-mode="cybergrid">CYBER GRID</button>
+          <button class="vis-btn" data-mode="oscilloscope">WAVEFORM</button>
+        </div>
+      </div>
+      <div class="canvas-wrapper">
+        <canvas id="vis-canvas"></canvas>
+        <div class="canvas-overlay">
+          <div class="stats-badge">BPM: <span id="bpm-display">120</span> | MASTER: <span id="master-db">-3.2 dB</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Controls Grid -->
+    <div class="controls-grid">
+
+      <!-- Column 1: Synth Engine Panel -->
+      <section class="panel synth-panel">
+        <div class="panel-header">
+          <h3><span class="icon">⚡</span> SYNTHESIZER ENGINE</h3>
+          <span class="badge">POLY-OSC</span>
+        </div>
+
+        <div class="panel-body">
+          <div class="control-group">
+            <label>OSCILLATOR WAVEFORM</label>
+            <div class="wave-buttons">
+              <button class="wave-btn active" data-wave="sawtooth">SAW</button>
+              <button class="wave-btn" data-wave="square">SQR</button>
+              <button class="wave-btn" data-wave="sine">SIN</button>
+              <button class="wave-btn" data-wave="triangle">TRI</button>
+            </div>
+          </div>
+
+          <div class="knob-row">
+            <div class="fader-box">
+              <label>CUTOFF</label>
+              <input type="range" id="param-cutoff" min="100" max="10000" value="3200" step="10">
+              <span class="val-tag" id="val-cutoff">3200 Hz</span>
+            </div>
+            <div class="fader-box">
+              <label>RESO</label>
+              <input type="range" id="param-reso" min="0" max="20" value="4" step="0.5">
+              <span class="val-tag" id="val-reso">4.0</span>
+            </div>
+          </div>
+
+          <div class="section-divider">ENVELOPE (ADSR)</div>
+
+          <div class="fader-grid-4">
+            <div class="fader-box mini">
+              <label>ATTACK</label>
+              <input type="range" id="param-attack" min="0.01" max="2" value="0.05" step="0.01">
+              <span class="val-tag" id="val-attack">0.05s</span>
+            </div>
+            <div class="fader-box mini">
+              <label>DECAY</label>
+              <input type="range" id="param-decay" min="0.05" max="3" value="0.3" step="0.05">
+              <span class="val-tag" id="val-decay">0.3s</span>
+            </div>
+            <div class="fader-box mini">
+              <label>SUSTAIN</label>
+              <input type="range" id="param-sustain" min="0" max="1" value="0.6" step="0.05">
+              <span class="val-tag" id="val-sustain">0.6</span>
+            </div>
+            <div class="fader-box mini">
+              <label>RELEASE</label>
+              <input type="range" id="param-release" min="0.05" max="4" value="0.8" step="0.05">
+              <span class="val-tag" id="val-release">0.8s</span>
+            </div>
+          </div>
+
+          <div class="section-divider">FX RACK</div>
+
+          <div class="knob-row">
+            <div class="fader-box">
+              <label>DELAY TIME</label>
+              <input type="range" id="param-delay-time" min="0" max="1" value="0.3" step="0.05">
+              <span class="val-tag" id="val-delay-time">300ms</span>
+            </div>
+            <div class="fader-box">
+              <label>DELAY FEEDBACK</label>
+              <input type="range" id="param-delay-fb" min="0" max="0.9" value="0.4" step="0.05">
+              <span class="val-tag" id="val-delay-fb">40%</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Column 2: 16-Step Beat Sequencer -->
+      <section class="panel sequencer-panel">
+        <div class="panel-header">
+          <h3><span class="icon">🥁</span> 16-STEP BEAT SEQUENCER</h3>
+          <div class="seq-actions">
+            <button id="btn-play-seq" class="btn-primary">▶ PLAY</button>
+            <button id="btn-clear-seq" class="btn-secondary">CLEAR</button>
+          </div>
+        </div>
+
+        <div class="panel-body">
+          <div class="tempo-bar">
+            <label>TEMPO:</label>
+            <input type="range" id="seq-bpm" min="60" max="180" value="120" step="1">
+            <span class="bpm-num" id="bpm-val">120 BPM</span>
+            <div class="swing-box">
+              <label>SWING:</label>
+              <input type="range" id="seq-swing" min="0" max="50" value="0" step="5">
+              <span id="swing-val">0%</span>
+            </div>
+          </div>
+
+          <!-- Sequencer Tracks Grid -->
+          <div class="sequencer-grid">
+
+            <!-- Track 1: KICK -->
+            <div class="seq-track" data-track="kick">
+              <div class="track-info">
+                <span class="track-name">KICK</span>
+                <button class="track-btn m-btn">M</button>
+              </div>
+              <div class="step-buttons">
+                <!-- 16 step buttons will be generated by JS -->
+              </div>
+            </div>
+
+            <!-- Track 2: SNARE -->
+            <div class="seq-track" data-track="snare">
+              <div class="track-info">
+                <span class="track-name">SNARE</span>
+                <button class="track-btn m-btn">M</button>
+              </div>
+              <div class="step-buttons"></div>
+            </div>
+
+            <!-- Track 3: HI-HAT -->
+            <div class="seq-track" data-track="hihat">
+              <div class="track-info">
+                <span class="track-name">HI-HAT</span>
+                <button class="track-btn m-btn">M</button>
+              </div>
+              <div class="step-buttons"></div>
+            </div>
+
+            <!-- Track 4: CLAP -->
+            <div class="seq-track" data-track="clap">
+              <div class="track-info">
+                <span class="track-name">CLAP</span>
+                <button class="track-btn m-btn">M</button>
+              </div>
+              <div class="step-buttons"></div>
+            </div>
+
+            <!-- Track 5: SYNTH PERC -->
+            <div class="seq-track" data-track="synthperc">
+              <div class="track-info">
+                <span class="track-name">PERC</span>
+                <button class="track-btn m-btn">M</button>
+              </div>
+              <div class="step-buttons"></div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- Column 3: Ambient Soundscapes & Master -->
+      <section class="panel ambient-panel">
+        <div class="panel-header">
+          <h3><span class="icon">🌊</span> AMBIENT SOUNDSCAPES</h3>
+          <span class="badge">ATMOSPHERE</span>
+        </div>
+
+        <div class="panel-body">
+          <div class="ambient-sliders">
+            
+            <div class="ambient-row">
+              <div class="amb-info">
+                <span class="amb-name">🌧️ CYBER RAIN</span>
+                <span class="amb-val" id="val-amb-rain">0%</span>
+              </div>
+              <input type="range" class="amb-slider" id="amb-rain" min="0" max="1" value="0" step="0.05">
+            </div>
+
+            <div class="ambient-row">
+              <div class="amb-info">
+                <span class="amb-name">🌌 COSMIC CABIN</span>
+                <span class="amb-val" id="val-amb-space">0%</span>
+              </div>
+              <input type="range" class="amb-slider" id="amb-space" min="0" max="1" value="0" step="0.05">
+            </div>
+
+            <div class="ambient-row">
+              <div class="amb-info">
+                <span class="amb-name">🌆 CYBER CITY NOISE</span>
+                <span class="amb-val" id="val-amb-city">0%</span>
+              </div>
+              <input type="range" class="amb-slider" id="amb-city" min="0" max="1" value="0" step="0.05">
+            </div>
+
+            <div class="ambient-row">
+              <div class="amb-info">
+                <span class="amb-name">📻 VINYL CRACKLE</span>
+                <span class="amb-val" id="val-amb-vinyl">0%</span>
+              </div>
+              <input type="range" class="amb-slider" id="amb-vinyl" min="0" max="1" value="0" step="0.05">
+            </div>
+
+          </div>
+
+          <div class="section-divider">MASTER GAIN</div>
+
+          <div class="master-control">
+            <label>MASTER VOLUME</label>
+            <input type="range" id="param-master-vol" min="0" max="1" value="0.8" step="0.02">
+            <span class="val-tag large" id="val-master-vol">80%</span>
+          </div>
+
+          <div class="quick-pads">
+            <label>QUICK SFX PADS</label>
+            <div class="pad-grid">
+              <button class="sfx-pad" data-sfx="laser">⚡ LASER</button>
+              <button class="sfx-pad" data-sfx="subdrop">💥 SUB DROP</button>
+              <button class="sfx-pad" data-sfx="riser">📈 CYBER RISER</button>
+              <button class="sfx-pad" data-sfx="glitch">👾 GLITCH</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- Bottom Section: Virtual Synthesizer Keyboard -->
+    <section class="keyboard-section">
+      <div class="keyboard-header">
+        <div class="octave-controls">
+          <label>OCTAVE:</label>
+          <button id="oct-down" class="btn-oct">◄ OCT -</button>
+          <span id="oct-val" class="oct-display">OCT 4</span>
+          <button id="oct-up" class="btn-oct">OCT + ►</button>
+        </div>
+        <div class="key-hint">
+          PLAY KEYS: <span class="kbd">A</span> <span class="kbd">W</span> <span class="kbd">S</span> <span class="kbd">E</span> <span class="kbd">D</span> <span class="kbd">F</span> <span class="kbd">T</span> <span class="kbd">G</span> <span class="kbd">Y</span> <span class="kbd">H</span> <span class="kbd">U</span> <span class="kbd">J</span> <span class="kbd">K</span>
+        </div>
+      </div>
+
+      <div class="piano-keyboard" id="piano-keyboard">
+        <!-- Generated by JS for octave rendering -->
+      </div>
+    </section>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
