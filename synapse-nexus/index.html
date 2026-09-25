@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SYNAPSE NEXUS — Neural Knowledge Graph & Mind Mapper</title>
+  <meta name="description" content="Interactive 2D neural knowledge graph visualizer and mind mapping workspace with dynamic physics layout and synth audio feedback.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <div id="nexus-app">
+    <!-- Header Command Bar -->
+    <header id="command-bar">
+      <div class="brand">
+        <div class="pulse-orb"></div>
+        <h1>SYNAPSE NEXUS</h1>
+        <span class="version-tag">v1.0</span>
+      </div>
+
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="node-search" placeholder="Search neural nodes, tags, concepts... (Ctrl+F)" autocomplete="off">
+        <button id="btn-clear-search" class="icon-btn hidden" title="Clear search">✕</button>
+      </div>
+
+      <div class="toolbar-actions">
+        <button id="btn-add-node" class="action-btn primary"><span class="btn-icon">➕</span> Add Node</button>
+        <button id="btn-preset-toggle" class="action-btn"><span class="btn-icon">📂</span> Presets</button>
+        <button id="btn-physics-toggle" class="action-btn active" title="Toggle Force Physics Simulation"><span class="btn-icon">⚡</span> Physics</button>
+        <button id="btn-audio-toggle" class="action-btn" title="Toggle Ambient Neural Audio Synth"><span class="btn-icon">🎵</span> Sound</button>
+        <button id="btn-reset-cam" class="action-btn" title="Reset Camera View"><span class="btn-icon">🎯</span> Recenter</button>
+        <button id="btn-snapshot" class="action-btn" title="Export High-Res Graph Snapshot"><span class="btn-icon">📸</span> Export</button>
+      </div>
+    </header>
+
+    <!-- Stats Ribbon HUD -->
+    <section id="stats-hud">
+      <div class="stat-card">
+        <span class="stat-icon">🧠</span>
+        <div>
+          <span class="stat-title">Total Nodes</span>
+          <span id="stat-total-nodes" class="stat-value">0</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-icon">⚡</span>
+        <div>
+          <span class="stat-title">Synapse Links</span>
+          <span id="stat-total-edges" class="stat-value">0</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-icon">🏷️</span>
+        <div>
+          <span class="stat-title">Clusters & Tags</span>
+          <span id="stat-total-clusters" class="stat-value">0</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-icon">🎯</span>
+        <div>
+          <span class="stat-title">Active Target</span>
+          <span id="stat-active-node" class="stat-value text-dim">None Selected</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Preset Selector Dropdown Modal -->
+    <div id="preset-modal" class="modal-backdrop hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>📂 Knowledge Graph Presets</h3>
+          <button id="btn-close-presets" class="close-btn">✕</button>
+        </div>
+        <div class="preset-grid">
+          <button class="preset-card" data-preset="ai-ecosystem">
+            <span class="preset-icon">🤖</span>
+            <h4>AI & Neural Architectures</h4>
+            <p>LLMs, Transformer Attention, Diffusion Models & Agentic Workflows.</p>
+          </button>
+          <button class="preset-card" data-preset="cosmic-physics">
+            <span class="preset-icon">🌌</span>
+            <h4>Quantum & Astrophysics</h4>
+            <p>Spacetime Geometry, Quantum Entanglement, Black Holes & Strings.</p>
+          </button>
+          <button class="preset-card" data-preset="mindweaver">
+            <span class="preset-icon">🔮</span>
+            <h4>Mindweaver Philosophy</h4>
+            <p>Cognitive Loops, Archetype Resonances, Soundscapes & Breathwork.</p>
+          </button>
+          <button class="preset-card" data-preset="empty">
+            <span class="preset-icon">✨</span>
+            <h4>Blank Neural Canvas</h4>
+            <p>Start fresh with an empty network canvas.</p>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Canvas Viewport -->
+    <main id="viewport">
+      <canvas id="neural-canvas"></canvas>
+
+      <!-- Viewport Controls Overlay -->
+      <div class="canvas-controls">
+        <button id="btn-zoom-in" class="ctrl-btn" title="Zoom In (+)">＋</button>
+        <button id="btn-zoom-out" class="ctrl-btn" title="Zoom Out (-)">－</button>
+        <button id="btn-zoom-reset" class="ctrl-btn" title="Reset Zoom">100%</button>
+      </div>
+
+      <!-- Quick Instructions Box -->
+      <div class="hint-overlay">
+        <span>💡 <strong>Click</strong> to select · <strong>Drag</strong> to move · <strong>Shift+Drag</strong> to connect links · <strong>Dbl-Click</strong> canvas to add node</span>
+      </div>
+    </main>
+
+    <!-- Side Inspector & Markdown Note Editor -->
+    <aside id="inspector-panel" class="inspector-panel collapsed">
+      <div class="inspector-header">
+        <span id="inspector-icon" class="insp-icon">🧠</span>
+        <h2 id="inspector-title">Node Inspector</h2>
+        <button id="btn-close-inspector" class="close-btn">✕</button>
+      </div>
+
+      <div class="inspector-content">
+        <div class="form-group">
+          <label for="inp-node-label">Label Name</label>
+          <input type="text" id="inp-node-label" placeholder="Enter node name...">
+        </div>
+
+        <div class="form-group">
+          <label for="inp-node-category">Cluster / Category</label>
+          <select id="inp-node-category">
+            <option value="Core Concept">Core Concept</option>
+            <option value="Architecture">Architecture</option>
+            <option value="Research & Theory">Research & Theory</option>
+            <option value="Implementation">Implementation</option>
+            <option value="Future Horizon">Future Horizon</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="inp-node-tags">Tags (comma-separated)</label>
+          <input type="text" id="inp-node-tags" placeholder="ai, neural, quantum...">
+        </div>
+
+        <div class="form-group">
+          <label for="inp-node-hue">Node Spectrum Hue</label>
+          <input type="range" id="inp-node-hue" min="0" max="360" value="220">
+        </div>
+
+        <div class="form-group">
+          <label for="inp-node-notes">Markdown Notes & Knowledge Details</label>
+          <textarea id="inp-node-notes" rows="8" placeholder="Type Markdown notes, equations, references or key insights here..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Synapse Connections</label>
+          <div id="inspector-links-list" class="links-list">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <div class="inspector-actions">
+          <button id="btn-connect-mode" class="action-btn secondary"><span class="btn-icon">🔗</span> Link New Node</button>
+          <button id="btn-delete-node" class="action-btn danger"><span class="btn-icon">🗑️</span> Delete Node</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+
+</html>

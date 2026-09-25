@@ -1,0 +1,20 @@
+{
+  "name": "synapse-nexus",
+  "version": "1.0.0",
+  "description": "SYNAPSE NEXUS — Interactive Mind Map & Neural Knowledge Graph Visualizer",
+  "main": "index.html",
+  "type": "module",
+  "scripts": {
+    "start": "npx serve -s . -p 4050",
+    "dev": "npx serve -s . -p 4050"
+  },
+  "keywords": [
+    "mindmap",
+    "knowledge-graph",
+    "neural",
+    "interactive",
+    "canvas"
+  ],
+  "author": "Antigravity AI",
+  "license": "MIT"
+}

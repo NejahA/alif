@@ -85,21 +85,24 @@ function detectTechStack(dirPath, pkgJson = {}, entryHtml = null) {
   if (deps.next) stack.push('Next.js');
   if (deps.express) stack.push('Express');
   if (deps.electron || n.includes('electron')) stack.push('Electron');
-  if (deps.flutter || fs.existsSync(path.join(dirPath, 'pubspec.yaml'))) stack.push('Flutter');
+  if (deps.flutter || fs.existsSync(path.join(dirPath, 'pubspec.yaml')) || fs.existsSync(path.join(dirPath, 'pubspec.lock'))) stack.push('Flutter');
   if (deps.vite) stack.push('Vite');
   if (deps.tailwindcss) stack.push('Tailwind');
 
   try {
     const files = fs.readdirSync(dirPath);
-    if (files.some(f => f.endsWith('.py'))) stack.push('Python');
-    if (files.some(f => f.endsWith('.cs') || f.endsWith('.csproj'))) stack.push('.NET / C#');
+    if (files.includes('manifest.json') || files.includes('manifest.v2.json') || files.includes('manifest.v3.json')) stack.push('Browser Extension');
+    if (files.some(f => f.endsWith('.py') || ['requirements.txt', 'pyproject.toml', 'Pipfile'].includes(f))) stack.push('Python');
+    if (files.some(f => f.endsWith('.cs') || f.endsWith('.csproj') || f.endsWith('.sln'))) stack.push('.NET / C#');
     if (files.some(f => f.endsWith('.rs') || files.includes('Cargo.toml'))) stack.push('Rust');
     if (files.some(f => f.endsWith('.go') || files.includes('go.mod'))) stack.push('Go');
-    if (files.includes('requirements.txt') || files.includes('pyproject.toml')) stack.push('Python');
+    if (files.some(f => f.endsWith('.cpp') || f.endsWith('.c') || f.endsWith('.h') || f === 'CMakeLists.txt' || f === 'Makefile')) stack.push('C / C++');
+    if (files.some(f => f.endsWith('.kt') || f.endsWith('.java') || f === 'build.gradle' || f === 'build.gradle.kts')) stack.push('Android / Kotlin');
   } catch (e) { }
 
   if (entryHtml && stack.length === 0) stack.push('HTML5 / JS');
   if (pkgJson.name && stack.length === 0) stack.push('Node.js');
+  if (stack.length === 0) stack.push('Source Module');
 
   return [...new Set(stack)];
 }
@@ -109,25 +112,32 @@ function categorizeProject(name, techStack = [], pkgJson = {}, dirPath = '') {
   const n = name.toLowerCase();
   const desc = (pkgJson.description || '').toLowerCase();
   const hasFlutter = techStack.includes('Flutter') || n.includes('flutter');
+  const hasAndroid = techStack.includes('Android / Kotlin');
+  const isExtension = techStack.includes('Browser Extension') || n.includes('extension');
 
-  if (hasFlutter) {
-    return { category: 'Desktop Apps', icon: '📱', hue: 200 };
+  if (isExtension) {
+    return { category: 'Browser Extensions', icon: '🧩', hue: 45 };
   }
-
-  if (n.includes('sound') || n.includes('melodix') || n.includes('audio') || n.includes('440') || n.includes('432') || n.includes('regulator') || n.includes('antis') || n.includes('aeris') || desc.includes('audio') || desc.includes('sound') || desc.includes('music')) {
+  if (hasFlutter || hasAndroid) {
+    return { category: 'Mobile & Desktop', icon: '📱', hue: 200 };
+  }
+  if (n.includes('sound') || n.includes('melodix') || n.includes('audio') || n.includes('440') || n.includes('432') || n.includes('regulator') || n.includes('antis') || n.includes('aeris') || n.includes('acapella') || n.includes('midi') || desc.includes('audio') || desc.includes('sound') || desc.includes('music')) {
     return { category: 'Audio & Soundscapes', icon: '🎵', hue: 280 };
   }
-  if (n.includes('json') || n.includes('rpg') || n.includes('game') || n.includes('derangement') || n.includes('kalcioom') || n.includes('999') || n.includes('ludic') || n.includes('ashned') || n.includes('mayson') || desc.includes('reincarnation') || desc.includes('game') || desc.includes('rpg')) {
+  if (n.includes('json') || n.includes('rpg') || n.includes('game') || n.includes('derangement') || n.includes('kalcioom') || n.includes('999') || n.includes('ludic') || n.includes('ashned') || n.includes('mayson') || n.includes('ninja') || n.includes('gladiator') || desc.includes('reincarnation') || desc.includes('game') || desc.includes('rpg')) {
     return { category: 'RPG & Gaming', icon: '⚔️', hue: 25 };
   }
   if (n.includes('task') || n.includes('pomodoro') || n.includes('board') || n.includes('admin') || n.includes('nexus') || n.includes('broker') || n.includes('applicator') || n.includes('privacy') || desc.includes('task') || desc.includes('management')) {
     return { category: 'Tasks & Management', icon: '⚡', hue: 160 };
   }
   if (n.includes('desktop') || n.includes('kiros') || n.includes('windoes') || n.includes('telipso') || n.includes('imports') || n.includes('virtuo') || n.includes('snlyt') || desc.includes('desktop') || desc.includes('windows')) {
-    return { category: 'Desktop Apps', icon: '🖥️', hue: 200 };
+    return { category: 'Mobile & Desktop', icon: '🖥️', hue: 200 };
   }
-  if (n.includes('canvas') || n.includes('hiro') || n.includes('hi§ro') || n.includes('scribelog') || n.includes('ponder') || n.includes('inkwell') || n.includes('nebula') || desc.includes('canvas') || desc.includes('journal') || desc.includes('notes') || desc.includes('spaced-repetition')) {
+  if (n.includes('canvas') || n.includes('hiro') || n.includes('hi§ro') || n.includes('scribelog') || n.includes('ponder') || n.includes('inkwell') || n.includes('nebula') || n.includes('quill') || n.includes('readoc') || desc.includes('canvas') || desc.includes('journal') || desc.includes('notes') || desc.includes('spaced-repetition')) {
     return { category: 'Canvas & Knowledge', icon: '🧠', hue: 220 };
+  }
+  if (techStack.includes('Express') || techStack.includes('Python') || n.includes('backend') || n.includes('api') || n.includes('server')) {
+    return { category: 'Web Services & APIs', icon: '🌐', hue: 120 };
   }
   return { category: 'Experimental Engines', icon: '🌌', hue: 320 };
 }
@@ -138,13 +148,17 @@ function isProjectRoot(dirPath) {
     const files = fs.readdirSync(dirPath);
     // Project indicators
     if (files.includes('package.json')) return true;
-    if (files.includes('pubspec.yaml')) return true;
+    if (files.includes('pubspec.yaml') || files.includes('pubspec.lock')) return true;
     if (files.includes('index.html')) return true;
-    if (files.some(f => f.endsWith('.csproj'))) return true;
+    if (files.some(f => f.endsWith('.csproj') || f.endsWith('.sln'))) return true;
     if (files.includes('Cargo.toml')) return true;
     if (files.includes('go.mod')) return true;
-    if (files.includes('requirements.txt')) return true;
-    if (files.includes('pyproject.toml')) return true;
+    if (files.includes('requirements.txt') || files.includes('pyproject.toml') || files.includes('Pipfile')) return true;
+    if (files.includes('manifest.json') || files.includes('manifest.v2.json') || files.includes('manifest.v3.json')) return true;
+    if (files.includes('build.gradle') || files.includes('build.gradle.kts') || files.includes('settings.gradle') || files.includes('settings.gradle.kts') || files.includes('pom.xml')) return true;
+    if (files.includes('CMakeLists.txt') || files.includes('Makefile')) return true;
+    if (files.includes('docker-compose.yml') || files.includes('Dockerfile')) return true;
+    if (files.some(f => ['main.py', 'app.py', 'server.py', 'run.py', 'manage.py', 'wincontrol.py', 'atlas.py', 'midi_launcher.py', 'pc_server.py', '__init__.py'].includes(f))) return true;
     return false;
   } catch (e) { return false; }
 }
@@ -157,12 +171,15 @@ function scanWorkspace() {
     '.git', '.github', 'node_modules', 'alif-universe', 'src', 'home',
     'melodixpublic', 'melodixsrc', 'melodixsrccomponents', 'melodixsrctypes',
     'pomodoro_timerassetssounds', 'volatillfrontendsrc', 'trutouthweb-demo',
-    '.dart_tool', '.idea', '.vscode', 'build', 'dist', '__pycache__'
+    '.dart_tool', '.idea', '.vscode', 'build', 'dist', '__pycache__', 'gradle', '.gradle'
   ]);
 
   // Top-level container dirs that we should RECURSE INTO instead of treating as projects
   const containerDirs = new Set([
-    'o-o', 'antis', 'kiros', 'Beta', 'MERN Belt Exam', 'flutters', "react's", "expoe' s", 'windoes', 'flutter'
+    'o-o', 'antis', 'kiros', 'Beta', 'MERN Belt Exam', 'flutters', "react's", "expoe' s", 'windoes', 'flutter',
+    'Career Service', 'Filmmakers and Movies', 'React assignments', 'iot-control', 'nate', 'nile', 'old mill',
+    'scratch', 'time-traveling-toaster', 'tries', 'volatill', 'webs', 'new', 'misc', 'Weelk 0', 'ninja man',
+    'domoiq', 'malware_guardian', 'mediach', 'n8n', 'librepods-main', 'Nexus', 'bluetough', 'achmed'
   ]);
 
   const NOW = Date.now();
@@ -182,7 +199,7 @@ function scanWorkspace() {
       for (const item of items) {
         if (!item.isDirectory() || item.name.startsWith('.') || ignoreList.has(item.name)) continue;
         const childRel = item.name;
-        const isContainer = containerDirs.has(item.name);
+        const isContainer = containerDirs.has(item.name) || containerDirs.has(item.name.replace(/['\s]/g, ''));
         processDir(childRel, depth + 1, isContainer);
       }
       return;
@@ -211,12 +228,11 @@ function scanWorkspace() {
       try {
         const files = fs.readdirSync(fullDir);
         fileCount = files.length;
-        // Added .yaml, .yml, .dart, .swift, .kt to the regex
-        codeFilesCount = files.filter(f => /\.(js|ts|py|cs|html|css|json|rs|go|md|dart|jsx|tsx|yaml|yml|swift|kt)$/i.test(f)).length;
+        codeFilesCount = files.filter(f => /\.(js|ts|py|cs|html|css|json|rs|go|md|dart|jsx|tsx|yaml|yml|swift|kt|java|c|cpp|h)$/i.test(f)).length;
       } catch (e) { }
 
-      // Skip empty fragment directories (unless it had clear project markers like pubspec.yaml)
-      const isStrongProject = hasPkg || hasHtml || fs.existsSync(path.join(fullDir, 'pubspec.yaml')) || fs.existsSync(path.join(fullDir, 'Cargo.toml'));
+      // Skip empty fragment directories (unless it had clear project markers)
+      const isStrongProject = hasPkg || hasHtml || fs.existsSync(path.join(fullDir, 'pubspec.yaml')) || fs.existsSync(path.join(fullDir, 'Cargo.toml')) || fs.existsSync(path.join(fullDir, 'manifest.json')) || fs.existsSync(path.join(fullDir, 'build.gradle')) || fs.existsSync(path.join(fullDir, 'build.gradle.kts'));
       
       if (!isStrongProject && codeFilesCount === 0) {
         // Not a valid project - skip adding but still recurse if it might contain projects
@@ -229,8 +245,6 @@ function scanWorkspace() {
       }
 
       // Determine flattened project name for display + routing
-      // Top-level dirs keep their simple name
-      // Nested dirs get "parent--child" naming
       let projectName;
       const parts = relativeDir.split(/[\/\\]/).filter(Boolean);
       if (parts.length === 1) {
@@ -250,6 +264,11 @@ function scanWorkspace() {
           scripts['flutter:run'] = 'flutter run';
         }
       }
+      if (techStack.includes('Android / Kotlin')) {
+        if (!scripts.build && !scripts['gradle:build']) {
+          scripts['gradle:build'] = process.platform === 'win32' ? '.\\gradlew assembleDebug' : './gradlew assembleDebug';
+        }
+      }
       if (techStack.includes('Rust')) {
         if (!scripts.start && !scripts.run && !scripts['cargo:run']) {
           scripts['cargo:run'] = 'cargo run';
@@ -262,9 +281,12 @@ function scanWorkspace() {
       }
       if (techStack.includes('Python')) {
         if (!scripts.start && !scripts.run && !scripts['python:run']) {
-          const mainFile = fs.readdirSync(fullDir).find(f => f === 'main.py' || f === 'app.py' || f === 'index.py');
-          if (mainFile) scripts['python:run'] = `python ${mainFile}`;
-          else if (fs.existsSync(path.join(fullDir, 'manage.py'))) scripts['django:run'] = 'python manage.py runserver';
+          try {
+            const files = fs.readdirSync(fullDir);
+            const mainFile = files.find(f => ['main.py', 'app.py', 'server.py', 'index.py', 'run.py', 'pc_server.py', 'wincontrol.py', 'atlas.py', 'midi_launcher.py'].includes(f)) || files.find(f => f.endsWith('.py'));
+            if (mainFile) scripts['python:run'] = `python ${mainFile}`;
+            else if (files.includes('manage.py')) scripts['django:run'] = 'python manage.py runserver';
+          } catch (e) {}
         }
       }
 

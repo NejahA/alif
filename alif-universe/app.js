@@ -309,11 +309,14 @@ if (hudKeyboardEl) {
 // Category Domain Centers & Angles in Galaxy View
 const DOMAIN_CONFIG = {
   'Canvas & Knowledge': { angle: 0, icon: '🧠', hue: 220 },
-  'RPG & Gaming': { angle: Math.PI / 3, icon: '⚔️', hue: 25 },
-  'Audio & Soundscapes': { angle: (2 * Math.PI) / 3, icon: '🎵', hue: 280 },
-  'Tasks & Management': { angle: Math.PI, icon: '⚡', hue: 160 },
-  'Desktop Apps': { angle: (4 * Math.PI) / 3, icon: '🖥️', hue: 200 },
-  'Experimental Engines': { angle: (5 * Math.PI) / 3, icon: '🌌', hue: 320 }
+  'RPG & Gaming': { angle: Math.PI / 4, icon: '⚔️', hue: 25 },
+  'Audio & Soundscapes': { angle: Math.PI / 2, icon: '🎵', hue: 280 },
+  'Tasks & Management': { angle: (3 * Math.PI) / 4, icon: '⚡', hue: 160 },
+  'Mobile & Desktop': { angle: Math.PI, icon: '📱', hue: 200 },
+  'Browser Extensions': { angle: (5 * Math.PI) / 4, icon: '🧩', hue: 45 },
+  'Web Services & APIs': { angle: (3 * Math.PI) / 2, icon: '🌐', hue: 120 },
+  'Experimental Engines': { angle: (7 * Math.PI) / 4, icon: '🌌', hue: 320 },
+  'Desktop Apps': { angle: Math.PI, icon: '🖥️', hue: 200 }
 };
 const DOMAIN_RADIUS = 280;
 
@@ -1351,9 +1354,16 @@ function updateCategoryCounts() {
     'RPG & Gaming': 0,
     'Audio & Soundscapes': 0,
     'Tasks & Management': 0,
-    'Desktop Apps': 0,
-    'Experimental Engines': 0
+    'Mobile & Desktop': 0,
+    'Browser Extensions': 0,
+    'Web Services & APIs': 0,
+    'Experimental Engines': 0,
+    'Desktop Apps': 0
   };
+
+  const domainCount = new Set(projectsData.map(p => p.category)).size;
+  const statCategories = document.getElementById('stat-categories');
+  if (statCategories) statCategories.textContent = `${domainCount} Active`;
 
   projectsData.forEach(p => {
     if (counts[p.category] !== undefined) counts[p.category]++;
@@ -1369,8 +1379,12 @@ function updateCategoryCounts() {
   if (countAudio) countAudio.textContent = counts['Audio & Soundscapes'];
   const countTasks = document.getElementById('count-tasks');
   if (countTasks) countTasks.textContent = counts['Tasks & Management'];
-  const countDesktop = document.getElementById('count-desktop');
-  if (countDesktop) countDesktop.textContent = counts['Desktop Apps'];
+  const countMobile = document.getElementById('count-mobile');
+  if (countMobile) countMobile.textContent = counts['Mobile & Desktop'] || counts['Desktop Apps'];
+  const countExt = document.getElementById('count-extensions');
+  if (countExt) countExt.textContent = counts['Browser Extensions'];
+  const countWeb = document.getElementById('count-web');
+  if (countWeb) countWeb.textContent = counts['Web Services & APIs'];
   const countExp = document.getElementById('count-experimental');
   if (countExp) countExp.textContent = counts['Experimental Engines'];
 }
