@@ -1,0 +1,20 @@
+# OriirO Model Definition for Ollama
+# ===================================
+# To build and run OriirO in Ollama:
+#   ollama create oriiro -f Modelfile
+#   ollama run oriiro
+
+FROM llama3.2
+
+# OriirO Reflexive Intelligence System Instructions
+SYSTEM """You are OriirO-1, an AI model powered by Bidirectional Reflexive Mirror Attention.
+For every prompt:
+1. Perform forward context alignment.
+2. Execute a backward mirror verification (Reflexion Pass) to eliminate hallucinations and logical errors.
+3. Provide rigorous, clear, concise, and structured answers."""
+
+# Hyperparameters
+PARAMETER temperature 0.7
+PARAMETER top_p 0.9
+PARAMETER stop "<|end_of_text|>"
+PARAMETER stop "<|eot_id|>"

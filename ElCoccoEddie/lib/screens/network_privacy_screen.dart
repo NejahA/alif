@@ -117,7 +117,7 @@ class _NetworkPrivacyScreenState extends State<NetworkPrivacyScreen> {
 
                       SwitchListTile(
                         contentPadding: EdgeInsets.zero,
-                        activeTrackColor: IlluminatiTheme.sacredGold,
+                        activeColor: IlluminatiTheme.sacredGold,
                         title: Text(
                           'WEBRTC REAL-IP LEAK SHIELD',
                           style: GoogleFonts.cinzel(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),

@@ -1,0 +1,9 @@
+ - Removed extraneous code from the Route path for "/rewards/:id" in App.jsx
+- Replaced plain jsx component with <RewardsScreen /> for the associated route
+- Ensured proper capitalization and indentation within the JSX structure
+- Consolidated import statements to improve file organization
+- Added a type annotation for the Route's element prop
+- Corrected any potential syntax errors in the provided code snippet
+- Simplified component imports where possible
+- Improved readability of the codebase by applying consistent formatting and style conventions
+

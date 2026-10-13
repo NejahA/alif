@@ -227,7 +227,7 @@ class _ClipboardGuardScreenState extends State<ClipboardGuardScreen> {
 
                       SwitchListTile(
                         contentPadding: EdgeInsets.zero,
-                        activeTrackColor: IlluminatiTheme.sacredGold,
+                        activeColor: IlluminatiTheme.sacredGold,
                         title: Text(
                           'AUTO-CLEAR SENSITIVE CLIPBOARD',
                           style: GoogleFonts.cinzel(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
@@ -255,7 +255,7 @@ class _ClipboardGuardScreenState extends State<ClipboardGuardScreen> {
                           min: 5,
                           max: 120,
                           divisions: 23,
-                          activeTrackColor: IlluminatiTheme.sacredGold,
+                          activeColor: IlluminatiTheme.sacredGold,
                           inactiveColor: Colors.white12,
                           onChanged: (val) => setState(() => _autoClearTimeoutSeconds = val.toInt()),
                         ),
@@ -265,7 +265,7 @@ class _ClipboardGuardScreenState extends State<ClipboardGuardScreen> {
 
                       SwitchListTile(
                         contentPadding: EdgeInsets.zero,
-                        activeTrackColor: IlluminatiTheme.sacredGold,
+                        activeColor: IlluminatiTheme.sacredGold,
                         title: Text(
                           'CLIPBOARD SNOOPING INTERCEPTION ALERTS',
                           style: GoogleFonts.cinzel(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),

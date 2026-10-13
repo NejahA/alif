@@ -1,18 +1,44 @@
- It seems like you have shared a Flutter code for a guide screen in a mobil[5D[K
-mobile app. The code includes a `GuideScreen` widget that displays a list o[1D[K
-of steps for a user to follow. The steps are displayed as cards in a grid, [K
-with each card containing the step number, title, description, and an icon.[5D[K
-icon. The active step is highlighted with a different color and border.
+ It seems like you've shared a set of CSS styles for a user interface, spec[4D[K
+specifically for a side inspector drawer and some related elements such as [K
+modal cards, preset cards, and buttons.
 
-The `GuideScreen` also includes an `_Eyebrow` widget that displays a title [K
-for the guide, and a `_BottomNote` widget that displays a note below the gu[2D[K
-guide.
+This CSS snippet includes styles for the alignment, hover effects, and tran[4D[K
+transitions of various elements. It also includes some basic styles for a m[1D[K
+modal card, preset card, and a side inspector drawer.
 
-In addition to the Flutter code, there are also changes to the project's `p[2D[K
-`pubspec.yaml`, `index.html`, and `manifest.json` files for a web build of [K
-the app.
+Here's a brief overview of the different parts:
 
-Overall, this code appears to be well-organized and follows Flutter best pr[2D[K
-practices for building user interfaces. It is easy to understand and custom[6D[K
-customize for different use cases.
+1. `align-items: center; justify-content: center; transition: all 0.2s ease[4D[K
+ease;` - These styles are applied to the `.ctrl-btn` element, which presuma[7D[K
+presumably represents a control button. The button has a transition effect [K
+for smooth animations when hovered.
+
+2. The `.hint-overlay` and related styles define a hint overlay, which appe[4D[K
+appears absolute, has a blur effect, and is used to provide additional info[4D[K
+information.
+
+3. The `.inspector-panel` and related styles define a side inspector drawer[6D[K
+drawer, which slides in from the right side of the screen and has a blur ef[2D[K
+effect.
+
+4. The `.modal-backdrop` and related styles define a modal backdrop, which [K
+dims the background when a modal is open.
+
+5. The `.modal-card` and related styles define a modal card, which is used [K
+within the modal backdrop.
+
+6. The `.preset-card` and related styles define a preset card, which is lik[3D[K
+likely used within a modal card or the inspector drawer.
+
+7. The `.form-group` and related styles define various form elements, such [K
+as inputs, selects, and textareas, and their styles.
+
+8. The `.links-list` and related styles define a list of links, which likel[5D[K
+likely appear within the inspector drawer or a modal card.
+
+9. The `.inspector-actions` styles define a set of actions that may appear [K
+at the bottom of the inspector drawer or a modal card.
+
+This CSS snippet can be used as a starting point for building a user interf[6D[K
+interface with the mentioned elements and interactions.
 

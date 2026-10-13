@@ -21,6 +21,7 @@ import 'sensor_privacy_screen.dart';
 import 'clipboard_guard_screen.dart';
 import 'screen_shield_screen.dart';
 import 'threat_radar_screen.dart';
+import 'privacy_flip_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -408,17 +409,112 @@ class HomeScreen extends StatelessWidget {
 
                   const SizedBox(height: 24),
 
-                    _buildPrivacyPostureCard(context, provider)
+                  _buildPrivacyPostureCard(context, provider)
                       .animate()
                       .fadeIn(delay: 350.ms)
                       .slideY(begin: 0.08, end: 0),
 
-                    const SizedBox(height: 24),
+                  const SizedBox(height: 16),
+
+                  // Privacy Flip Engine Highlight Card
+                  Card(
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const PrivacyFlipScreen()),
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(16),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: provider.privacyAutomationEnabled
+                                    ? IlluminatiTheme.emeraldShield.withValues(alpha: 0.15)
+                                    : IlluminatiTheme.crimsonSeal.withValues(alpha: 0.15),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.screen_lock_portrait,
+                                color: provider.privacyAutomationEnabled
+                                    ? IlluminatiTheme.emeraldShield
+                                    : IlluminatiTheme.crimsonSeal,
+                                size: 26,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Text(
+                                        'PRIVACY FLIP ENGINE',
+                                        style: GoogleFonts.cinzel(
+                                          color: IlluminatiTheme.sacredGold,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: provider.privacyAutomationEnabled
+                                              ? IlluminatiTheme.emeraldShield.withValues(alpha: 0.2)
+                                              : IlluminatiTheme.crimsonSeal.withValues(alpha: 0.2),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Text(
+                                          provider.privacyAutomationEnabled ? 'ACTIVE' : 'PAUSED',
+                                          style: GoogleFonts.orbitron(
+                                            color: provider.privacyAutomationEnabled
+                                                ? IlluminatiTheme.emeraldShield
+                                                : IlluminatiTheme.crimsonSeal,
+                                            fontSize: 8,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Lock Delay: ${provider.lockDelaySeconds}s • Unlock Delay: ${provider.unlockDelaySeconds}s • Shizuku/Root Ready',
+                                    style: GoogleFonts.orbitron(color: Colors.white70, fontSize: 10),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(Icons.arrow_forward_ios, size: 16, color: IlluminatiTheme.sacredGold),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ).animate().fadeIn(delay: 380.ms),
+
+                  const SizedBox(height: 20),
 
                   // Quick Action Buttons - Grid Row 1
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
+                      _buildQuickActionButton(
+                        context: context,
+                        icon: Icons.screen_lock_portrait,
+                        label: 'Privacy Flip',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const PrivacyFlipScreen()),
+                          );
+                        },
+                      ),
                       _buildQuickActionButton(
                         context: context,
                         icon: Icons.no_photography,
@@ -441,6 +537,15 @@ class HomeScreen extends StatelessWidget {
                           );
                         },
                       ),
+                    ],
+                  ).animate().fadeIn(delay: 400.ms),
+
+                  const SizedBox(height: 12),
+
+                  // Quick Action Buttons - Grid Row 2
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
                       _buildQuickActionButton(
                         context: context,
                         icon: Icons.wifi_tethering,
@@ -452,15 +557,6 @@ class HomeScreen extends StatelessWidget {
                           );
                         },
                       ),
-                    ],
-                  ).animate().fadeIn(delay: 400.ms),
-
-                  const SizedBox(height: 12),
-
-                  // Quick Action Buttons - Grid Row 2
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
                       _buildQuickActionButton(
                         context: context,
                         icon: Icons.sensors_off,
@@ -483,17 +579,6 @@ class HomeScreen extends StatelessWidget {
                           );
                         },
                       ),
-                      _buildQuickActionButton(
-                        context: context,
-                        icon: Icons.screenshot_monitor,
-                        label: 'Screen Shield',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const ScreenShieldScreen()),
-                          );
-                        },
-                      ),
                     ],
                   ).animate().fadeIn(delay: 450.ms),
 
@@ -505,23 +590,23 @@ class HomeScreen extends StatelessWidget {
                     children: [
                       _buildQuickActionButton(
                         context: context,
+                        icon: Icons.screenshot_monitor,
+                        label: 'Screen Shield',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const ScreenShieldScreen()),
+                          );
+                        },
+                      ),
+                      _buildQuickActionButton(
+                        context: context,
                         icon: Icons.verified_user,
                         label: 'Threat Radar',
                         onTap: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(builder: (_) => const ThreatRadarScreen()),
-                          );
-                        },
-                      ),
-                      _buildQuickActionButton(
-                        context: context,
-                        icon: Icons.radar,
-                        label: 'Threat Audit',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const AppAuditScreen()),
                           );
                         },
                       ),
@@ -538,6 +623,7 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ],
                   ).animate().fadeIn(delay: 500.ms),
+
                 ],
                 ),
               ),

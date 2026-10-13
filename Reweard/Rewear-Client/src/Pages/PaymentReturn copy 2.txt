@@ -1,0 +1,66 @@
+import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
+
+const PaymentReturn = () => {
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const success = searchParams.get('success');
+  const [redirecting, setRedirecting] = useState(true);
+
+  useEffect(() => {
+    const handleRedirect = () => {
+      // Check if the payment was successful
+      if (success === 'true') {
+        // Send a message to the parent window to redirect
+        window.parent.postMessage({ type: 'PAYMENT_SUCCESS' }, '*');
+      } else {
+        // Send a message to the parent window to redirect on failure
+        window.parent.postMessage({ type: 'PAYMENT_FAILURE' }, '*');
+      }
+
+      // Set a timeout to ensure the message is sent before the component unmounts
+      setTimeout(() => {
+        setRedirecting(false);
+      }, 2000);
+    };
+
+    handleRedirect();
+  }, [success]);
+
+  return (
+    <div className="container my-5">
+      <div className="d-flex flex-column align-items-center justify-content-center" style={{ minHeight: '60vh' }}>
+        {redirecting ? (
+          <>
+            <div className="spinner-border text-primary mb-3" role="status" style={{ width: '3rem', height: '3rem' }}>
+              <span className="visually-hidden">Loading...</span>
+            </div>
+            <h2 className="mb-3">Processing Payment Result...</h2>
+            <p className="text-muted">Redirecting you back to the app...</p>
+          </>
+        ) : (
+          <>
+            <h1 className="mb-4">Payment Result</h1>
+            {success === 'true' ? (
+              <div className="alert alert-success" role="alert" style={{ maxWidth: '500px', width: '100%' }}>
+                <h4 className="alert-heading">Success!</h4>
+                <p>Your payment was successful! Thank you for your purchase.</p>
+                <hr />
+                <p className="mb-0">Redirecting to homepage...</p>
+              </div>
+            ) : (
+              <div className="alert alert-danger" role="alert" style={{ maxWidth: '500px', width: '100%' }}>
+                <h4 className="alert-heading">Payment Failed</h4>
+                <p>Your payment was cancelled or failed. Please try again.</p>
+                <hr />
+                <p className="mb-0">Redirecting to homepage...</p>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default PaymentReturn;

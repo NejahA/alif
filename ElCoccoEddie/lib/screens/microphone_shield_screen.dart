@@ -315,7 +315,7 @@ class _MicrophoneShieldScreenState extends State<MicrophoneShieldScreen> with Si
             // Acoustic Jammer Switch
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              activeTrackColor: IlluminatiTheme.sacredGold,
+              activeColor: IlluminatiTheme.sacredGold,
               title: Text(
                 'ULTRASONIC ACOUSTIC CIPHER',
                 style: GoogleFonts.cinzel(

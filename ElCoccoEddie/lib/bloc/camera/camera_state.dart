@@ -43,6 +43,6 @@ class CameraErrorState extends CameraState {
 
   const CameraErrorState({required this.errorMessage});
 
-  @override
+  @override 
   List<Object?> get props => [errorMessage];
 }

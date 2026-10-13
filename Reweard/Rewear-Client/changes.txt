@@ -1,0 +1,2 @@
+++ b/src/App.jsx
+          <Route path="/rewards/:id" element={<RewardsScreen />} />

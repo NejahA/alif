@@ -117,7 +117,7 @@ class _SensorPrivacyScreenState extends State<SensorPrivacyScreen> {
 
                       SwitchListTile(
                         contentPadding: EdgeInsets.zero,
-                        activeTrackColor: IlluminatiTheme.sacredGold,
+                        activeColor: IlluminatiTheme.sacredGold,
                         title: Text(
                           'LOCATION & GPS HARDWARE SEAL',
                           style: GoogleFonts.cinzel(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
@@ -134,7 +134,7 @@ class _SensorPrivacyScreenState extends State<SensorPrivacyScreen> {
 
                       SwitchListTile(
                         contentPadding: EdgeInsets.zero,
-                        activeTrackColor: IlluminatiTheme.sacredGold,
+                        activeColor: IlluminatiTheme.sacredGold,
                         title: Text(
                           'MOTION SENSOR EAVESDROPPING GUARD',
                           style: GoogleFonts.cinzel(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
@@ -151,7 +151,7 @@ class _SensorPrivacyScreenState extends State<SensorPrivacyScreen> {
 
                       SwitchListTile(
                         contentPadding: EdgeInsets.zero,
-                        activeTrackColor: IlluminatiTheme.sacredGold,
+                        activeColor: IlluminatiTheme.sacredGold,
                         title: Text(
                           'AD-ID TELEMETRY MUTE',
                           style: GoogleFonts.cinzel(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
@@ -195,7 +195,7 @@ class _SensorPrivacyScreenState extends State<SensorPrivacyScreen> {
                             ],
                           ),
                           Switch(
-                            activeTrackColor: IlluminatiTheme.sacredGold,
+                            activeColor: IlluminatiTheme.sacredGold,
                             value: _bluetoothRadarActive,
                             onChanged: (val) => setState(() => _bluetoothRadarActive = val),
                           ),

@@ -233,6 +233,7 @@ Ehthumbs.db
 .history
 .svn/
 .swiftpm/
+**/.git_disabled/
 migrate_working_dir/
 
 # IntelliJ related

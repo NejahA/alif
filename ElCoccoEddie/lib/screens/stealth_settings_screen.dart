@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../theme/illuminati_theme.dart';
 import '../providers/privacy_shield_provider.dart';
 import '../widgets/sacred_geometry_background.dart';
+import 'privacy_flip_screen.dart';
 
 class StealthSettingsScreen extends StatelessWidget {
   const StealthSettingsScreen({super.key});
@@ -121,11 +122,21 @@ class StealthSettingsScreen extends StatelessWidget {
                   const SizedBox(height: 12),
 
                   _buildSettingTile(
-                    title: 'AUTO PRIVACY FLIP',
-                    subtitle: 'Apply selected privacy protections when the device locks and restore them on unlock',
+                    title: 'AUTO PRIVACY FLIP ENGINE',
+                    subtitle: 'Configure full PrivacyFlip lock/unlock triggers, delays, smart rules & app exemptions',
                     icon: Icons.screen_lock_portrait,
                     value: provider.privacyAutomationEnabled,
                     onChanged: provider.setPrivacyAutomationEnabled,
+                    trailingWidget: IconButton(
+                      icon: const Icon(Icons.tune, color: IlluminatiTheme.sacredGold),
+                      tooltip: 'Open PrivacyFlip Configuration',
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const PrivacyFlipScreen()),
+                        );
+                      },
+                    ),
                   ),
 
                   const SizedBox(height: 12),

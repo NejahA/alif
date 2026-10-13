@@ -115,7 +115,7 @@ class _ScreenShieldScreenState extends State<ScreenShieldScreen> {
 
                       SwitchListTile(
                         contentPadding: EdgeInsets.zero,
-                        activeTrackColor: IlluminatiTheme.sacredGold,
+                        activeColor: IlluminatiTheme.sacredGold,
                         title: Text(
                           'SYSTEM FLAG_SECURE ENFORCER',
                           style: GoogleFonts.cinzel(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
@@ -132,7 +132,7 @@ class _ScreenShieldScreenState extends State<ScreenShieldScreen> {
 
                       SwitchListTile(
                         contentPadding: EdgeInsets.zero,
-                        activeTrackColor: IlluminatiTheme.sacredGold,
+                        activeColor: IlluminatiTheme.sacredGold,
                         title: Text(
                           'ANTI-SPY WATERMARK OBFUSCATION',
                           style: GoogleFonts.cinzel(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
@@ -149,7 +149,7 @@ class _ScreenShieldScreenState extends State<ScreenShieldScreen> {
 
                       SwitchListTile(
                         contentPadding: EdgeInsets.zero,
-                        activeTrackColor: IlluminatiTheme.sacredGold,
+                        activeColor: IlluminatiTheme.sacredGold,
                         title: Text(
                           'SCREEN CAST & MIRRORING DETECTOR',
                           style: GoogleFonts.cinzel(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),

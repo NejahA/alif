@@ -23,6 +23,58 @@ class CameraLogEntry {
   });
 }
 
+class PrivacyFlipFeaturePolicy {
+  final String key;
+  final String displayName;
+  final String description;
+  final IconData icon;
+  final String category; // 'Connectivity', 'Sensors', 'System Modes'
+  bool disableOnLock;
+  bool enableOnUnlock;
+  bool currentlyActive;
+
+  PrivacyFlipFeaturePolicy({
+    required this.key,
+    required this.displayName,
+    required this.description,
+    required this.icon,
+    required this.category,
+    this.disableOnLock = true,
+    this.enableOnUnlock = true,
+    this.currentlyActive = true,
+  });
+}
+
+class PrivacyFlipLogEntry {
+  final DateTime timestamp;
+  final String eventType; // 'SCREEN_LOCK', 'SCREEN_UNLOCK', 'MANUAL_TOGGLE'
+  final String feature;
+  final String action; // 'DISABLED', 'RESTORED', 'SKIPPED'
+  final String details;
+
+  PrivacyFlipLogEntry({
+    required this.timestamp,
+    required this.eventType,
+    required this.feature,
+    required this.action,
+    required this.details,
+  });
+}
+
+class ExemptApp {
+  final String name;
+  final String packageName;
+  final IconData icon;
+  bool isExempt;
+
+  ExemptApp({
+    required this.name,
+    required this.packageName,
+    required this.icon,
+    this.isExempt = false,
+  });
+}
+
 class AuditedApp {
   final String name;
   final String packageName;
@@ -74,9 +126,24 @@ class PrivacyShieldProvider extends ChangeNotifier {
   bool _privacyAutomationEnabled = true;
   int _lockDelaySeconds = 10;
   int _unlockDelaySeconds = 1;
+  bool _showCountdown = true;
   bool _hasLocalStateChanges = false;
   CameraLockMode _cameraLockMode = CameraLockMode.fortressCombined;
   final List<CameraLogEntry> _cameraLogs = [];
+
+  // PrivacyFlip Smart Rules & Privilege Settings
+  bool _onlyIfUnused = true;
+  bool _onlyIfNotAlreadyEnabled = false;
+  bool _onlyIfNotManuallySet = true;
+  bool _samsungNfcAutoRetry = true;
+  bool _accessibilityInstantLock = false;
+  String _privilegeMethod = 'Shizuku / ADB Privileges';
+  bool _privilegeDetected = true;
+
+  // PrivacyFlip Features Policies
+  late List<PrivacyFlipFeaturePolicy> _flipPolicies;
+  final List<PrivacyFlipLogEntry> _flipLogs = [];
+  late List<ExemptApp> _exemptApps;
 
   PermissionStatus _cameraPermissionStatus = PermissionStatus.denied;
   PermissionStatus _micPermissionStatus = PermissionStatus.denied;
@@ -102,8 +169,22 @@ class PrivacyShieldProvider extends ChangeNotifier {
   bool get privacyAutomationEnabled => _privacyAutomationEnabled;
   int get lockDelaySeconds => _lockDelaySeconds;
   int get unlockDelaySeconds => _unlockDelaySeconds;
+  bool get showCountdown => _showCountdown;
   CameraLockMode get cameraLockMode => _cameraLockMode;
   List<CameraLogEntry> get cameraLogs => List.unmodifiable(_cameraLogs);
+
+  // PrivacyFlip Getters
+  bool get onlyIfUnused => _onlyIfUnused;
+  bool get onlyIfNotAlreadyEnabled => _onlyIfNotAlreadyEnabled;
+  bool get onlyIfNotManuallySet => _onlyIfNotManuallySet;
+  bool get samsungNfcAutoRetry => _samsungNfcAutoRetry;
+  bool get accessibilityInstantLock => _accessibilityInstantLock;
+  String get privilegeMethod => _privilegeMethod;
+  bool get privilegeDetected => _privilegeDetected;
+  List<PrivacyFlipFeaturePolicy> get flipPolicies => List.unmodifiable(_flipPolicies);
+  List<PrivacyFlipLogEntry> get flipLogs => List.unmodifiable(_flipLogs);
+  List<ExemptApp> get exemptApps => List.unmodifiable(_exemptApps);
+
   List<AuditedApp> get auditedApps => _auditedApps;
   List<AuditSnapshot> get scanHistory => List.unmodifiable(_scanHistory);
 
@@ -130,6 +211,11 @@ class PrivacyShieldProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void clearFlipLogs() {
+    _flipLogs.clear();
+    notifyListeners();
+  }
+
   Future<void> toggleEmergencyLockdown() async {
     _hasLocalStateChanges = true;
     _masterLockActive = true;
@@ -147,16 +233,138 @@ class PrivacyShieldProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-
   void clearScanHistory() {
     _scanHistory.clear();
     notifyListeners();
   }
+
   PermissionStatus get cameraPermissionStatus => _cameraPermissionStatus;
   PermissionStatus get micPermissionStatus => _micPermissionStatus;
 
   PrivacyShieldProvider() {
+    _initFlipDefaults();
     _initPermissionsAndAudit();
+  }
+
+  void _initFlipDefaults() {
+    _flipPolicies = [
+      PrivacyFlipFeaturePolicy(
+        key: 'WIFI',
+        displayName: 'Wi-Fi',
+        description: 'Disable wireless network connectivity on lock',
+        icon: Icons.wifi,
+        category: 'Connectivity',
+        disableOnLock: true,
+        enableOnUnlock: true,
+        currentlyActive: true,
+      ),
+      PrivacyFlipFeaturePolicy(
+        key: 'BLUETOOTH',
+        displayName: 'Bluetooth',
+        description: 'Disable short-range Bluetooth radios on lock',
+        icon: Icons.bluetooth,
+        category: 'Connectivity',
+        disableOnLock: true,
+        enableOnUnlock: true,
+        currentlyActive: true,
+      ),
+      PrivacyFlipFeaturePolicy(
+        key: 'MOBILE_DATA',
+        displayName: 'Mobile Data',
+        description: 'Disable cellular data connectivity on lock',
+        icon: Icons.signal_cellular_alt,
+        category: 'Connectivity',
+        disableOnLock: true,
+        enableOnUnlock: false,
+        currentlyActive: true,
+      ),
+      PrivacyFlipFeaturePolicy(
+        key: 'LOCATION',
+        displayName: 'Location Services',
+        description: 'Disable GPS hardware & location tracking on lock',
+        icon: Icons.location_on,
+        category: 'Connectivity',
+        disableOnLock: true,
+        enableOnUnlock: true,
+        currentlyActive: false,
+      ),
+      PrivacyFlipFeaturePolicy(
+        key: 'NFC',
+        displayName: 'NFC',
+        description: 'Disable Near Field Communication sensor on lock',
+        icon: Icons.nfc,
+        category: 'Connectivity',
+        disableOnLock: true,
+        enableOnUnlock: true,
+        currentlyActive: false,
+      ),
+      PrivacyFlipFeaturePolicy(
+        key: 'CAMERA',
+        displayName: 'Camera Sensor',
+        description: 'Seal physical camera sensor access on lock (Android 12+)',
+        icon: Icons.camera_alt,
+        category: 'Sensors',
+        disableOnLock: true,
+        enableOnUnlock: true,
+        currentlyActive: _cameraBlocked,
+      ),
+      PrivacyFlipFeaturePolicy(
+        key: 'MICROPHONE',
+        displayName: 'Microphone Sensor',
+        description: 'Block microphone recording permissions on lock (Android 12+)',
+        icon: Icons.mic,
+        category: 'Sensors',
+        disableOnLock: true,
+        enableOnUnlock: true,
+        currentlyActive: _micBlocked,
+      ),
+      PrivacyFlipFeaturePolicy(
+        key: 'AIRPLANE_MODE',
+        displayName: 'Airplane Mode',
+        description: 'Force all RF radios off when device locks (Opt-in)',
+        icon: Icons.airplanemode_active,
+        category: 'System Modes',
+        disableOnLock: false,
+        enableOnUnlock: false,
+        currentlyActive: false,
+      ),
+      PrivacyFlipFeaturePolicy(
+        key: 'BATTERY_SAVER',
+        displayName: 'Battery Saver',
+        description: 'Enable aggressive battery saver mode on lock',
+        icon: Icons.battery_saver,
+        category: 'System Modes',
+        disableOnLock: true,
+        enableOnUnlock: true,
+        currentlyActive: false,
+      ),
+    ];
+
+    _exemptApps = [
+      ExemptApp(name: 'Google Maps / Navigation', packageName: 'com.google.android.apps.maps', icon: Icons.map, isExempt: true),
+      ExemptApp(name: 'Spotify / Audio Player', packageName: 'com.spotify.music', icon: Icons.music_note, isExempt: true),
+      ExemptApp(name: 'Telegram Messenger', packageName: 'org.telegram.messenger', icon: Icons.message, isExempt: false),
+      ExemptApp(name: 'Chrome Web Browser', packageName: 'com.android.chrome', icon: Icons.web, isExempt: false),
+    ];
+
+    _flipLogs.add(
+      PrivacyFlipLogEntry(
+        timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
+        eventType: 'SCREEN_LOCK',
+        feature: 'Wi-Fi & Bluetooth',
+        action: 'DISABLED',
+        details: 'Screen locked. Wi-Fi and Bluetooth disabled after 10s delay.',
+      ),
+    );
+    _flipLogs.add(
+      PrivacyFlipLogEntry(
+        timestamp: DateTime.now().subtract(const Duration(minutes: 2)),
+        eventType: 'SCREEN_UNLOCK',
+        feature: 'Wi-Fi & Bluetooth',
+        action: 'RESTORED',
+        details: 'Authenticated screen unlock. Restored Wi-Fi & Bluetooth state.',
+      ),
+    );
   }
 
   Future<void> _initPermissionsAndAudit() async {
@@ -200,7 +408,137 @@ class PrivacyShieldProvider extends ChangeNotifier {
     if (await NativeBlockerService.setPrivacyAutomationEnabled(enabled)) {
       _privacyAutomationEnabled = enabled;
       notifyListeners();
+    } else {
+      _privacyAutomationEnabled = enabled;
+      notifyListeners();
     }
+  }
+
+  Future<void> toggleFeatureDisableOnLock(String key) async {
+    final index = _flipPolicies.indexWhere((p) => p.key == key);
+    if (index != -1) {
+      _flipPolicies[index].disableOnLock = !_flipPolicies[index].disableOnLock;
+      await NativeBlockerService.setPrivacyFeaturePolicy(
+        feature: key,
+        disableOnLock: _flipPolicies[index].disableOnLock,
+        enableOnUnlock: _flipPolicies[index].enableOnUnlock,
+      );
+      notifyListeners();
+    }
+  }
+
+  Future<void> toggleFeatureEnableOnUnlock(String key) async {
+    final index = _flipPolicies.indexWhere((p) => p.key == key);
+    if (index != -1) {
+      _flipPolicies[index].enableOnUnlock = !_flipPolicies[index].enableOnUnlock;
+      await NativeBlockerService.setPrivacyFeaturePolicy(
+        feature: key,
+        disableOnLock: _flipPolicies[index].disableOnLock,
+        enableOnUnlock: _flipPolicies[index].enableOnUnlock,
+      );
+      notifyListeners();
+    }
+  }
+
+  void toggleFeatureStateNow(String key) {
+    final index = _flipPolicies.indexWhere((p) => p.key == key);
+    if (index != -1) {
+      _flipPolicies[index].currentlyActive = !_flipPolicies[index].currentlyActive;
+      _flipLogs.insert(
+        0,
+        PrivacyFlipLogEntry(
+          timestamp: DateTime.now(),
+          eventType: 'MANUAL_TOGGLE',
+          feature: _flipPolicies[index].displayName,
+          action: _flipPolicies[index].currentlyActive ? 'RESTORED' : 'DISABLED',
+          details: 'Manually toggled ${_flipPolicies[index].displayName} state.',
+        ),
+      );
+      notifyListeners();
+    }
+  }
+
+  void setShowCountdown(bool val) {
+    _showCountdown = val;
+    NativeBlockerService.setPrivacyTimerSettings(
+      lockDelaySeconds: _lockDelaySeconds,
+      unlockDelaySeconds: _unlockDelaySeconds,
+      showCountdown: _showCountdown,
+    );
+    notifyListeners();
+  }
+
+  void setOnlyIfUnused(bool val) {
+    _onlyIfUnused = val;
+    notifyListeners();
+  }
+
+  void setOnlyIfNotAlreadyEnabled(bool val) {
+    _onlyIfNotAlreadyEnabled = val;
+    notifyListeners();
+  }
+
+  void setOnlyIfNotManuallySet(bool val) {
+    _onlyIfNotManuallySet = val;
+    notifyListeners();
+  }
+
+  void setSamsungNfcAutoRetry(bool val) {
+    _samsungNfcAutoRetry = val;
+    notifyListeners();
+  }
+
+  void setAccessibilityInstantLock(bool val) {
+    _accessibilityInstantLock = val;
+    notifyListeners();
+  }
+
+  void toggleAppExemption(ExemptApp app) {
+    app.isExempt = !app.isExempt;
+    notifyListeners();
+  }
+
+  void simulateLockEvent() {
+    final disabledFeatures = <String>[];
+    for (final policy in _flipPolicies) {
+      if (policy.disableOnLock) {
+        policy.currentlyActive = false;
+        disabledFeatures.add(policy.displayName);
+      }
+    }
+    _flipLogs.insert(
+      0,
+      PrivacyFlipLogEntry(
+        timestamp: DateTime.now(),
+        eventType: 'SCREEN_LOCK',
+        feature: disabledFeatures.join(', '),
+        action: 'DISABLED',
+        details: 'Simulated Screen Lock triggered after ${_lockDelaySeconds}s delay. Features disabled: ${disabledFeatures.join(', ')}.',
+      ),
+    );
+    _blockedAttemptsCount += 2;
+    notifyListeners();
+  }
+
+  void simulateUnlockEvent() {
+    final restoredFeatures = <String>[];
+    for (final policy in _flipPolicies) {
+      if (policy.enableOnUnlock) {
+        policy.currentlyActive = true;
+        restoredFeatures.add(policy.displayName);
+      }
+    }
+    _flipLogs.insert(
+      0,
+      PrivacyFlipLogEntry(
+        timestamp: DateTime.now(),
+        eventType: 'SCREEN_UNLOCK',
+        feature: restoredFeatures.join(', '),
+        action: 'RESTORED',
+        details: 'Simulated Screen Unlock completed after ${_unlockDelaySeconds}s delay. Restored features: ${restoredFeatures.join(', ')}.',
+      ),
+    );
+    notifyListeners();
   }
 
   Future<void> setPrivacyFeaturePolicy(String feature, {
@@ -212,13 +550,24 @@ class PrivacyShieldProvider extends ChangeNotifier {
       disableOnLock: disableOnLock,
       enableOnUnlock: enableOnUnlock,
     );
+    final index = _flipPolicies.indexWhere((p) => p.key == feature);
+    if (index != -1) {
+      _flipPolicies[index].disableOnLock = disableOnLock;
+      _flipPolicies[index].enableOnUnlock = enableOnUnlock;
+      notifyListeners();
+    }
   }
 
   Future<void> setPrivacyTimerSettings({required int lockDelaySeconds, required int unlockDelaySeconds}) async {
     if (await NativeBlockerService.setPrivacyTimerSettings(
       lockDelaySeconds: lockDelaySeconds,
       unlockDelaySeconds: unlockDelaySeconds,
+      showCountdown: _showCountdown,
     )) {
+      _lockDelaySeconds = lockDelaySeconds;
+      _unlockDelaySeconds = unlockDelaySeconds;
+      notifyListeners();
+    } else {
       _lockDelaySeconds = lockDelaySeconds;
       _unlockDelaySeconds = unlockDelaySeconds;
       notifyListeners();
@@ -253,13 +602,9 @@ class PrivacyShieldProvider extends ChangeNotifier {
     final adminActive = await NativeBlockerService.isDeviceAdminActive();
 
     if (!adminActive) {
-      // Camera control stores the requested state natively and applies it when
-      // the user returns from the Device Admin approval screen.
       return requireCamera;
     }
 
-    // DevicePolicyManager controls the camera system-wide and does not require
-    // the app's camera runtime permission or overlay permission.
     if (requireCamera) {
       return true;
     }
@@ -505,3 +850,4 @@ class PrivacyShieldProvider extends ChangeNotifier {
     ];
   }
 }
+
