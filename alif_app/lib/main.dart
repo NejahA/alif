@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'models/pet_evolution.dart';
 import 'models/achievements_and_streaks.dart';
 import 'models/life_quests.dart';
+import 'services/save_game.dart';
 import 'widgets/lucky_wheel_modal.dart';
+import 'widgets/focus_timer.dart';
 import 'games/void_meteor_rush.dart';
 import 'games/flappy_alifi.dart';
 import 'games/nebula_rhythm.dart';
@@ -21,6 +23,9 @@ import 'games/bubble_shooter.dart';
 import 'games/constellation_flip.dart';
 import 'games/black_hole_whack.dart';
 import 'games/stardust_tower.dart';
+import 'games/warp_pong.dart';
+import 'games/nebula_sequence.dart';
+import 'games/comet_merge.dart';
 
 void main() {
   runApp(const AlifApp());
@@ -97,6 +102,9 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
   late List<LifeQuest> _lifeQuests;
   int _totalLifeLogs = 0;
   int _lifePointsEarned = 0;
+  final List<String> _moodHistory = [];
+  String _lastMoodDate = '';
+  Timer? _saveDebounce;
 
   // Gamification & Evolution Attributes
   bool _freeWheelSpinAvailable = true;
@@ -153,6 +161,7 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
     _initQuests();
     _achievements = PetAchievement.initialList();
     _lifeQuests = LifeQuest.dailyDefaults();
+    _loadProgress();
 
     // Passive stat decrease over time
     _statDecayTimer = Timer.periodic(const Duration(seconds: 8), (timer) {
@@ -221,6 +230,7 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
   void dispose() {
     _bounceController.dispose();
     _statDecayTimer?.cancel();
+    _saveDebounce?.cancel();
     super.dispose();
   }
 
@@ -281,6 +291,7 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
         _checkAndIncrementAchievement('evolution_leap', _level);
       }
     });
+    _persist();
   }
 
   void _checkAndIncrementAchievement(String id, [int amount = 1]) {
@@ -331,6 +342,157 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
   }
 
   int get _lifeQuestsCleared => _lifeQuests.where((q) => q.isClaimed).length;
+
+  // ---------------------------------------------------------------- Life Rank
+  static const List<int> _lifeRankThresholds = [0, 100, 300, 700, 1500];
+  static const List<String> _lifeRankNames = ['Explorer', 'Builder', 'Achiever', 'Master', 'Legend'];
+
+  int get _lifeRankIndex {
+    var index = 0;
+    for (var i = 0; i < _lifeRankThresholds.length; i++) {
+      if (_lifePointsEarned >= _lifeRankThresholds[i]) index = i;
+    }
+    return index;
+  }
+
+  double get _lifeRankProgress {
+    final index = _lifeRankIndex;
+    if (index >= _lifeRankThresholds.length - 1) return 1.0;
+    final floor = _lifeRankThresholds[index];
+    final ceiling = _lifeRankThresholds[index + 1];
+    return ((_lifePointsEarned - floor) / (ceiling - floor)).clamp(0.0, 1.0);
+  }
+
+  String get _lifeRankLabel => _lifeRankNames[_lifeRankIndex];
+
+  String get _lifeRankNextLabel {
+    final index = _lifeRankIndex;
+    if (index >= _lifeRankThresholds.length - 1) return 'Max rank reached';
+    return '$_lifePointsEarned/${_lifeRankThresholds[index + 1]} to ${_lifeRankNames[index + 1]}';
+  }
+
+  // ------------------------------------------------------------ Mood check-in
+  static const List<Map<String, Object>> _moodOptions = [
+    {'label': 'Great', 'icon': Icons.sentiment_very_satisfied, 'color': Color(0xFF34D399)},
+    {'label': 'Good', 'icon': Icons.sentiment_satisfied, 'color': Color(0xFF60A5FA)},
+    {'label': 'Okay', 'icon': Icons.sentiment_neutral, 'color': Color(0xFFFBBF24)},
+    {'label': 'Low', 'icon': Icons.sentiment_dissatisfied, 'color': Color(0xFFFB923C)},
+    {'label': 'Rough', 'icon': Icons.sentiment_very_dissatisfied, 'color': Color(0xFFF87171)},
+  ];
+
+  String get _todayKey {
+    final now = DateTime.now();
+    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  }
+
+  bool get _moodLoggedToday => _lastMoodDate == _todayKey;
+
+  void _recordMood(String label) {
+    if (_moodLoggedToday) {
+      _showMessage('Mood already checked in today 🌤 Come back tomorrow!');
+      return;
+    }
+    setState(() {
+      _lastMoodDate = _todayKey;
+      _moodHistory.add(label);
+      if (_moodHistory.length > 7) {
+        _moodHistory.removeAt(0);
+      }
+      _coins += 10;
+      _totalLifeLogs += 1;
+    });
+    _gainXP(5);
+    _showMessage('Mood logged: $label (+10 Coins, +5 XP)');
+  }
+
+  void _openFocusSession() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FocusTimerScreen(
+          onSessionComplete: (minutes) {
+            final earnedCoins = (minutes * 2).clamp(25, 90).toInt();
+            final earnedXP = minutes.clamp(20, 70).toInt();
+            setState(() {
+              _coins += earnedCoins;
+              _totalLifeLogs += 1;
+              _lifePointsEarned += earnedCoins;
+            });
+            _gainXP(earnedXP);
+            final focusMatches = _lifeQuests.where((q) => q.id == 'focus');
+            final focusQuest = focusMatches.isEmpty ? null : focusMatches.first;
+            if (focusQuest != null && !focusQuest.isClaimed && !focusQuest.isCompleted) {
+              _logLifeQuest(focusQuest);
+            }
+            _showMessage('Focus session banked! +$earnedCoins Coins, +$earnedXP XP 🎯');
+          },
+        ),
+      ),
+    );
+  }
+
+  // -------------------------------------------------------------- Persistence
+  SaveSnapshot _snapshot() => SaveSnapshot(
+        coins: _coins,
+        level: _level,
+        xp: _xp,
+        streakDay: _streakDay,
+        streakClaimedToday: _streakClaimedToday,
+        totalLifeLogs: _totalLifeLogs,
+        lifePointsEarned: _lifePointsEarned,
+        totalGamesPlayed: _totalGamesPlayed,
+        totalSnacksFed: _totalSnacksFed,
+        totalPetTaps: _totalPetTaps,
+        equippedHat: _equippedHat,
+        currentHabitat: _currentHabitat,
+        unlockedHats: List<String>.from(_unlockedHats),
+        unlockedHabitats: List<String>.from(_unlockedHabitats),
+        lifeQuestProgress: {for (final q in _lifeQuests) q.id: q.currentProgress},
+        lifeQuestClaimed: {for (final q in _lifeQuests) q.id: q.isClaimed},
+        moodHistory: List<String>.from(_moodHistory),
+        lastMoodDate: _lastMoodDate,
+      );
+
+  /// Debounced so a burst of rewards only writes once.
+  void _persist() {
+    _saveDebounce?.cancel();
+    _saveDebounce = Timer(const Duration(milliseconds: 400), () {
+      SaveGame.save(_snapshot());
+    });
+  }
+
+  Future<void> _loadProgress() async {
+    final snapshot = await SaveGame.load();
+    if (!mounted || snapshot == null) return;
+    setState(() {
+      _coins = snapshot.coins;
+      _level = snapshot.level;
+      _xp = snapshot.xp;
+      _streakDay = snapshot.streakDay;
+      _streakClaimedToday = snapshot.streakClaimedToday;
+      _totalLifeLogs = snapshot.totalLifeLogs;
+      _lifePointsEarned = snapshot.lifePointsEarned;
+      _totalGamesPlayed = snapshot.totalGamesPlayed;
+      _totalSnacksFed = snapshot.totalSnacksFed;
+      _totalPetTaps = snapshot.totalPetTaps;
+      _equippedHat = snapshot.equippedHat;
+      _currentHabitat = snapshot.currentHabitat;
+      for (final hat in snapshot.unlockedHats) {
+        if (!_unlockedHats.contains(hat)) _unlockedHats.add(hat);
+      }
+      for (final habitat in snapshot.unlockedHabitats) {
+        if (!_unlockedHabitats.contains(habitat)) _unlockedHabitats.add(habitat);
+      }
+      for (final quest in _lifeQuests) {
+        quest.currentProgress = snapshot.lifeQuestProgress[quest.id] ?? 0;
+        quest.isClaimed = snapshot.lifeQuestClaimed[quest.id] ?? false;
+      }
+      _moodHistory
+        ..clear()
+        ..addAll(snapshot.moodHistory);
+      _lastMoodDate = snapshot.lastMoodDate;
+    });
+  }
 
   void _openLuckyWheel() {
     showDialog(
@@ -1261,6 +1423,11 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
 
         _buildLifeScoreCard(),
 
+        const SizedBox(height: 20),
+        _buildMoodCard(),
+        const SizedBox(height: 16),
+        _buildFocusCard(),
+
         const SizedBox(height: 24),
         const Text('Real-Life Quests', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
         const SizedBox(height: 12),
@@ -1284,11 +1451,44 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
           ),
         ],
       ),
-      child: Row(
+      child: Column(
         children: [
-          _buildLifeScoreStat('$_totalLifeLogs', 'Habits Logged'),
-          _buildLifeScoreStat('$_lifeQuestsCleared/${_lifeQuests.length}', 'Quests Cleared'),
-          _buildLifeScoreStat('$_lifePointsEarned', 'Life Points'),
+          Row(
+            children: [
+              _buildLifeScoreStat('$_totalLifeLogs', 'Habits Logged'),
+              _buildLifeScoreStat('$_lifeQuestsCleared/${_lifeQuests.length}', 'Quests Cleared'),
+              _buildLifeScoreStat('$_lifePointsEarned', 'Life Points'),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              const Icon(Icons.workspace_premium, color: Colors.white, size: 16),
+              const SizedBox(width: 6),
+              Text(
+                'Life Rank: $_lifeRankLabel',
+                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w900),
+              ),
+              const Spacer(),
+              Flexible(
+                child: Text(
+                  _lifeRankNextLabel,
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: _lifeRankProgress,
+              minHeight: 6,
+              backgroundColor: Colors.white24,
+              valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+            ),
+          ),
         ],
       ),
     );
@@ -1301,6 +1501,135 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
           Text(value, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900)),
           const SizedBox(height: 2),
           Text(label, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMoodCard() {
+    final lastMood = _moodHistory.isEmpty ? '' : _moodHistory.last;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E293B),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFF34D399).withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.favorite_rounded, color: Color(0xFF34D399), size: 20),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'Daily Mood Check-in',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                ),
+              ),
+              Text(
+                _moodLoggedToday ? 'Logged ✔' : '+10 Coins',
+                style: TextStyle(
+                  color: _moodLoggedToday ? Colors.white38 : const Color(0xFF34D399),
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: _moodOptions.map((mood) {
+              final label = mood['label'] as String;
+              final color = mood['color'] as Color;
+              final icon = mood['icon'] as IconData;
+              final isSelected = _moodLoggedToday && lastMood == label;
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(14),
+                    onTap: () => _recordMood(label),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: isSelected ? 0.35 : 0.12),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: isSelected ? color : Colors.transparent, width: 1.5),
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(icon, color: color, size: 24),
+                          const SizedBox(height: 4),
+                          Text(
+                            label,
+                            style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+          if (_moodHistory.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(
+              'Recent check-ins: ${_moodHistory.join(' · ')}',
+              style: const TextStyle(color: Colors.white54, fontSize: 11),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFocusCard() {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E293B),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFF8B5CF6).withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF8B5CF6).withValues(alpha: 0.2),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.timer_outlined, color: Color(0xFF8B5CF6), size: 22),
+          ),
+          const SizedBox(width: 14),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Focus Session', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+                SizedBox(height: 2),
+                Text(
+                  'Run a timed deep-work block — finish it to bank Coins, XP and Life Points.',
+                  style: TextStyle(color: Colors.white60, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF8B5CF6),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+            ),
+            onPressed: _openFocusSession,
+            child: const Text('Start'),
+          ),
         ],
       ),
     );
@@ -1905,6 +2234,93 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
                     );
                   },
                 ),
+                const SizedBox(height: 16),
+                _buildGameCard(
+                  title: 'Warp Pong',
+                  description: 'Drag or tap to swing your paddle — outplay the AI in a neon rally duel and win the match before time runs out!',
+                  icon: Icons.sports_tennis_rounded,
+                  color: const Color(0xFF34D399),
+                  badgeText: 'NEW',
+                  badgeColor: const Color(0xFF34D399),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => WarpPongGameScreen(
+                          onGameFinished: (earnedCoins, earnedXP) {
+                            final scaledCoins = (earnedCoins * _currentEvolution.coinMultiplier).round();
+                            final scaledXP = (earnedXP * _currentEvolution.xpMultiplier).round();
+                            setState(() {
+                              _coins += scaledCoins;
+                              _totalGamesPlayed += 1;
+                            });
+                            _gainXP(scaledXP);
+                            _incrementQuestProgress('play_game');
+                            _checkAndIncrementAchievement('arcade_champion');
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+                _buildGameCard(
+                  title: 'Nebula Sequence',
+                  description: 'Watch the nebula nodes flash, then repeat the growing sequence from memory — how long a chain can you hold?',
+                  icon: Icons.graphic_eq_rounded,
+                  color: const Color(0xFFF472B6),
+                  badgeText: 'NEW',
+                  badgeColor: const Color(0xFFF472B6),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => NebulaSequenceGameScreen(
+                          onGameFinished: (earnedCoins, earnedXP) {
+                            final scaledCoins = (earnedCoins * _currentEvolution.coinMultiplier).round();
+                            final scaledXP = (earnedXP * _currentEvolution.xpMultiplier).round();
+                            setState(() {
+                              _coins += scaledCoins;
+                              _totalGamesPlayed += 1;
+                            });
+                            _gainXP(scaledXP);
+                            _incrementQuestProgress('play_game');
+                            _checkAndIncrementAchievement('arcade_champion');
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+                _buildGameCard(
+                  title: 'Comet Merge',
+                  description: 'Drop comets and let identical ones collide — merge your way up from asteroid to Supernova before the stack overflows!',
+                  icon: Icons.bubble_chart_rounded,
+                  color: const Color(0xFFFBBF24),
+                  badgeText: 'NEW',
+                  badgeColor: const Color(0xFFFBBF24),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CometMergeGameScreen(
+                          onGameFinished: (earnedCoins, earnedXP) {
+                            final scaledCoins = (earnedCoins * _currentEvolution.coinMultiplier).round();
+                            final scaledXP = (earnedXP * _currentEvolution.xpMultiplier).round();
+                            setState(() {
+                              _coins += scaledCoins;
+                              _totalGamesPlayed += 1;
+                            });
+                            _gainXP(scaledXP);
+                            _incrementQuestProgress('play_game');
+                            _checkAndIncrementAchievement('arcade_champion');
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
               ],
             ),
           ),
@@ -2058,6 +2474,7 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
                         _equippedHat = isEquipped ? 'None' : hat;
                       });
                       _incrementQuestProgress('style_pet');
+                      _persist();
                     },
                     child: Text(isEquipped ? 'Equipped' : 'Equip', style: const TextStyle(color: Colors.white)),
                   )
@@ -2077,6 +2494,7 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
                         _showMessage('Unlocked $hat hat!');
                         _incrementQuestProgress('style_pet');
                         _checkAndIncrementAchievement('fashion_icon');
+                        _persist();
                       } else {
                         _showMessage('Need $price coins!');
                       }
@@ -2134,6 +2552,7 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
                     ),
                     onPressed: () {
                       setState(() => _currentHabitat = habitat);
+                      _persist();
                     },
                     child: Text(isSelected ? 'Selected' : 'Apply', style: const TextStyle(color: Colors.white)),
                   )
@@ -2151,6 +2570,7 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
                           _currentHabitat = habitat;
                         });
                         _showMessage('Unlocked $habitat environment!');
+                        _persist();
                       } else {
                         _showMessage('Need $price coins!');
                       }
