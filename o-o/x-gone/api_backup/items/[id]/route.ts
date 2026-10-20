@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Item from '@/models/Item';
 
+import mongoose from 'mongoose';
+
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -9,12 +11,17 @@ export async function DELETE(
   try {
     await dbConnect();
     const { id } = await params;
-    const deletedItem = await Item.findByIdAndDelete(id);
-    if (!deletedItem) {
-      return NextResponse.json({ success: false, error: 'Item not found' }, { status: 404 });
+    let deletedItem = null;
+
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      deletedItem = await Item.findByIdAndDelete(id);
+    } else {
+      deletedItem = await Item.findOneAndDelete({ $or: [{ _id: id }, { id }] });
     }
-    return NextResponse.json({ success: true, data: {} });
+
+    return NextResponse.json({ success: true, data: deletedItem || {} });
   } catch (error) {
+    console.error("DELETE Error:", error);
     return NextResponse.json({ success: false, error: 'Failed to delete item' }, { status: 500 });
   }
 }

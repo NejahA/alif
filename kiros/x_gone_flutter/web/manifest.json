@@ -1,6 +1,6 @@
 {
-    "name": "X_Gone",
-    "short_name": "X_Gone",
+    "name": "X-Gone",
+    "short_name": "X-Gone",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

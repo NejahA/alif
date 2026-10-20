@@ -1,6 +1,22 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'models/pet_evolution.dart';
+import 'models/achievements_and_streaks.dart';
+import 'widgets/lucky_wheel_modal.dart';
+import 'games/void_meteor_rush.dart';
+import 'games/flappy_alifi.dart';
+import 'games/nebula_rhythm.dart';
+import 'games/quantum_breakout.dart';
+import 'games/astral_snake.dart';
+import 'games/galaxy_defender.dart';
+import 'games/gravity_sling.dart';
+import 'games/starlight_match3.dart';
+import 'games/hyperspace_racer.dart';
+import 'games/cosmic_pinball.dart';
+import 'games/cosmic_2048.dart';
+import 'games/stellar_slicer.dart';
+import 'games/bubble_shooter.dart';
 
 void main() {
   runApp(const AlifApp());
@@ -72,7 +88,14 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
   int _totalSnacksFed = 0;
   int _totalGamesPlayed = 0;
   int _totalPetTaps = 0;
-  bool _dailyBonusClaimed = false;
+
+  // Gamification & Evolution Attributes
+  bool _freeWheelSpinAvailable = true;
+  int _streakDay = 1;
+  bool _streakClaimedToday = false;
+  late List<PetAchievement> _achievements;
+  int _voidRushHighScore = 0;
+  PetEvolution get _currentEvolution => PetEvolution.fromLevel(_level);
 
   // Pet State & Wardrobe
   String _petMood = 'Happy'; // Happy, Hungry, Sleepy, Party, Eating
@@ -119,6 +142,7 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
     )..repeat(reverse: true);
 
     _initQuests();
+    _achievements = PetAchievement.initialList();
 
     // Passive stat decrease over time
     _statDecayTimer = Timer.periodic(const Duration(seconds: 8), (timer) {
@@ -211,26 +235,167 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
     }
   }
 
-  void _claimDailyBonus() {
-    if (_dailyBonusClaimed) return;
+  void _claimStreakDay() {
+    if (_streakClaimedToday) return;
+    final reward = StreakReward.sevenDays[(_streakDay - 1) % 7];
     setState(() {
-      _dailyBonusClaimed = true;
-      _coins += 50;
+      _streakClaimedToday = true;
+      _coins += reward.coins;
+      if (reward.bonusHat != null && !_unlockedHats.contains(reward.bonusHat!)) {
+        _unlockedHats.add(reward.bonusHat!);
+      }
+      _streakDay = (_streakDay % 7) + 1;
     });
-    _gainXP(30);
-    _triggerCelebration('Daily Bonus Claimed! +50 Coins & +30 XP! 🎁');
+    _gainXP(reward.xp);
+    _triggerCelebration('Day Reward Claimed! +${reward.coins} Coins & +${reward.xp} XP! ⚡');
   }
 
   void _gainXP(int amount) {
+    final scaled = (amount * _currentEvolution.xpMultiplier).round();
     setState(() {
-      _xp += amount;
+      _xp += scaled;
       if (_xp >= _xpToNextLevel) {
+        final oldStage = _currentEvolution.stage;
         _level += 1;
         _xp -= _xpToNextLevel;
-        _coins += 50;
-        _triggerCelebration('LEVEL UP! Reached Level $_level (+50 Coins!)');
+        final bonusCoins = (50 * _currentEvolution.coinMultiplier).round();
+        _coins += bonusCoins;
+
+        final newStage = _currentEvolution.stage;
+        if (newStage > oldStage) {
+          _showEvolutionModal(_currentEvolution);
+        } else {
+          _triggerCelebration('LEVEL UP! Reached Level $_level (+$bonusCoins Coins!)');
+        }
+
+        _checkAndIncrementAchievement('evolution_leap', _level);
       }
     });
+  }
+
+  void _checkAndIncrementAchievement(String id, [int amount = 1]) {
+    setState(() {
+      for (final a in _achievements) {
+        if (a.id == id && !a.isClaimed) {
+          a.currentValue += amount;
+        }
+      }
+    });
+  }
+
+  void _claimAchievementReward(PetAchievement achievement) {
+    if (achievement.isCompleted && !achievement.isClaimed) {
+      setState(() {
+        achievement.isClaimed = true;
+        _coins += achievement.coinReward;
+      });
+      _gainXP(achievement.xpReward);
+      _triggerCelebration('Achievement: ${achievement.title}! +${achievement.coinReward} Coins! 🏆');
+    }
+  }
+
+  void _openLuckyWheel() {
+    showDialog(
+      context: context,
+      builder: (ctx) => LuckyWheelModal(
+        currentCoins: _coins,
+        hasFreeSpin: _freeWheelSpinAvailable,
+        onRewardClaimed: (coins, xp, usedFreeSpin) {
+          final scaledCoins = (coins * _currentEvolution.coinMultiplier).round();
+          final scaledXp = (xp * _currentEvolution.xpMultiplier).round();
+          setState(() {
+            _coins += scaledCoins;
+            if (usedFreeSpin) {
+              _freeWheelSpinAvailable = false;
+            } else {
+              _coins = max(0, _coins - 30);
+            }
+          });
+          _gainXP(scaledXp);
+        },
+      ),
+    );
+  }
+
+  void _showEvolutionModal(PetEvolution evo) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF0F172A),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(28),
+          side: BorderSide(color: evo.primaryAura, width: 2.5),
+        ),
+        title: Row(
+          children: [
+            Icon(Icons.auto_awesome, color: evo.primaryAura, size: 28),
+            const SizedBox(width: 8),
+            const Expanded(
+              child: Text(
+                'CELESTIAL METAMORPHOSIS!',
+                style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: evo.primaryAura.withValues(alpha: 0.2),
+                boxShadow: [
+                  BoxShadow(color: evo.primaryAura.withValues(alpha: 0.5), blurRadius: 20, spreadRadius: 2),
+                ],
+              ),
+              child: Icon(Icons.pets, color: evo.accentAura, size: 52),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              evo.title,
+              style: TextStyle(color: evo.primaryAura, fontSize: 22, fontWeight: FontWeight.w900),
+            ),
+            Text(
+              evo.formName,
+              style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              evo.description,
+              style: const TextStyle(color: Colors.white60, fontSize: 13),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              decoration: BoxDecoration(
+                color: evo.primaryAura.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: evo.primaryAura),
+              ),
+              child: Text(
+                'Passive Bonus: ${evo.statBonusText}',
+                style: TextStyle(color: evo.primaryAura, fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: evo.primaryAura,
+              foregroundColor: Colors.black,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            ),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('EMBRACE EVOLUTION!', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 
   void _triggerCelebration(String message) {
@@ -279,6 +444,7 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
     });
     _gainXP(15);
     _incrementQuestProgress('feed_snack');
+    _checkAndIncrementAchievement('gourmet');
 
     Future.delayed(const Duration(milliseconds: 1200), () {
       if (mounted && _petMood == 'Eating') {
@@ -300,6 +466,7 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
     });
     _gainXP(5);
     _incrementQuestProgress('tap_pet');
+    _checkAndIncrementAchievement('tap_master');
   }
 
   void _toggleSleep() {
@@ -458,6 +625,36 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
             ],
           ),
 
+          // Lucky Wheel Center Button
+          InkWell(
+            onTap: _openLuckyWheel,
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(colors: [Color(0xFFFFEA00), Color(0xFFF59E0B)]),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFFFD700).withValues(alpha: 0.5),
+                    blurRadius: 8,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.stars_rounded, color: Colors.black, size: 16),
+                  const SizedBox(width: 4),
+                  Text(
+                    _freeWheelSpinAvailable ? 'FREE SPIN!' : 'LUCKY SPIN',
+                    style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w900, fontSize: 10.5),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
           // Coins Counter
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
@@ -503,6 +700,43 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
               ),
             ),
             const SizedBox(height: 12),
+
+            // Evolution Stage Badge
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+              decoration: BoxDecoration(
+                color: _currentEvolution.primaryAura.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: _currentEvolution.primaryAura, width: 1.5),
+                boxShadow: [
+                  BoxShadow(color: _currentEvolution.primaryAura.withValues(alpha: 0.25), blurRadius: 10),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.auto_awesome, color: _currentEvolution.primaryAura, size: 14),
+                  const SizedBox(width: 6),
+                  Text(
+                    '${_currentEvolution.title} (Stage ${_currentEvolution.stage})',
+                    style: TextStyle(color: _currentEvolution.primaryAura, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 0.8),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: _currentEvolution.primaryAura,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      _currentEvolution.statBonusText,
+                      style: const TextStyle(color: Colors.black, fontSize: 9.5, fontWeight: FontWeight.w900),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
 
             // Habitat Badge
             Container(
@@ -585,6 +819,12 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
                     color: const Color(0xFFEC4899),
                     onTap: () => _triggerCelebration('Party Mode Activated! 🎉'),
                   ),
+                  _buildActionButton(
+                    icon: Icons.stars_rounded,
+                    label: 'Lucky Spin',
+                    color: const Color(0xFFFFD700),
+                    onTap: _openLuckyWheel,
+                  ),
                 ],
               ),
             ),
@@ -595,10 +835,89 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
   }
 
   Widget _buildPetAvatar() {
+    final evo = _currentEvolution;
+
     return Stack(
       alignment: Alignment.center,
       clipBehavior: Clip.none,
       children: [
+        // Evolution Stage 3+ Celestial Nebula Wings
+        if (evo.stage >= 3) ...[
+          Positioned(
+            left: -36,
+            child: Transform.rotate(
+              angle: -0.25,
+              child: Container(
+                width: 60,
+                height: 90,
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.horizontal(left: Radius.circular(50)),
+                  gradient: LinearGradient(
+                    colors: [evo.primaryAura.withValues(alpha: 0.8), evo.accentAura.withValues(alpha: 0.1)],
+                  ),
+                  boxShadow: [
+                    BoxShadow(color: evo.primaryAura.withValues(alpha: 0.5), blurRadius: 18),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            right: -36,
+            child: Transform.rotate(
+              angle: 0.25,
+              child: Container(
+                width: 60,
+                height: 90,
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.horizontal(right: Radius.circular(50)),
+                  gradient: LinearGradient(
+                    colors: [evo.accentAura.withValues(alpha: 0.1), evo.primaryAura.withValues(alpha: 0.8)],
+                  ),
+                  boxShadow: [
+                    BoxShadow(color: evo.primaryAura.withValues(alpha: 0.5), blurRadius: 18),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+
+        // Evolution Stage 2+ Orbital Starlight Ring
+        if (evo.stage >= 2)
+          Positioned(
+            child: Transform.rotate(
+              angle: -0.38,
+              child: Container(
+                width: 195,
+                height: 64,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(32),
+                  border: Border.all(color: evo.accentAura.withValues(alpha: 0.85), width: 2.5),
+                  boxShadow: [
+                    BoxShadow(color: evo.accentAura.withValues(alpha: 0.45), blurRadius: 14),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+        // Evolution Stage 4 Chronos Transcendent Chronometer Ring
+        if (evo.stage >= 4)
+          Positioned(
+            child: Container(
+              width: 180,
+              height: 180,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: const Color(0xFFFFD700).withValues(alpha: 0.6), width: 2),
+                boxShadow: [
+                  BoxShadow(color: const Color(0xFFFFD700).withValues(alpha: 0.4), blurRadius: 24, spreadRadius: 3),
+                ],
+              ),
+            ),
+          ),
+
         // Glow backdrop
         Container(
           width: 170,
@@ -609,13 +928,13 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
                     ? const Color(0xFFEC4899)
                     : _isSleeping
                         ? const Color(0xFF312E81)
-                        : const Color(0xFF8B5CF6))
+                        : evo.primaryAura)
                 .withValues(alpha: 0.35),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF8B5CF6).withValues(alpha: 0.5),
+                color: evo.primaryAura.withValues(alpha: 0.55),
                 blurRadius: 30,
-                spreadRadius: 5,
+                spreadRadius: 6,
               ),
             ],
           ),
@@ -630,24 +949,25 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
             gradient: RadialGradient(
               colors: _isSleeping
                   ? [const Color(0xFF6366F1), const Color(0xFF312E81)]
-                  : [const Color(0xFFA78BFA), const Color(0xFF6D28D9)],
+                  : [evo.accentAura, evo.primaryAura],
               center: Alignment.topLeft,
             ),
           ),
           child: Stack(
             alignment: Alignment.center,
             children: [
-              // Alien Antenna
+              // Alien Antenna / Star Crest
               Positioned(
                 top: 10,
                 child: Container(
-                  width: 14,
-                  height: 14,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFF472B6),
+                  width: evo.stage >= 3 ? 18 : 14,
+                  height: evo.stage >= 3 ? 18 : 14,
+                  decoration: BoxDecoration(
+                    color: evo.accentAura,
                     shape: BoxShape.circle,
-                    boxShadow: [BoxShadow(color: Color(0xFFF472B6), blurRadius: 10)],
+                    boxShadow: [BoxShadow(color: evo.accentAura, blurRadius: 12)],
                   ),
+                  child: evo.stage >= 3 ? const Icon(Icons.star, color: Colors.white, size: 12) : null,
                 ),
               ),
 
@@ -925,12 +1245,396 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
                       MaterialPageRoute(
                         builder: (context) => CosmicMemoryGameScreen(
                           onGameFinished: (earnedCoins, earnedXP) {
+                            final scaledCoins = (earnedCoins * _currentEvolution.coinMultiplier).round();
+                            final scaledXP = (earnedXP * _currentEvolution.xpMultiplier).round();
                             setState(() {
-                              _coins += earnedCoins;
+                              _coins += scaledCoins;
                               _totalGamesPlayed += 1;
                             });
-                            _gainXP(earnedXP);
+                            _gainXP(scaledXP);
                             _incrementQuestProgress('play_game');
+                            _checkAndIncrementAchievement('arcade_champion');
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+                _buildGameCard(
+                  title: 'Void Meteor Rush',
+                  description: 'Steer Alifi through space debris! Dodge fiery meteors & collect star crystals!',
+                  icon: Icons.flight_takeoff_rounded,
+                  color: const Color(0xFFFF5252),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => VoidMeteorRushGameScreen(
+                          onGameFinished: (earnedCoins, earnedXP) {
+                            final scaledCoins = (earnedCoins * _currentEvolution.coinMultiplier).round();
+                            final scaledXP = (earnedXP * _currentEvolution.xpMultiplier).round();
+                            setState(() {
+                              _coins += scaledCoins;
+                              _totalGamesPlayed += 1;
+                              if (earnedCoins / 4 > _voidRushHighScore) {
+                                _voidRushHighScore = (earnedCoins / 4).round();
+                              }
+                            });
+                            _gainXP(scaledXP);
+                            _incrementQuestProgress('play_game');
+                            _checkAndIncrementAchievement('arcade_champion');
+                            if ((earnedCoins / 4) >= 15) {
+                              _checkAndIncrementAchievement('meteor_survivor', (earnedCoins / 4).round());
+                            }
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+                _buildGameCard(
+                  title: 'Flappy Alifi: Stargate Flight',
+                  description: 'Flap & glide through cosmic laser portals! Dodge obstacles & grab stardust crystals!',
+                  icon: Icons.rocket_rounded,
+                  color: const Color(0xFF00E5FF),
+                  badgeText: 'NEW',
+                  badgeColor: const Color(0xFF00E5FF),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => FlappyAlifiGameScreen(
+                          onGameFinished: (earnedCoins, earnedXP) {
+                            final scaledCoins = (earnedCoins * _currentEvolution.coinMultiplier).round();
+                            final scaledXP = (earnedXP * _currentEvolution.xpMultiplier).round();
+                            setState(() {
+                              _coins += scaledCoins;
+                              _totalGamesPlayed += 1;
+                            });
+                            _gainXP(scaledXP);
+                            _incrementQuestProgress('play_game');
+                            _checkAndIncrementAchievement('arcade_champion');
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+                _buildGameCard(
+                  title: 'Nebula Rhythm Beats',
+                  description: 'Tap along to cosmic musical energy! Hit falling notes across 4 neon lanes for massive combos!',
+                  icon: Icons.audiotrack_rounded,
+                  color: const Color(0xFFEC4899),
+                  badgeText: 'HOT',
+                  badgeColor: const Color(0xFFEC4899),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => NebulaRhythmGameScreen(
+                          onGameFinished: (earnedCoins, earnedXP) {
+                            final scaledCoins = (earnedCoins * _currentEvolution.coinMultiplier).round();
+                            final scaledXP = (earnedXP * _currentEvolution.xpMultiplier).round();
+                            setState(() {
+                              _coins += scaledCoins;
+                              _totalGamesPlayed += 1;
+                            });
+                            _gainXP(scaledXP);
+                            _incrementQuestProgress('play_game');
+                            _checkAndIncrementAchievement('arcade_champion');
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+                _buildGameCard(
+                  title: 'Quantum Breakout',
+                  description: 'Shatter celestial brick formations! Steer the quantum energy paddle and clear galaxies!',
+                  icon: Icons.view_module_rounded,
+                  color: const Color(0xFF8B5CF6),
+                  badgeText: 'NEW',
+                  badgeColor: const Color(0xFF8B5CF6),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => QuantumBreakoutGameScreen(
+                          onGameFinished: (earnedCoins, earnedXP) {
+                            final scaledCoins = (earnedCoins * _currentEvolution.coinMultiplier).round();
+                            final scaledXP = (earnedXP * _currentEvolution.xpMultiplier).round();
+                            setState(() {
+                              _coins += scaledCoins;
+                              _totalGamesPlayed += 1;
+                            });
+                            _gainXP(scaledXP);
+                            _incrementQuestProgress('play_game');
+                            _checkAndIncrementAchievement('arcade_champion');
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+                _buildGameCard(
+                  title: 'Astral Comet Snake',
+                  description: 'Guide Alifi\'s glowing comet tail! Gobble stardust orbs and avoid space boundary breaches!',
+                  icon: Icons.gesture_rounded,
+                  color: const Color(0xFF10B981),
+                  badgeText: 'CLASSIC',
+                  badgeColor: const Color(0xFF10B981),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => AstralSnakeGameScreen(
+                          onGameFinished: (earnedCoins, earnedXP) {
+                            final scaledCoins = (earnedCoins * _currentEvolution.coinMultiplier).round();
+                            final scaledXP = (earnedXP * _currentEvolution.xpMultiplier).round();
+                            setState(() {
+                              _coins += scaledCoins;
+                              _totalGamesPlayed += 1;
+                            });
+                            _gainXP(scaledXP);
+                            _incrementQuestProgress('play_game');
+                            _checkAndIncrementAchievement('arcade_champion');
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+                _buildGameCard(
+                  title: 'Galaxy Defender',
+                  description: 'Classic arcade space invader defense! Intercept alien fleets with dual plasma cannons!',
+                  icon: Icons.shield_moon_rounded,
+                  color: const Color(0xFFFF5252),
+                  badgeText: 'ACTION',
+                  badgeColor: const Color(0xFFFF5252),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => GalaxyDefenderGameScreen(
+                          onGameFinished: (earnedCoins, earnedXP) {
+                            final scaledCoins = (earnedCoins * _currentEvolution.coinMultiplier).round();
+                            final scaledXP = (earnedXP * _currentEvolution.xpMultiplier).round();
+                            setState(() {
+                              _coins += scaledCoins;
+                              _totalGamesPlayed += 1;
+                            });
+                            _gainXP(scaledXP);
+                            _incrementQuestProgress('play_game');
+                            _checkAndIncrementAchievement('arcade_champion');
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+                _buildGameCard(
+                  title: 'Gravity Slingshot',
+                  description: 'Pull back & slingshot Alifi around planetary gravity wells! Collect orbital gems & warp out!',
+                  icon: Icons.public_rounded,
+                  color: const Color(0xFF6366F1),
+                  badgeText: 'PHYSICS',
+                  badgeColor: const Color(0xFF6366F1),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => GravitySlingGameScreen(
+                          onGameFinished: (earnedCoins, earnedXP) {
+                            final scaledCoins = (earnedCoins * _currentEvolution.coinMultiplier).round();
+                            final scaledXP = (earnedXP * _currentEvolution.xpMultiplier).round();
+                            setState(() {
+                              _coins += scaledCoins;
+                              _totalGamesPlayed += 1;
+                            });
+                            _gainXP(scaledXP);
+                            _incrementQuestProgress('play_game');
+                            _checkAndIncrementAchievement('arcade_champion');
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+                _buildGameCard(
+                  title: 'Starlight Match-3',
+                  description: 'Swap glowing celestial gems to create supernova cascades before the cosmic timer runs out!',
+                  icon: Icons.diamond_rounded,
+                  color: const Color(0xFFFFD700),
+                  badgeText: 'PUZZLE',
+                  badgeColor: const Color(0xFFFFD700),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => StarlightMatch3GameScreen(
+                          onGameFinished: (earnedCoins, earnedXP) {
+                            final scaledCoins = (earnedCoins * _currentEvolution.coinMultiplier).round();
+                            final scaledXP = (earnedXP * _currentEvolution.xpMultiplier).round();
+                            setState(() {
+                              _coins += scaledCoins;
+                              _totalGamesPlayed += 1;
+                            });
+                            _gainXP(scaledXP);
+                            _incrementQuestProgress('play_game');
+                            _checkAndIncrementAchievement('arcade_champion');
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+                _buildGameCard(
+                  title: 'Cosmic Hyperspace Racer',
+                  description: 'High-speed 3-lane hover speeder racing down the warp tunnel! Grab turbos & dodge obstacles!',
+                  icon: Icons.speed_rounded,
+                  color: const Color(0xFF00E5FF),
+                  badgeText: 'TURBO',
+                  badgeColor: const Color(0xFF00E5FF),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => HyperspaceRacerGameScreen(
+                          onGameFinished: (earnedCoins, earnedXP) {
+                            final scaledCoins = (earnedCoins * _currentEvolution.coinMultiplier).round();
+                            final scaledXP = (earnedXP * _currentEvolution.xpMultiplier).round();
+                            setState(() {
+                              _coins += scaledCoins;
+                              _totalGamesPlayed += 1;
+                            });
+                            _gainXP(scaledXP);
+                            _incrementQuestProgress('play_game');
+                            _checkAndIncrementAchievement('arcade_champion');
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+                _buildGameCard(
+                  title: 'Cosmic Pinball',
+                  description: 'Arcade pinball with glowing celestial bumpers, dual flippers, and high-energy physics!',
+                  icon: Icons.stars_rounded,
+                  color: const Color(0xFFEC4899),
+                  badgeText: 'PINBALL',
+                  badgeColor: const Color(0xFFEC4899),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CosmicPinballGameScreen(
+                          onGameFinished: (earnedCoins, earnedXP) {
+                            final scaledCoins = (earnedCoins * _currentEvolution.coinMultiplier).round();
+                            final scaledXP = (earnedXP * _currentEvolution.xpMultiplier).round();
+                            setState(() {
+                              _coins += scaledCoins;
+                              _totalGamesPlayed += 1;
+                            });
+                            _gainXP(scaledXP);
+                            _incrementQuestProgress('play_game');
+                            _checkAndIncrementAchievement('arcade_champion');
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+                _buildGameCard(
+                  title: 'Cosmic 2048 Fusion',
+                  description: 'Slide & merge matching celestial bodies into moons, stars, supernovas, and black holes!',
+                  icon: Icons.grid_view_rounded,
+                  color: const Color(0xFF8B5CF6),
+                  badgeText: 'FUSION',
+                  badgeColor: const Color(0xFF8B5CF6),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => Cosmic2048GameScreen(
+                          onGameFinished: (earnedCoins, earnedXP) {
+                            final scaledCoins = (earnedCoins * _currentEvolution.coinMultiplier).round();
+                            final scaledXP = (earnedXP * _currentEvolution.xpMultiplier).round();
+                            setState(() {
+                              _coins += scaledCoins;
+                              _totalGamesPlayed += 1;
+                            });
+                            _gainXP(scaledXP);
+                            _incrementQuestProgress('play_game');
+                            _checkAndIncrementAchievement('arcade_champion');
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+                _buildGameCard(
+                  title: 'Stellar Blade Slicer',
+                  description: 'Swipe your laser blade across flying space fruits! Slice combos and dodge antimatter bombs!',
+                  icon: Icons.content_cut_rounded,
+                  color: const Color(0xFF00E5FF),
+                  badgeText: 'ACTION',
+                  badgeColor: const Color(0xFF00E5FF),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => StellarSlicerGameScreen(
+                          onGameFinished: (earnedCoins, earnedXP) {
+                            final scaledCoins = (earnedCoins * _currentEvolution.coinMultiplier).round();
+                            final scaledXP = (earnedXP * _currentEvolution.xpMultiplier).round();
+                            setState(() {
+                              _coins += scaledCoins;
+                              _totalGamesPlayed += 1;
+                            });
+                            _gainXP(scaledXP);
+                            _incrementQuestProgress('play_game');
+                            _checkAndIncrementAchievement('arcade_champion');
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+                _buildGameCard(
+                  title: 'Nebula Bubble Shooter',
+                  description: 'Aim and shoot colorful stardust bubbles to match clusters of 3+ and clear constellations!',
+                  icon: Icons.bubble_chart_rounded,
+                  color: const Color(0xFFEC4899),
+                  badgeText: 'POP',
+                  badgeColor: const Color(0xFFEC4899),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => BubbleShooterGameScreen(
+                          onGameFinished: (earnedCoins, earnedXP) {
+                            final scaledCoins = (earnedCoins * _currentEvolution.coinMultiplier).round();
+                            final scaledXP = (earnedXP * _currentEvolution.xpMultiplier).round();
+                            setState(() {
+                              _coins += scaledCoins;
+                              _totalGamesPlayed += 1;
+                            });
+                            _gainXP(scaledXP);
+                            _incrementQuestProgress('play_game');
+                            _checkAndIncrementAchievement('arcade_champion');
                           },
                         ),
                       ),
@@ -951,6 +1655,8 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
     required IconData icon,
     required Color color,
     required VoidCallback onTap,
+    String? badgeText,
+    Color? badgeColor,
   }) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -981,7 +1687,28 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(title, style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+                    ),
+                    if (badgeText != null) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: (badgeColor ?? color).withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: badgeColor ?? color, width: 1),
+                        ),
+                        child: Text(
+                          badgeText,
+                          style: TextStyle(color: badgeColor ?? color, fontSize: 10, fontWeight: FontWeight.w900),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
                 const SizedBox(height: 4),
                 Text(description, style: const TextStyle(color: Colors.white70, fontSize: 12)),
                 const SizedBox(height: 12),
@@ -1085,6 +1812,7 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
                         });
                         _showMessage('Unlocked $hat hat!');
                         _incrementQuestProgress('style_pet');
+                        _checkAndIncrementAchievement('fashion_icon');
                       } else {
                         _showMessage('Need $price coins!');
                       }
@@ -1179,37 +1907,8 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
       padding: const EdgeInsets.all(20),
       child: ListView(
         children: [
-          // Daily Login Bonus Banner
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [Color(0xFF8B5CF6), Color(0xFFEC4899)]),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.card_giftcard, color: Colors.white, size: 36),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text('Daily Login Reward', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                      Text('Claim 50 free coins + 30 XP every day!', style: TextStyle(color: Colors.white90, fontSize: 12)),
-                    ],
-                  ),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _dailyBonusClaimed ? Colors.black38 : Colors.white,
-                    foregroundColor: _dailyBonusClaimed ? Colors.white54 : const Color(0xFF8B5CF6),
-                  ),
-                  onPressed: _dailyBonusClaimed ? null : _claimDailyBonus,
-                  child: Text(_dailyBonusClaimed ? 'Claimed' : 'Claim'),
-                ),
-              ],
-            ),
-          ),
+          // 7-Day Login Streak Tracker
+          _buildStreakCalendar(),
           const SizedBox(height: 24),
 
           // Daily Quests Header
@@ -1218,6 +1917,10 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
 
           ..._quests.map((quest) => _buildQuestTile(quest)),
 
+          const SizedBox(height: 24),
+
+          // Celestial Achievements Section
+          _buildAchievementsSection(),
           const SizedBox(height: 24),
 
           // Lifetime Stats Card
@@ -1232,6 +1935,10 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
             ),
             child: Column(
               children: [
+                _buildStatRow('Evolution Stage', '${_currentEvolution.title} (Stage ${_currentEvolution.stage})'),
+                const Divider(color: Colors.white10),
+                _buildStatRow('Passive Perk', _currentEvolution.statBonusText),
+                const Divider(color: Colors.white10),
                 _buildStatRow('Friendship Status', _getFriendshipTitle()),
                 const Divider(color: Colors.white10),
                 _buildStatRow('Total Snacks Fed', '$_totalSnacksFed 🍪'),
@@ -1244,6 +1951,158 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildStreakCalendar() {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(colors: [Color(0xFF8B5CF6), Color(0xFFEC4899)]),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFEC4899).withValues(alpha: 0.35),
+            blurRadius: 16,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: const [
+                  Icon(Icons.local_fire_department_rounded, color: Colors.amber, size: 28),
+                  SizedBox(width: 8),
+                  Text('7-Day Login Streak', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16)),
+                ],
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _streakClaimedToday ? Colors.black38 : Colors.white,
+                  foregroundColor: _streakClaimedToday ? Colors.white54 : const Color(0xFF8B5CF6),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                ),
+                onPressed: _streakClaimedToday ? null : _claimStreakDay,
+                child: Text(_streakClaimedToday ? 'Claimed ✔' : 'Claim Day $_streakDay', style: const TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: StreakReward.sevenDays.map((reward) {
+              final isCurrent = reward.day == _streakDay;
+              final isPassed = reward.day < _streakDay || (isCurrent && _streakClaimedToday);
+
+              return Expanded(
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 2),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  decoration: BoxDecoration(
+                    color: isPassed
+                        ? Colors.black26
+                        : isCurrent
+                            ? Colors.white.withValues(alpha: 0.25)
+                            : Colors.black12,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isCurrent ? Colors.white : Colors.white24,
+                      width: isCurrent ? 2 : 1,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Text('D${reward.day}', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 4),
+                      Icon(reward.icon, size: 16, color: isCurrent ? Colors.amberAccent : Colors.white70),
+                      const SizedBox(height: 2),
+                      Text('+${reward.coins}', style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAchievementsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Celestial Achievements', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+        const SizedBox(height: 12),
+        ..._achievements.map((ach) {
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E293B),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: ach.isClaimed ? Colors.white10 : (ach.isCompleted ? ach.themeColor : Colors.white12),
+                width: ach.isCompleted && !ach.isClaimed ? 1.8 : 1.0,
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: ach.themeColor.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(ach.icon, color: ach.themeColor, size: 24),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(ach.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                      Text(ach.description, style: const TextStyle(color: Colors.white60, fontSize: 11)),
+                      const SizedBox(height: 6),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: ach.progressPct,
+                          minHeight: 5,
+                          backgroundColor: Colors.white10,
+                          valueColor: AlwaysStoppedAnimation<Color>(ach.themeColor),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                if (ach.isClaimed)
+                  const Text('Claimed ✔', style: TextStyle(color: Colors.white38, fontSize: 11, fontWeight: FontWeight.bold))
+                else
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: ach.isCompleted ? ach.themeColor : Colors.white10,
+                      foregroundColor: ach.isCompleted ? Colors.black : Colors.white38,
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    ),
+                    onPressed: ach.isCompleted ? () => _claimAchievementReward(ach) : null,
+                    child: Text(
+                      ach.isCompleted ? '+${ach.coinReward}C' : '${ach.currentValue}/${ach.targetValue}',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+                    ),
+                  ),
+              ],
+            ),
+          );
+        }),
+      ],
     );
   }
 

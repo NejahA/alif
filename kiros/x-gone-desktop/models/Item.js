@@ -7,8 +7,12 @@ const ItemSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['note', 'file'],
+    enum: ['note', 'task', 'secret', 'code', 'file'],
     default: 'note',
+  },
+  isCompleted: {
+    type: Boolean,
+    default: false,
   },
   createdAt: {
     type: Date,

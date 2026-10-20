@@ -1,8 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:mongo_dart/mongo_dart.dart';
 import 'models/transient_item.dart';
 
 class ApiService {
-  static const String _uri = "mongodb+srv://nejahachref:96176065@cluster0.ajw0g.mongodb.net/href?retryWrites=true&w=majority&appName=x_gone";
+  static const String _uri = "mongodb+srv://nejahachref:96176065@cluster0.ajw0g.mongodb.net/href?retryWrites=true&w=majority&appName=x-gone";
   Db? _db;
   DbCollection? _collection;
 
@@ -20,7 +21,7 @@ class ApiService {
       final items = await _collection!.find(where.sortBy('createdAt', descending: false)).toList();
       return items.map((item) => TransientItem.fromJson(item)).toList();
     } catch (e) {
-      print("Error fetching items: $e");
+      debugPrint("Error fetching items: $e");
     }
     return [];
   }
@@ -35,6 +36,7 @@ class ApiService {
         "_id": ObjectId(),
         "content": content,
         "type": type,
+        "isCompleted": false,
         "createdAt": now,
         "expiresAt": expiresAt,
       };
@@ -42,9 +44,23 @@ class ApiService {
       await _collection!.insertOne(doc);
       return TransientItem.fromJson(doc);
     } catch (e) {
-      print("Error adding item: $e");
+      debugPrint("Error adding item: $e");
     }
     return null;
+  }
+
+  Future<bool> toggleTask(String id, bool isCompleted) async {
+    try {
+      await _ensureConnected();
+      await _collection!.update(
+        where.id(ObjectId.fromHexString(id)),
+        modify.set('isCompleted', isCompleted),
+      );
+      return true;
+    } catch (e) {
+      debugPrint("Error toggling task: $e");
+      return false;
+    }
   }
 
   Future<bool> deleteItem(String id) async {
@@ -53,7 +69,7 @@ class ApiService {
       await _collection!.remove(where.id(ObjectId.fromHexString(id)));
       return true;
     } catch (e) {
-      print("Error deleting item: $e");
+      debugPrint("Error deleting item: $e");
       return false;
     }
   }
@@ -64,7 +80,7 @@ class ApiService {
       await _collection!.remove(<String, dynamic>{});
       return true;
     } catch (e) {
-      print("Error mass wiping items: $e");
+      debugPrint("Error mass wiping items: $e");
       return false;
     }
   }

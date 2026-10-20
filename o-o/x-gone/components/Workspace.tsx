@@ -135,15 +135,18 @@ export const Workspace = () => {
                       onClick={() => handleEdit(item)}
                       className={styles.actionBtn}
                       title="Edit Task"
+                      aria-label="Edit Task"
                     >
                       <Edit2 size={14} />
                     </button>
                   )}
                   <button 
                     onClick={() => removeAtOnce(item.id)}
-                    className={styles.xButton}
+                    className={`${styles.actionBtn} ${styles.deleteBtn}`}
+                    title="Delete Task"
+                    aria-label="Delete Task"
                   >
-                    <X size={16} />
+                    <Trash2 size={14} />
                   </button>
                 </div>
               </div>

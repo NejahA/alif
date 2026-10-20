@@ -1,0 +1,186 @@
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
+
+:root {
+  --bg-dark: #050811;
+  --bg-card: rgba(13, 20, 36, 0.85);
+  --bg-panel: rgba(18, 28, 51, 0.95);
+  --border-cyan: #00e5ff;
+  --border-dim: rgba(0, 229, 255, 0.25);
+  --text-main: #e2e8f0;
+  --text-dim: #94a3b8;
+  --accent-amber: #ffd600;
+  --accent-magenta: #e040fb;
+  --accent-red: #ff1744;
+  --accent-green: #00e676;
+  --glow-cyan: 0 0 16px rgba(0, 229, 255, 0.35);
+  --glow-amber: 0 0 16px rgba(255, 214, 0, 0.35);
+  --glow-red: 0 0 16px rgba(255, 23, 68, 0.35);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+}
+
+body {
+  font-family: 'Chakra Petch', sans-serif;
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  min-height: 100vh;
+  overflow-x: hidden;
+  background-image: 
+    radial-gradient(circle at 50% 10%, rgba(0, 229, 255, 0.08) 0%, transparent 60%),
+    linear-gradient(rgba(5, 8, 17, 0.92), rgba(5, 8, 17, 0.92)),
+    radial-gradient(#1e293b 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 32px 32px;
+}
+
+.mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Glass Panels */
+.glass-panel {
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-dim);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.glass-panel:hover {
+  border-color: rgba(0, 229, 255, 0.45);
+}
+
+/* Sci-Fi Buttons */
+.btn-sci-fi {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: 'Chakra Petch', sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 10px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid var(--border-cyan);
+  background: rgba(0, 229, 255, 0.12);
+  color: #fff;
+  font-size: 0.85rem;
+}
+
+.btn-sci-fi:hover:not(:disabled) {
+  background: var(--border-cyan);
+  color: #050811;
+  box-shadow: var(--glow-cyan);
+  transform: translateY(-1px);
+}
+
+.btn-sci-fi:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.btn-sci-fi.btn-amber {
+  border-color: var(--accent-amber);
+  background: rgba(255, 214, 0, 0.12);
+}
+.btn-sci-fi.btn-amber:hover:not(:disabled) {
+  background: var(--accent-amber);
+  color: #050811;
+  box-shadow: var(--glow-amber);
+}
+
+.btn-sci-fi.btn-red {
+  border-color: var(--accent-red);
+  background: rgba(255, 23, 68, 0.12);
+}
+.btn-sci-fi.btn-red:hover:not(:disabled) {
+  background: var(--accent-red);
+  color: #fff;
+  box-shadow: var(--glow-red);
+}
+
+/* Nav Tab */
+.nav-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-dim);
+  font-family: 'Chakra Petch', sans-serif;
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nav-tab:hover {
+  color: #fff;
+}
+
+.nav-tab.active {
+  color: var(--border-cyan);
+  border-bottom-color: var(--border-cyan);
+  text-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
+}
+
+/* Stat Gauge Bar */
+.gauge-track {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+
+.gauge-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+/* CRT Scanlines subtle effect */
+.crt-overlay {
+  pointer-events: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(
+    rgba(18, 16, 16, 0) 50%, 
+    rgba(0, 0, 0, 0.15) 50%
+  );
+  background-size: 100% 4px;
+  z-index: 9999;
+  opacity: 0.4;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(5, 8, 17, 0.8);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 229, 255, 0.3);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-cyan);
+}

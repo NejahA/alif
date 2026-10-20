@@ -1,19 +1,23 @@
 {
   "name": "x-gone-desktop",
   "version": "1.0.0",
-  "description": "X-Gone Desktop Application",
+  "description": "X-Gone Desktop Application - Ephemeral Workspace",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder"
+    "dist": "electron-builder --win nsis",
+    "build": "electron-builder --win nsis",
+    "build:installer": "electron-builder --win nsis",
+    "build:portable": "electron-builder --win portable"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "x-gone",
+    "desktop",
+    "ephemeral",
+    "mongodb"
+  ],
+  "author": "Kiros",
   "license": "ISC",
-  "devDependencies": {
-    "electron": "^30.0.0",
-    "electron-builder": "^24.13.3"
-  },
   "build": {
     "appId": "com.kiros.xgone",
     "productName": "X-Gone",
@@ -21,14 +25,44 @@
       "output": "dist"
     },
     "win": {
-      "icon": "icon.png",
+      "icon": "icon.ico",
       "target": [
-        "nsis"
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
       ]
-    }
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "X-Gone",
+      "installerIcon": "icon.ico",
+      "uninstallerIcon": "icon.ico",
+      "installerHeaderIcon": "icon.ico"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "models/**/*",
+      "logo.png",
+      "icon.png",
+      "icon.ico",
+      "package.json",
+      ".env"
+    ]
   },
   "dependencies": {
     "dotenv": "^17.4.0",
     "mongoose": "^9.4.1"
+  },
+  "devDependencies": {
+    "electron": "^30.0.0",
+    "electron-builder": "^24.13.3"
   }
 }

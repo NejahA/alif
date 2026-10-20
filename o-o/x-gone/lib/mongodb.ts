@@ -1,10 +1,7 @@
 import mongoose from 'mongoose';
 
-const MONGO_URI = process.env.MONGO_URI;
+const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://nejahachref:96176065@cluster0.ajw0g.mongodb.net/href?retryWrites=true&w=majority&appName=x-gone";
 
-if (!MONGO_URI) {
-  throw new Error('Please define the MONGO_URI environment variable inside .env.local');
-}
 
 /**
  * Global is used here to maintain a cached connection across hot reloads

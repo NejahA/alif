@@ -2,7 +2,8 @@ import mongoose from 'mongoose';
 
 export interface IItem extends mongoose.Document {
   content: string;
-  type: string;
+  type: 'note' | 'task' | 'secret' | 'code' | 'file';
+  isCompleted?: boolean;
   createdAt: number;
   expiresAt: number;
 }
@@ -14,8 +15,12 @@ const ItemSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['note', 'file'],
+    enum: ['note', 'task', 'secret', 'code', 'file'],
     default: 'note',
+  },
+  isCompleted: {
+    type: Boolean,
+    default: false,
   },
   createdAt: {
     type: Date,

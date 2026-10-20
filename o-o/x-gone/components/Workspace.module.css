@@ -286,6 +286,18 @@
   color: var(--accent);
 }
 
+.deleteBtn {
+  color: var(--text-dim);
+}
+
+.deleteBtn:hover,
+.deleteBtn:active {
+  background: rgba(255, 0, 60, 0.15);
+  border-color: var(--accent);
+  color: #ff3366;
+  box-shadow: 0 0 10px rgba(255, 0, 60, 0.3);
+}
+
 /* Build Integration Styles */
 .buildBtn {
   margin-top: 15px;
@@ -350,4 +362,26 @@
   font-size: 0.65rem;
   opacity: 0.8;
 }
+
+@media (max-width: 768px) {
+  .workspace {
+    padding: 20px 16px;
+  }
+  .controls {
+    flex-direction: column;
+    width: 100%;
+  }
+  .form {
+    width: 100%;
+  }
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .actionBtn {
+    width: 36px;
+    height: 36px;
+  }
+}
+
 

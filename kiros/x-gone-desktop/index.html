@@ -2,447 +2,1213 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>X-Gone</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>X-Gone // Ephemeral Workspace</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-gradient: linear-gradient(135deg, #09090b 0%, #18181b 100%);
+      --bg-base: #08080a;
+      --bg-panel: rgba(18, 18, 24, 0.75);
+      --bg-card: rgba(24, 24, 32, 0.65);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-hover: rgba(244, 63, 94, 0.4);
       --accent: #f43f5e;
+      --accent-glow: rgba(244, 63, 94, 0.35);
+      --accent-secondary: #ec4899;
       --text-main: #f8fafc;
       --text-muted: #94a3b8;
-      --glass-bg: rgba(255, 255, 255, 0.03);
-      --glass-border: rgba(255, 255, 255, 0.08);
+      --text-dim: #64748b;
       --danger: #ef4444;
-      --success: #22c55e;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --font-main: 'Outfit', -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
     }
-    
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
     body {
       background: transparent;
       color: var(--text-main);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family: var(--font-main);
       height: 100vh;
       overflow: hidden;
       display: flex;
       flex-direction: column;
     }
 
-    .app-container {
-      background: var(--bg-gradient);
-      border-radius: 12px;
-      margin: 10px;
-      height: calc(100vh - 20px);
+    .app-window {
+      background: radial-gradient(circle at 50% 0%, rgba(244, 63, 94, 0.08) 0%, rgba(8, 8, 10, 0.98) 70%);
+      border-radius: 16px;
+      margin: 8px;
+      height: calc(100vh - 16px);
       display: flex;
       flex-direction: column;
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-      border: 1px solid var(--glass-border);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 0 1px var(--border-subtle);
       position: relative;
       overflow: hidden;
+      backdrop-filter: blur(28px);
     }
 
-    /* Header */
-    header {
+    .ambient-noise {
+      position: absolute;
+      inset: 0;
+      background-image: url("https://grainy-gradients.vercel.app/noise.svg");
+      opacity: 0.035;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    header.titlebar {
       -webkit-app-region: drag;
-      min-height: 48px;
+      height: 52px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 0 16px;
-      border-bottom: 1px solid var(--glass-border);
-      background: var(--glass-bg);
-      backdrop-filter: blur(8px);
-      z-index: 10;
+      padding: 0 18px;
+      border-bottom: 1px solid var(--border-subtle);
+      background: rgba(12, 12, 16, 0.6);
+      backdrop-filter: blur(12px);
+      z-index: 20;
     }
 
-    .title {
-      font-weight: 600;
-      font-size: 14px;
-      letter-spacing: 2px;
-      color: var(--text-muted);
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .app-logo {
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
+      object-fit: cover;
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    .brand-text {
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: 3px;
+      color: #ffffff;
+      text-transform: uppercase;
       display: flex;
       align-items: center;
       gap: 8px;
     }
 
-    .status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--danger);
-      box-shadow: 0 0 8px var(--danger);
+    .brand-tag {
+      font-size: 9px;
+      letter-spacing: 1.5px;
+      font-weight: 600;
+      color: var(--text-dim);
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .meta-center {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      -webkit-app-region: no-drag;
+    }
+
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.04);
+      padding: 4px 10px;
+      border-radius: 20px;
+      border: 1px solid var(--border-subtle);
       transition: all 0.3s;
     }
-    .status-dot.connected {
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--warning);
+      box-shadow: 0 0 8px var(--warning);
+      transition: all 0.3s;
+    }
+
+    .status-badge.connected .status-dot {
       background: var(--success);
-      box-shadow: 0 0 8px var(--success);
+      box-shadow: 0 0 10px var(--success);
+    }
+
+    .status-badge.failed .status-dot {
+      background: var(--danger);
+      box-shadow: 0 0 10px var(--danger);
+    }
+
+    .expiring-badge {
+      font-size: 11px;
+      color: #f87171;
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      padding: 3px 8px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      animation: pulseAlert 2s infinite ease-in-out;
+    }
+
+    @keyframes pulseAlert {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+
+    .count-pill {
+      font-size: 11px;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
     }
 
     .window-controls {
       -webkit-app-region: no-drag;
       display: flex;
-      gap: 12px;
+      align-items: center;
+      gap: 8px;
     }
 
-    .control-btn {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
+    .win-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
       border: none;
+      background: transparent;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
       cursor: pointer;
-       transition: transform 0.2s;
+      font-size: 13px;
+      transition: all 0.2s;
     }
-    .control-btn:hover { transform: scale(1.1); }
-    .btn-close { background: #ef4444; }
-    .btn-min { background: #eab308; }
-    .btn-max { background: #22c55e; }
 
-    /* Main Area - Items Grid */
-    main {
+    .win-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+    }
+
+    .win-btn.close:hover {
+      background: var(--danger);
+      color: #fff;
+    }
+
+    /* Input Toolbar Section */
+    .action-bar {
+      padding: 14px 20px;
+      background: rgba(14, 14, 18, 0.4);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      z-index: 10;
+    }
+
+    .input-form {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .type-select, .duration-select {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-family: var(--font-main);
+      outline: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .type-select:hover, .duration-select:hover {
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .type-select option, .duration-select option {
+      background: #121216;
+      color: #fff;
+    }
+
+    .input-wrapper {
       flex: 1;
-      padding: 24px;
+      position: relative;
+    }
+
+    .thought-input {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-main);
+      padding: 11px 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: var(--font-main);
+      outline: none;
+      transition: all 0.25s ease;
+      user-select: text;
+    }
+
+    .thought-input:focus {
+      border-color: var(--border-hover);
+      background: rgba(255, 255, 255, 0.06);
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+
+    .btn-inject {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-secondary) 100%);
+      color: #ffffff;
+      border: none;
+      padding: 0 20px;
+      height: 42px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.25s;
+      box-shadow: 0 4px 15px var(--accent-glow);
+      flex-shrink: 0;
+    }
+
+    .btn-inject:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(244, 63, 94, 0.5);
+    }
+
+    .btn-wipe {
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #f87171;
+      height: 42px;
+      padding: 0 16px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    .btn-wipe:hover {
+      background: var(--danger);
+      color: #ffffff;
+      box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+    }
+
+    /* Sub Toolbar: Filter tabs and Search */
+    .sub-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .search-box {
+      flex: 1;
+      max-width: 320px;
+      position: relative;
+    }
+
+    .search-input {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-subtle);
+      color: #fff;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-family: var(--font-main);
+      outline: none;
+    }
+
+    .search-input:focus {
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    .filter-pills {
+      display: flex;
+      gap: 6px;
+    }
+
+    .filter-btn {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-dim);
+      padding: 4px 12px;
+      border-radius: 16px;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .filter-btn:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .filter-btn.active {
+      background: rgba(244, 63, 94, 0.18);
+      border-color: var(--accent);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* Workspace Items Area */
+    main.workspace-area {
+      flex: 1;
+      padding: 20px;
       overflow-y: auto;
+      z-index: 5;
+    }
+
+    main.workspace-area::-webkit-scrollbar { width: 6px; }
+    main.workspace-area::-webkit-scrollbar-track { background: transparent; }
+    main.workspace-area::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 4px; }
+
+    .items-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
       gap: 16px;
       align-content: start;
     }
-    main::-webkit-scrollbar { width: 8px; }
-    main::-webkit-scrollbar-track { background: transparent; }
-    main::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 4px; }
 
-    .item-card {
-      background: var(--glass-bg);
-      border: 1px solid var(--glass-border);
-      border-radius: 12px;
+    .note-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
       padding: 16px;
       display: flex;
       flex-direction: column;
       gap: 12px;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       position: relative;
+      backdrop-filter: blur(12px);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s, border-color 0.25s;
+      animation: cardEntrance 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
-    .item-card.vanishing {
-      opacity: 0;
-      transform: scale(1.1) rotate(5deg);
-      filter: blur(8px);
+    @keyframes cardEntrance {
+      from { opacity: 0; transform: translateY(10px) scale(0.96); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
     }
 
-    .item-header {
+    .note-card:hover {
+      border-color: rgba(255, 255, 255, 0.18);
+      transform: translateY(-2px);
+    }
+
+    .note-card.vanishing {
+      opacity: 0 !important;
+      transform: scale(1.12) rotate(4deg) !important;
+      filter: blur(12px) !important;
+      pointer-events: none !important;
+    }
+
+    .card-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 12px;
-      color: var(--text-muted);
     }
 
-    .delete-btn {
-      background: transparent;
-      border: none;
+    .type-chip {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .type-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    .card-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .card-btn {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-subtle);
       color: var(--text-muted);
       cursor: pointer;
-      font-size: 16px;
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      transition: all 0.2s;
     }
-    .delete-btn:hover { color: var(--accent); }
 
-    .item-content {
+    .card-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+
+    .card-btn.delete:hover {
+      background: rgba(244, 63, 94, 0.25);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .card-body {
+      flex: 1;
       font-size: 14px;
       line-height: 1.5;
+      color: #e2e8f0;
       word-break: break-word;
-      flex: 1;
+      user-select: text;
     }
 
-    .item-footer {
+    /* Task Styling */
+    .task-container {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .task-box {
+      width: 18px;
+      height: 18px;
+      border-radius: 5px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: #10b981;
+      margin-top: 2px;
+      flex-shrink: 0;
+      transition: all 0.2s;
+    }
+
+    .task-container.done .task-box {
+      background: #10b981;
+      border-color: #10b981;
+      color: #000;
+    }
+
+    .task-container.done .task-label {
+      text-decoration: line-through;
+      color: rgba(255, 255, 255, 0.35);
+    }
+
+    /* Secret Styling */
+    .secret-blur-box {
+      background: rgba(244, 63, 94, 0.06);
+      border: 1px dashed rgba(244, 63, 94, 0.35);
+      border-radius: 8px;
+      padding: 12px;
+      cursor: pointer;
+      text-align: center;
+      color: #f43f5e;
+      letter-spacing: 4px;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+
+    .secret-blur-box:hover {
+      background: rgba(244, 63, 94, 0.12);
+    }
+
+    .secret-hint {
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 1px;
+      display: block;
+      margin-top: 4px;
+    }
+
+    /* Code Snippet Styling */
+    .code-box {
+      background: rgba(0, 0, 0, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 10px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: #a5b4fc;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .card-footer {
       display: flex;
       flex-direction: column;
       gap: 6px;
     }
 
-    .life-bar-bg {
+    .life-track {
       height: 4px;
-      background: rgba(0,0,0,0.3);
+      background: rgba(255, 255, 255, 0.06);
       border-radius: 2px;
       overflow: hidden;
     }
 
-    .life-bar-fill {
+    .life-fill {
       height: 100%;
-      background: var(--accent);
-      width: 100%;
+      background: linear-gradient(90deg, var(--accent) 0%, var(--accent-secondary) 100%);
       transition: width 1s linear;
+      box-shadow: 0 0 8px var(--accent-glow);
     }
 
-    .time-left {
-      font-size: 10px;
-      color: var(--text-muted);
-      text-align: right;
-      font-variant-numeric: tabular-nums;
-    }
-
-    /* Footer - Controls */
-    footer {
-      padding: 16px;
-      border-top: 1px solid var(--glass-border);
-      background: rgba(0,0,0,0.2);
-      display: flex;
-      gap: 12px;
-      align-items: center;
-    }
-
-    form {
-      flex: 1;
-      display: flex;
-      gap: 8px;
-    }
-
-    input {
-      flex: 1;
-      background: var(--glass-bg);
-      border: 1px solid var(--glass-border);
-      color: var(--text-main);
-      padding: 12px 16px;
-      border-radius: 8px;
-      font-size: 14px;
-      outline: none;
-    }
-    input:focus { border-color: rgba(255,255,255,0.2); }
-
-    button.primary-btn {
-      background: var(--text-main);
-      color: #000;
-      border: none;
-      padding: 0 20px;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: opacity 0.2s;
-    }
-    button.primary-btn:hover { opacity: 0.8; }
-
-    button.wipe-btn {
-      background: transparent;
-      border: 1px solid var(--danger);
-      color: var(--danger);
-      padding: 0 16px;
-      border-radius: 8px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s;
-      height: 42px;
-    }
-    button.wipe-btn:hover {
+    .life-fill.critical {
       background: var(--danger);
-      color: white;
+      box-shadow: 0 0 10px var(--danger);
     }
 
-    /* Wipe Overlay */
+    .time-indicator {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--text-dim);
+    }
+
+    .empty-state {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      opacity: 0.45;
+    }
+
+    .empty-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 16px;
+      opacity: 0.6;
+    }
+
+    .empty-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: #ffffff;
+    }
+
+    .empty-sub {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
     .wipe-overlay {
       position: absolute;
       inset: 0;
-      background: rgba(239, 68, 68, 0);
+      background: rgba(8, 8, 10, 0);
+      backdrop-filter: blur(0px);
       pointer-events: none;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
+      gap: 20px;
       z-index: 100;
-      transition: background 0.5s;
+      transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
     }
+
     .wipe-overlay.active {
-      background: rgba(239, 68, 68, 0.9);
+      background: rgba(14, 10, 12, 0.94);
+      backdrop-filter: blur(20px);
       pointer-events: all;
     }
-    .wipe-text {
-      color: white;
-      font-size: 48px;
-      font-weight: 900;
-      letter-spacing: 8px;
+
+    .wipe-logo {
+      width: 80px;
+      height: 80px;
+      border-radius: 20px;
       opacity: 0;
-      transform: scale(0.5);
-      transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      transform: scale(0.3) rotate(-20deg);
+      transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      box-shadow: 0 0 50px rgba(244, 63, 94, 0.7);
     }
-    .wipe-overlay.active .wipe-text {
+
+    .wipe-overlay.active .wipe-logo {
       opacity: 1;
-      transform: scale(1);
+      transform: scale(1) rotate(0deg);
+    }
+
+    .wipe-title {
+      font-size: 42px;
+      font-weight: 900;
+      letter-spacing: 12px;
+      color: #ffffff;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.5s 0.1s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .wipe-overlay.active .wipe-title {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .wipe-sub {
+      font-size: 13px;
+      letter-spacing: 3px;
+      color: var(--accent);
+      text-transform: uppercase;
+      font-family: var(--font-mono);
+      opacity: 0;
+    }
+
+    .wipe-overlay.active .wipe-sub {
+      opacity: 1;
     }
   </style>
 </head>
 <body>
-  <div class="app-container">
-    <header>
-      <div class="title">
-        <div class="status-dot tooltip" id="status-dot"></div>
-        X-GONE
+  <div class="app-window">
+    <div class="ambient-noise"></div>
+
+    <header class="titlebar">
+      <div class="brand-section">
+        <img src="logo.png" alt="X-Gone Logo" class="app-logo">
+        <span class="brand-text">X-Gone</span>
+        <span class="brand-tag">DESKTOP</span>
       </div>
+
+      <div class="meta-center">
+        <div class="status-badge" id="db-badge">
+          <div class="status-dot"></div>
+          <span id="db-text">Connecting to MongoDB...</span>
+        </div>
+        <div id="expiring-badge" class="expiring-badge" style="display: none;">
+          ⚡ 0 Expiring Soon
+        </div>
+        <div class="count-pill" id="count-pill">0 ITEMS</div>
+      </div>
+
       <div class="window-controls">
-        <button class="control-btn btn-min" onclick="window.closeWindow('minimize')"></button>
-        <button class="control-btn btn-max" onclick="window.closeWindow('maximize')"></button>
-        <button class="control-btn btn-close" onclick="window.closeWindow('close')"></button>
+        <button class="win-btn" id="btn-min" title="Minimize">─</button>
+        <button class="win-btn" id="btn-max" title="Maximize">□</button>
+        <button class="win-btn close" id="btn-close" title="Close">✕</button>
       </div>
     </header>
-    
-    <main id="items-grid">
-      <!-- Items will be injected here -->
+
+    <section class="action-bar">
+      <form class="input-form" id="thought-form">
+        <select id="type-select" class="type-select" title="Item Type">
+          <option value="note">📝 Note</option>
+          <option value="task">✅ Task</option>
+          <option value="secret">🔐 Secret</option>
+          <option value="code">💻 Code</option>
+        </select>
+
+        <div class="input-wrapper">
+          <input 
+            type="text" 
+            id="thought-input" 
+            class="thought-input" 
+            placeholder="Inject a thought into the void... (Press Enter)" 
+            autocomplete="off"
+            required
+          >
+        </div>
+
+        <select id="duration-select" class="duration-select" title="Auto-decay duration">
+          <option value="60">⚡ 1 minute</option>
+          <option value="300" selected>⏱️ 5 minutes</option>
+          <option value="900">☕ 15 minutes</option>
+          <option value="3600">🌙 1 hour</option>
+          <option value="86400">🔒 24 hours</option>
+        </select>
+
+        <button type="submit" class="btn-inject">
+          <span>+</span> Inject
+        </button>
+
+        <button type="button" class="btn-wipe" id="btn-mass-wipe" title="Instantly clear all notes">
+          <span>⚡</span> Wipe All
+        </button>
+      </form>
+
+      <!-- Sub Toolbar -->
+      <div class="sub-toolbar">
+        <div class="search-box">
+          <input type="text" id="search-input" class="search-input" placeholder="Search thoughts...">
+        </div>
+        <div class="filter-pills">
+          <button class="filter-btn active" data-filter="all">All</button>
+          <button class="filter-btn" data-filter="note">Notes</button>
+          <button class="filter-btn" data-filter="task">Tasks</button>
+          <button class="filter-btn" data-filter="secret">Secrets</button>
+          <button class="filter-btn" data-filter="code">Code</button>
+        </div>
+      </div>
+    </section>
+
+    <main class="workspace-area">
+      <div class="items-grid" id="items-grid"></div>
+      <div class="empty-state" id="empty-state">
+        <img src="logo.png" alt="X-Gone" class="empty-icon">
+        <div class="empty-title">THE VOID IS SILENT</div>
+        <div class="empty-sub">Inject thoughts above. They will auto-decay and vanish forever.</div>
+      </div>
     </main>
 
-    <footer>
-      <form id="add-form">
-        <input type="text" id="content-input" placeholder="Inject a thought..." required autocomplete="off">
-        <button type="submit" class="primary-btn">+</button>
-      </form>
-      <button class="wipe-btn" id="mass-wipe">MASS WIPE</button>
-    </footer>
-
     <div class="wipe-overlay" id="wipe-overlay">
-      <div class="wipe-text">X-GONE</div>
+      <img src="logo.png" alt="X-Gone Logo" class="wipe-logo">
+      <div class="wipe-title">X-GONE</div>
+      <div class="wipe-sub">All thoughts erased from database</div>
     </div>
   </div>
 
   <script>
-    const { ipcRenderer } = require('electron');
-    
     let items = [];
-    const MAX_LIFE = 300; // 5 minutes standard decay
+    let currentFilter = 'all';
+    let searchQuery = '';
+    const revealedSecrets = new Set();
+    const hasElectron = typeof window !== 'undefined' && window.electronAPI;
 
-    // Elements
-    const statusDot = document.getElementById('status-dot');
+    const dbBadge = document.getElementById('db-badge');
+    const dbText = document.getElementById('db-text');
+    const expiringBadge = document.getElementById('expiring-badge');
+    const countPill = document.getElementById('count-pill');
     const itemsGrid = document.getElementById('items-grid');
-    const addForm = document.getElementById('add-form');
-    const contentInput = document.getElementById('content-input');
-    const massWipeBtn = document.getElementById('mass-wipe');
+    const emptyState = document.getElementById('empty-state');
+    const thoughtForm = document.getElementById('thought-form');
+    const thoughtInput = document.getElementById('thought-input');
+    const typeSelect = document.getElementById('type-select');
+    const durationSelect = document.getElementById('duration-select');
+    const searchInput = document.getElementById('search-input');
+    const btnMassWipe = document.getElementById('btn-mass-wipe');
     const wipeOverlay = document.getElementById('wipe-overlay');
+    const btnMin = document.getElementById('btn-min');
+    const btnMax = document.getElementById('btn-max');
+    const btnClose = document.getElementById('btn-close');
 
-    // UI Controls
-    window.closeWindow = (action) => ipcRenderer.send('window-control', action);
+    if (hasElectron) {
+      btnMin.addEventListener('click', () => window.electronAPI.windowControl('minimize'));
+      btnMax.addEventListener('click', () => window.electronAPI.windowControl('maximize'));
+      btnClose.addEventListener('click', () => window.electronAPI.windowControl('close'));
+    }
 
-    ipcRenderer.on('db-status', (event, status) => {
+    function updateDbStatus(status) {
+      dbBadge.className = 'status-badge';
       if (status === 'connected') {
-        statusDot.classList.add('connected');
-        statusDot.title = 'Database Connected';
-        fetchItems();
+        dbBadge.classList.add('connected');
+        dbText.textContent = 'MongoDB: Connected';
+      } else if (status === 'connecting') {
+        dbText.textContent = 'MongoDB: Connecting...';
       } else {
-        statusDot.classList.remove('connected');
-        statusDot.title = 'Database Disconnected';
+        dbBadge.classList.add('failed');
+        dbText.textContent = 'MongoDB: Offline';
       }
+    }
+
+    if (hasElectron) {
+      window.electronAPI.onDbStatus(updateDbStatus);
+      window.electronAPI.getDbStatus().then(updateDbStatus);
+    }
+
+    // Filter pill click
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentFilter = btn.dataset.filter;
+        syncGrid();
+      });
     });
 
-    // Render logic
-    function renderItems() {
-      itemsGrid.innerHTML = '';
-      items.forEach(item => {
-        const lifePct = (item.life / MAX_LIFE) * 100;
+    searchInput.addEventListener('input', (e) => {
+      searchQuery = e.target.value.toLowerCase().trim();
+      syncGrid();
+    });
+
+    const escapeHtml = (str) => {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    };
+
+    function syncGrid() {
+      const activeItems = items.filter(i => !i.vanished);
+      const filtered = activeItems.filter(item => {
+        const matchesType = currentFilter === 'all' || item.type === currentFilter;
+        const matchesSearch = !searchQuery || item.content.toLowerCase().includes(searchQuery);
+        return matchesType && matchesSearch;
+      });
+
+      // Update expiring soon count
+      const expiringSoon = activeItems.filter(i => i.life > 0 && i.life <= 60).length;
+      if (expiringSoon > 0) {
+        expiringBadge.style.display = 'flex';
+        expiringBadge.textContent = `⚡ ${expiringSoon} Expiring Soon`;
+      } else {
+        expiringBadge.style.display = 'none';
+      }
+
+      if (filtered.length === 0) {
+        itemsGrid.style.display = 'none';
+        emptyState.style.display = 'flex';
+        countPill.textContent = `${activeItems.length} ITEMS`;
+        itemsGrid.innerHTML = '';
+        return;
+      }
+
+      itemsGrid.style.display = 'grid';
+      emptyState.style.display = 'none';
+      countPill.textContent = `${activeItems.length} ${activeItems.length === 1 ? 'ITEM' : 'ITEMS'}`;
+
+      const activeIds = new Set(filtered.map(i => String(i.id || i._id)));
+
+      Array.from(itemsGrid.children).forEach(child => {
+        if (!activeIds.has(child.dataset.id)) {
+          child.remove();
+        }
+      });
+
+      filtered.forEach(item => {
+        const itemId = String(item.id || item._id);
+        const totalDuration = item.totalDuration || 300;
+        const progressPct = Math.max(0, Math.min(100, (item.life / totalDuration) * 100));
         const mins = Math.floor(item.life / 60);
         const secs = (item.life % 60).toString().padStart(2, '0');
-        
-        const card = document.createElement('div');
-        card.className = `item-card ${item.vanishing ? 'vanishing' : ''}`;
-        card.innerHTML = `
-          <div class="item-header">
-            <span>${item.type}</span>
-            <button class="delete-btn" onclick="removeItem('${item._id}')">✕</button>
-          </div>
-          <div class="item-content">${escapeHtml(item.content)}</div>
-          <div class="item-footer">
-            <div class="life-bar-bg">
-              <div class="life-bar-fill" style="width: ${Math.max(0, lifePct)}%"></div>
+        const isCritical = item.life <= 30;
+        const isSecret = item.type === 'secret';
+        const isTask = item.type === 'task';
+        const isCode = item.type === 'code';
+        const isRevealed = revealedSecrets.has(itemId);
+
+        let card = document.getElementById(`card-${itemId}`);
+
+        if (!card) {
+          card = document.createElement('div');
+          card.className = `note-card ${item.vanishing ? 'vanishing' : ''}`;
+          card.id = `card-${itemId}`;
+          card.dataset.id = itemId;
+
+          card.innerHTML = `
+            <div class="card-header">
+              <span class="type-chip">
+                <span class="type-dot"></span>
+                ${escapeHtml(item.type || 'note')}
+              </span>
+              <div class="card-actions">
+                <button class="card-btn copy-btn" title="Copy to clipboard">📋</button>
+                ${isSecret ? `<button class="card-btn eye-btn" title="Reveal secret">👁️</button>` : ''}
+                <button class="card-btn delete del-btn" title="Vanish now">✕</button>
+              </div>
             </div>
-            <div class="time-left">${mins}:${secs}</div>
-          </div>
-        `;
-        itemsGrid.appendChild(card);
+            <div class="card-body"></div>
+            <div class="card-footer">
+              <div class="life-track">
+                <div class="life-fill ${isCritical ? 'critical' : ''}" style="width: ${progressPct}%;"></div>
+              </div>
+              <div class="time-indicator">
+                <span class="decay-label">Vanishes in</span>
+                <span class="time-text">${mins}:${secs}</span>
+              </div>
+            </div>
+          `;
+
+          // Event listeners
+          card.querySelector('.copy-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            navigator.clipboard.writeText(item.content);
+            const btn = e.currentTarget;
+            btn.textContent = '✓';
+            setTimeout(() => { btn.textContent = '📋'; }, 1500);
+          });
+
+          if (isSecret) {
+            const eyeBtn = card.querySelector('.eye-btn');
+            if (eyeBtn) {
+              eyeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (revealedSecrets.has(itemId)) {
+                  revealedSecrets.delete(itemId);
+                } else {
+                  revealedSecrets.add(itemId);
+                }
+                syncGrid();
+              });
+            }
+          }
+
+          card.querySelector('.del-btn').addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            deleteCard(itemId);
+          });
+
+          itemsGrid.appendChild(card);
+        }
+
+        // Update body content according to type
+        const bodyEl = card.querySelector('.card-body');
+        if (bodyEl) {
+          if (isTask) {
+            bodyEl.innerHTML = `
+              <div class="task-container ${item.isCompleted ? 'done' : ''}">
+                <div class="task-box">${item.isCompleted ? '✓' : ''}</div>
+                <span class="task-label">${escapeHtml(item.content)}</span>
+              </div>
+            `;
+            const taskContainer = bodyEl.querySelector('.task-container');
+            if (taskContainer) {
+              taskContainer.onclick = () => toggleTask(itemId);
+            }
+          } else if (isSecret && !isRevealed) {
+            bodyEl.innerHTML = `
+              <div class="secret-blur-box">
+                ••••••••••••••••
+                <span class="secret-hint">Click to peek</span>
+              </div>
+            `;
+            const blurBox = bodyEl.querySelector('.secret-blur-box');
+            if (blurBox) {
+              blurBox.onclick = () => {
+                revealedSecrets.add(itemId);
+                syncGrid();
+              };
+            }
+          } else if (isCode) {
+            bodyEl.innerHTML = `<pre class="code-box"><code>${escapeHtml(item.content)}</code></pre>`;
+          } else {
+            bodyEl.innerHTML = `<div>${escapeHtml(item.content)}</div>`;
+          }
+        }
+
+        // Update footer progress & timer
+        const fillEl = card.querySelector('.life-fill');
+        if (fillEl) {
+          fillEl.style.width = `${progressPct}%`;
+          if (isCritical) fillEl.classList.add('critical');
+          else fillEl.classList.remove('critical');
+        }
+
+        const timeText = card.querySelector('.time-text');
+        if (timeText) {
+          timeText.textContent = `${mins}:${secs}`;
+        }
       });
     }
 
-    const escapeHtml = (text) => text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    async function toggleTask(id) {
+      const item = items.find(i => String(i.id || i._id) === id);
+      if (!item) return;
 
-    // Operations
-    async function fetchItems() {
-      const res = await ipcRenderer.invoke('fetch-items');
-      if (res.success) {
-        const now = Date.now();
-        items = res.data.map(item => ({
-          ...item,
-          life: Math.max(0, Math.floor((new Date(item.expiresAt).getTime() - now) / 1000)),
-          vanishing: false
-        }));
-        renderItems();
+      item.isCompleted = !item.isCompleted;
+      syncGrid();
+
+      if (hasElectron) {
+        try {
+          await window.electronAPI.toggleTask({ id, isCompleted: item.isCompleted });
+        } catch (e) {
+          console.error('Failed to toggle task in MongoDB', e);
+        }
       }
     }
 
-    addForm.addEventListener('submit', async (e) => {
+    async function loadItems() {
+      if (!hasElectron) return;
+      try {
+        const res = await window.electronAPI.fetchItems();
+        if (res.success && Array.isArray(res.data)) {
+          const now = Date.now();
+          const serverMap = new Map();
+
+          res.data.forEach(serverItem => {
+            const id = String(serverItem.id || serverItem._id);
+            serverMap.set(id, serverItem);
+          });
+
+          items = items.filter(localItem => {
+            const id = String(localItem.id || localItem._id);
+            if (localItem.vanishing) return true;
+            return serverMap.has(id);
+          });
+
+          serverMap.forEach((serverItem, id) => {
+            const existing = items.find(i => String(i.id || i._id) === id);
+            const exp = new Date(serverItem.expiresAt).getTime();
+            const created = new Date(serverItem.createdAt).getTime();
+            const totalDuration = Math.max(1, Math.floor((exp - created) / 1000));
+            const serverLife = Math.max(0, Math.floor((exp - now) / 1000));
+
+            if (!existing) {
+              items.push({
+                ...serverItem,
+                id,
+                _id: id,
+                totalDuration,
+                life: serverLife,
+                isCompleted: serverItem.isCompleted || false,
+                vanishing: false
+              });
+            } else if (!existing.vanishing) {
+              if (Math.abs(existing.life - serverLife) > 3) {
+                existing.life = serverLife;
+              }
+              existing.totalDuration = totalDuration;
+              existing.isCompleted = serverItem.isCompleted || false;
+            }
+          });
+
+          syncGrid();
+        }
+      } catch (err) {
+        console.error('Failed to load items:', err);
+      }
+    }
+
+    thoughtForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const content = contentInput.value.trim();
+      const content = thoughtInput.value.trim();
       if (!content) return;
-      
-      contentInput.value = '';
+
+      const type = typeSelect.value || 'note';
+      const durationSecs = parseInt(durationSelect.value, 10) || 300;
+      thoughtInput.value = '';
+
       const now = Date.now();
       const payload = {
         content,
-        type: 'note',
+        type,
+        isCompleted: false,
         createdAt: new Date(now),
-        expiresAt: new Date(now + MAX_LIFE * 1000)
+        expiresAt: new Date(now + durationSecs * 1000)
       };
 
-      const res = await ipcRenderer.invoke('add-item', payload);
-      if (res.success) {
-        items.push({
-          ...res.data,
-          life: MAX_LIFE,
-          vanishing: false
-        });
-        renderItems();
+      if (hasElectron) {
+        const res = await window.electronAPI.addItem(payload);
+        if (res.success && res.data) {
+          const newId = String(res.data.id || res.data._id);
+          items.push({
+            ...res.data,
+            id: newId,
+            _id: newId,
+            type,
+            isCompleted: false,
+            totalDuration: durationSecs,
+            life: durationSecs,
+            vanishing: false
+          });
+          syncGrid();
+        }
       }
     });
 
-    window.removeItem = async (id) => {
-      // Optimistic vanish
-      const idx = items.findIndex(i => i._id === id);
-      if (idx > -1) {
-        items[idx].vanishing = true;
-        renderItems();
-      }
-      
-      await ipcRenderer.invoke('remove-item', id);
-      setTimeout(() => {
-        items = items.filter(i => i._id !== id);
-        renderItems();
-      }, 300);
-    };
+    async function deleteCard(rawId) {
+      const id = String(rawId);
+      const cardEl = document.getElementById(`card-${id}`);
+      if (cardEl) cardEl.classList.add('vanishing');
 
-    massWipeBtn.addEventListener('click', async () => {
+      const idx = items.findIndex(i => String(i.id || i._id) === id);
+      if (idx > -1) items[idx].vanishing = true;
+
+      if (hasElectron) {
+        try {
+          await window.electronAPI.removeItem(id);
+        } catch (err) {
+          console.error('Failed to remove item via IPC:', err);
+        }
+      }
+
+      setTimeout(() => {
+        items = items.filter(i => String(i.id || i._id) !== id);
+        revealedSecrets.delete(id);
+        syncGrid();
+      }, 350);
+    }
+    window.deleteCard = deleteCard;
+
+    btnMassWipe.addEventListener('click', async () => {
       wipeOverlay.classList.add('active');
       items.forEach(i => i.vanishing = true);
-      renderItems();
+      syncGrid();
 
-      await ipcRenderer.invoke('mass-wipe');
-      
+      if (hasElectron) {
+        await window.electronAPI.massWipe();
+      }
+
       setTimeout(() => {
         items = [];
+        revealedSecrets.clear();
         wipeOverlay.classList.remove('active');
-        renderItems();
-      }, 1000);
+        syncGrid();
+      }, 900);
     });
 
-    // Decay Timer
     setInterval(() => {
-      let needsRender = false;
+      let hasChanges = false;
+      const expiredIds = [];
+
       items.forEach(item => {
         if (item.vanishing) return;
+
         if (item.life > 0) {
           item.life -= 1;
-          needsRender = true;
+          hasChanges = true;
         } else if (item.life === 0 && !item.vanishing) {
           item.vanishing = true;
-          needsRender = true;
-          // Trigger backend removal silently when decay finishes
-          ipcRenderer.invoke('remove-item', item._id);
+          hasChanges = true;
+          expiredIds.push(String(item.id || item._id));
         }
       });
-      if (needsRender) renderItems();
+
+      if (expiredIds.length > 0 && hasElectron) {
+        expiredIds.forEach(id => {
+          window.electronAPI.removeItem(id);
+          setTimeout(() => {
+            items = items.filter(i => String(i.id || i._id) !== id);
+            syncGrid();
+          }, 350);
+        });
+      }
+
+      if (hasChanges) syncGrid();
     }, 1000);
 
-    // Initial fetch trigger fallback if db-status was missed
-    setTimeout(fetchItems, 500);
-
+    loadItems();
+    setInterval(loadItems, 8000);
   </script>
 </body>
 </html>
