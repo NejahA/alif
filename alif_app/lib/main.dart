@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'models/pet_evolution.dart';
 import 'models/achievements_and_streaks.dart';
+import 'models/life_quests.dart';
 import 'widgets/lucky_wheel_modal.dart';
 import 'games/void_meteor_rush.dart';
 import 'games/flappy_alifi.dart';
@@ -17,6 +18,9 @@ import 'games/cosmic_pinball.dart';
 import 'games/cosmic_2048.dart';
 import 'games/stellar_slicer.dart';
 import 'games/bubble_shooter.dart';
+import 'games/constellation_flip.dart';
+import 'games/black_hole_whack.dart';
+import 'games/stardust_tower.dart';
 
 void main() {
   runApp(const AlifApp());
@@ -28,7 +32,7 @@ class AlifApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Alifi - Cosmic Pet & Games',
+      title: 'point.o',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: Brightness.dark,
@@ -89,6 +93,11 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
   int _totalGamesPlayed = 0;
   int _totalPetTaps = 0;
 
+  // Real-Life Gamification
+  late List<LifeQuest> _lifeQuests;
+  int _totalLifeLogs = 0;
+  int _lifePointsEarned = 0;
+
   // Gamification & Evolution Attributes
   bool _freeWheelSpinAvailable = true;
   int _streakDay = 1;
@@ -143,6 +152,7 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
 
     _initQuests();
     _achievements = PetAchievement.initialList();
+    _lifeQuests = LifeQuest.dailyDefaults();
 
     // Passive stat decrease over time
     _statDecayTimer = Timer.periodic(const Duration(seconds: 8), (timer) {
@@ -293,6 +303,34 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
       _triggerCelebration('Achievement: ${achievement.title}! +${achievement.coinReward} Coins! 🏆');
     }
   }
+
+  void _logLifeQuest(LifeQuest quest) {
+    if (quest.isClaimed || quest.isCompleted) return;
+    setState(() {
+      quest.currentProgress = (quest.currentProgress + 1).clamp(0, quest.targetProgress);
+      _totalLifeLogs += 1;
+    });
+    _gainXP(3);
+    if (quest.isCompleted) {
+      _showMessage('${quest.title} complete! Claim your reward 🎯');
+    } else {
+      _showMessage('Logged: ${quest.title} (+3 XP)');
+    }
+  }
+
+  void _claimLifeQuest(LifeQuest quest) {
+    if (!quest.isCompleted || quest.isClaimed) return;
+    final points = (quest.coinReward * _currentEvolution.coinMultiplier).round();
+    setState(() {
+      quest.isClaimed = true;
+      _coins += points;
+      _lifePointsEarned += points;
+    });
+    _gainXP(quest.xpReward);
+    _triggerCelebration('Life Quest cleared: ${quest.title}! +$points Points, +${quest.xpReward} XP! 🌱');
+  }
+
+  int get _lifeQuestsCleared => _lifeQuests.where((q) => q.isClaimed).length;
 
   void _openLuckyWheel() {
     showDialog(
@@ -538,6 +576,7 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
                   index: _currentTab,
                   children: [
                     _buildHomePetView(),
+                    _buildLifeQuestsView(),
                     _buildMiniGamesView(),
                     _buildWardrobeView(),
                     _buildQuestsAndStatsView(),
@@ -558,6 +597,11 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
             icon: Icon(Icons.pets_outlined, color: Colors.white70),
             selectedIcon: Icon(Icons.pets, color: Color(0xFFF472B6)),
             label: 'Pet Care',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.bolt_outlined, color: Colors.white70),
+            selectedIcon: Icon(Icons.bolt, color: Color(0xFFF472B6)),
+            label: 'Life',
           ),
           NavigationDestination(
             icon: Icon(Icons.sports_esports_outlined, color: Colors.white70),
@@ -1197,6 +1241,139 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
     );
   }
 
+  Widget _buildLifeQuestsView() {
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        Row(
+          children: const [
+            Icon(Icons.bolt, color: Color(0xFFF472B6), size: 30),
+            SizedBox(width: 8),
+            Text('point.o', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.white)),
+          ],
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          'Gamify your real life. Log real actions, earn Points & XP, and level up everything.',
+          style: TextStyle(color: Colors.white70, fontSize: 13),
+        ),
+        const SizedBox(height: 16),
+
+        _buildLifeScoreCard(),
+
+        const SizedBox(height: 24),
+        const Text('Real-Life Quests', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+        const SizedBox(height: 12),
+
+        ..._lifeQuests.map((quest) => _buildLifeQuestTile(quest)),
+      ],
+    );
+  }
+
+  Widget _buildLifeScoreCard() {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(colors: [Color(0xFF8B5CF6), Color(0xFFEC4899)]),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFEC4899).withValues(alpha: 0.35),
+            blurRadius: 16,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          _buildLifeScoreStat('$_totalLifeLogs', 'Habits Logged'),
+          _buildLifeScoreStat('$_lifeQuestsCleared/${_lifeQuests.length}', 'Quests Cleared'),
+          _buildLifeScoreStat('$_lifePointsEarned', 'Life Points'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLifeScoreStat(String value, String label) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(value, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 2),
+          Text(label, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLifeQuestTile(LifeQuest quest) {
+    final isDone = quest.isCompleted;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E293B),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: quest.isClaimed ? Colors.white10 : (isDone ? quest.themeColor : Colors.white12),
+          width: isDone && !quest.isClaimed ? 1.8 : 1.0,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: quest.themeColor.withValues(alpha: 0.2),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(quest.icon, color: quest.themeColor, size: 22),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(quest.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+                Text(quest.description, style: const TextStyle(color: Colors.white60, fontSize: 12)),
+                const SizedBox(height: 6),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: quest.progressPct,
+                    minHeight: 6,
+                    backgroundColor: Colors.white10,
+                    valueColor: AlwaysStoppedAnimation<Color>(isDone ? quest.themeColor : const Color(0xFF8B5CF6)),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '${quest.currentProgress}/${quest.targetProgress} · +${quest.coinReward} Points · +${quest.xpReward} XP',
+                  style: TextStyle(color: quest.themeColor, fontSize: 11, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          if (quest.isClaimed)
+            const Text('Done ✔', style: TextStyle(color: Colors.white38, fontWeight: FontWeight.bold, fontSize: 12))
+          else
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isDone ? quest.themeColor : const Color(0xFF8B5CF6),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+              ),
+              onPressed: isDone ? () => _claimLifeQuest(quest) : () => _logLifeQuest(quest),
+              child: Text(isDone ? 'Claim' : quest.logLabel),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildMiniGamesView() {
     return Padding(
       padding: const EdgeInsets.all(20),
@@ -1625,6 +1802,93 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
                       context,
                       MaterialPageRoute(
                         builder: (context) => BubbleShooterGameScreen(
+                          onGameFinished: (earnedCoins, earnedXP) {
+                            final scaledCoins = (earnedCoins * _currentEvolution.coinMultiplier).round();
+                            final scaledXP = (earnedXP * _currentEvolution.xpMultiplier).round();
+                            setState(() {
+                              _coins += scaledCoins;
+                              _totalGamesPlayed += 1;
+                            });
+                            _gainXP(scaledXP);
+                            _incrementQuestProgress('play_game');
+                            _checkAndIncrementAchievement('arcade_champion');
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+                _buildGameCard(
+                  title: 'Constellation Flip',
+                  description: 'Flip a glowing star node to toggle its neighbours — light up the whole constellation to solve the puzzle!',
+                  icon: Icons.auto_awesome_rounded,
+                  color: const Color(0xFFF59E0B),
+                  badgeText: 'NEW',
+                  badgeColor: const Color(0xFFF59E0B),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ConstellationFlipGameScreen(
+                          onGameFinished: (earnedCoins, earnedXP) {
+                            final scaledCoins = (earnedCoins * _currentEvolution.coinMultiplier).round();
+                            final scaledXP = (earnedXP * _currentEvolution.xpMultiplier).round();
+                            setState(() {
+                              _coins += scaledCoins;
+                              _totalGamesPlayed += 1;
+                            });
+                            _gainXP(scaledXP);
+                            _incrementQuestProgress('play_game');
+                            _checkAndIncrementAchievement('arcade_champion');
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+                _buildGameCard(
+                  title: 'Black Hole Whack',
+                  description: 'Void creatures pop out of 3x3 portholes — whack them fast for huge combos, but never touch an empty hole!',
+                  icon: Icons.blur_on_rounded,
+                  color: const Color(0xFF8B5CF6),
+                  badgeText: 'NEW',
+                  badgeColor: const Color(0xFF8B5CF6),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => BlackHoleWhackGameScreen(
+                          onGameFinished: (earnedCoins, earnedXP) {
+                            final scaledCoins = (earnedCoins * _currentEvolution.coinMultiplier).round();
+                            final scaledXP = (earnedXP * _currentEvolution.xpMultiplier).round();
+                            setState(() {
+                              _coins += scaledCoins;
+                              _totalGamesPlayed += 1;
+                            });
+                            _gainXP(scaledXP);
+                            _incrementQuestProgress('play_game');
+                            _checkAndIncrementAchievement('arcade_champion');
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+                _buildGameCard(
+                  title: 'Stardust Tower',
+                  description: 'One tap to drop each sliding block — stack stardust perfectly, land dead-centre for perfect combos, and build the tallest tower!',
+                  icon: Icons.layers_rounded,
+                  color: const Color(0xFF00E5FF),
+                  badgeText: 'NEW',
+                  badgeColor: const Color(0xFF00E5FF),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => StardustTowerGameScreen(
                           onGameFinished: (earnedCoins, earnedXP) {
                             final scaledCoins = (earnedCoins * _currentEvolution.coinMultiplier).round();
                             final scaledXP = (earnedXP * _currentEvolution.xpMultiplier).round();

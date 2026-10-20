@@ -1,11 +1,11 @@
 {
-    "name": "alif_app",
-    "short_name": "alif_app",
+    "name": "point.o",
+    "short_name": "point.o",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "point.o - gamify your real life.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
