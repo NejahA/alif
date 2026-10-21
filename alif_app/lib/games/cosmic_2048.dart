@@ -343,33 +343,35 @@ class _Cosmic2048GameScreenState extends State<Cosmic2048GameScreen> {
                                 borderRadius: BorderRadius.circular(24),
                                 border: Border.all(color: const Color(0xFF8B5CF6), width: 2),
                               ),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(Icons.grid_view_rounded, color: Color(0xFF8B5CF6), size: 44),
-                                  const SizedBox(height: 10),
-                                  const Text(
-                                    'COSMIC 2048 FUSION',
-                                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 1.2),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  const Text(
-                                    'SWIPE OR USE D-PAD TO SLIDE & MERGE MATCHING CELESTIAL BODIES INTO A BLACK HOLE!',
-                                    style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold, height: 1.4),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                  const SizedBox(height: 16),
-                                  ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF8B5CF6),
-                                      foregroundColor: Colors.white,
-                                      minimumSize: const Size.fromHeight(46),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              child: SingleChildScrollView(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.grid_view_rounded, color: Color(0xFF8B5CF6), size: 44),
+                                    const SizedBox(height: 10),
+                                    const Text(
+                                      'COSMIC 2048 FUSION',
+                                      style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 1.2),
                                     ),
-                                    onPressed: _startGame,
-                                    child: const Text('START FUSION', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                                  ),
-                                ],
+                                    const SizedBox(height: 6),
+                                    const Text(
+                                      'SWIPE OR USE D-PAD TO SLIDE & MERGE MATCHING CELESTIAL BODIES INTO A BLACK HOLE!',
+                                      style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold, height: 1.4),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color(0xFF8B5CF6),
+                                        foregroundColor: Colors.white,
+                                        minimumSize: const Size.fromHeight(46),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                      ),
+                                      onPressed: _startGame,
+                                      child: const Text('START FUSION', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),

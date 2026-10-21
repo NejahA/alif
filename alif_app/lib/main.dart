@@ -26,6 +26,8 @@ import 'games/stardust_tower.dart';
 import 'games/warp_pong.dart';
 import 'games/nebula_sequence.dart';
 import 'games/comet_merge.dart';
+import 'games/eclipse_grid.dart';
+import 'games/nova_reflex.dart';
 
 void main() {
   runApp(const AlifApp());
@@ -74,6 +76,65 @@ class DailyQuest {
   });
 }
 
+/// A rotating real-life objective that resets every calendar day.
+///
+/// [metric] names the lifetime counter it measures; progress is always the
+/// difference between that counter and the snapshot taken at the start of
+/// the day, so nothing has to be cleared on rollover.
+class DailyChallenge {
+  final String title;
+  final String metric; // 'logs', 'games' or 'points'
+  final int target;
+  final int coinReward;
+  final int xpReward;
+  final IconData icon;
+
+  const DailyChallenge({
+    required this.title,
+    required this.metric,
+    required this.target,
+    required this.coinReward,
+    required this.xpReward,
+    required this.icon,
+  });
+
+  String get description => switch (metric) {
+        'logs' => 'Log $target real-life habit${target == 1 ? '' : 's'} today',
+        'games' => 'Play $target Cosmic Arcade game${target == 1 ? '' : 's'} today',
+        _ => 'Bank $target Life Points today',
+      };
+}
+
+/// A larger weekly objective worth a chunk of the week's rewards.
+///
+/// Uses the same baseline trick as [DailyChallenge], but the snapshot is taken
+/// on the Monday the week starts so progress survives every daily rollover.
+class WeeklyMilestone {
+  final String id;
+  final String title;
+  final String metric; // 'logs', 'games' or 'points'
+  final int target;
+  final int coinReward;
+  final int xpReward;
+  final IconData icon;
+
+  const WeeklyMilestone({
+    required this.id,
+    required this.title,
+    required this.metric,
+    required this.target,
+    required this.coinReward,
+    required this.xpReward,
+    required this.icon,
+  });
+
+  String get description => switch (metric) {
+        'logs' => 'Log $target real-life habits this week',
+        'games' => 'Play $target Cosmic Arcade games this week',
+        _ => 'Bank $target Life Points this week',
+      };
+}
+
 class MainPetScreen extends StatefulWidget {
   const MainPetScreen({super.key});
 
@@ -105,6 +166,28 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
   final List<String> _moodHistory = [];
   String _lastMoodDate = '';
   Timer? _saveDebounce;
+
+  // Daily Challenge
+  String _challengeDate = '';
+  bool _challengeClaimed = false;
+  int _challengeBaselineLogs = 0;
+  int _challengeBaselineGames = 0;
+  int _challengeBaselinePoints = 0;
+
+  // Gratitude Journal
+  final List<String> _journalEntries = [];
+  String _journalDate = '';
+  int _journalCountToday = 0;
+
+  // Rolling 7-day life point history, keyed by yyyy-MM-dd
+  final Map<String, int> _lifePointsByDay = {};
+
+  // Weekly Milestones
+  String _weekStartKey = '';
+  int _weekBaselineLogs = 0;
+  int _weekBaselineGames = 0;
+  int _weekBaselinePoints = 0;
+  final Map<String, bool> _weekMilestoneClaimed = {};
 
   // Gamification & Evolution Attributes
   bool _freeWheelSpinAvailable = true;
@@ -161,12 +244,14 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
     _initQuests();
     _achievements = PetAchievement.initialList();
     _lifeQuests = LifeQuest.dailyDefaults();
+    _ensureTodayRollover();
     _loadProgress();
 
     // Passive stat decrease over time
     _statDecayTimer = Timer.periodic(const Duration(seconds: 8), (timer) {
       if (!mounted) return;
       setState(() {
+        _ensureTodayRollover();
         if (!_isSleeping) {
           _fullness = (_fullness - 0.03).clamp(0.0, 1.0);
           _energy = (_energy - 0.02).clamp(0.0, 1.0);
@@ -272,6 +357,7 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
 
   void _gainXP(int amount) {
     final scaled = (amount * _currentEvolution.xpMultiplier).round();
+    _ensureTodayRollover();
     setState(() {
       _xp += scaled;
       if (_xp >= _xpToNextLevel) {
@@ -317,6 +403,7 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
 
   void _logLifeQuest(LifeQuest quest) {
     if (quest.isClaimed || quest.isCompleted) return;
+    _ensureTodayRollover();
     setState(() {
       quest.currentProgress = (quest.currentProgress + 1).clamp(0, quest.targetProgress);
       _totalLifeLogs += 1;
@@ -331,11 +418,12 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
 
   void _claimLifeQuest(LifeQuest quest) {
     if (!quest.isCompleted || quest.isClaimed) return;
+    _ensureTodayRollover();
     final points = (quest.coinReward * _currentEvolution.coinMultiplier).round();
     setState(() {
       quest.isClaimed = true;
       _coins += points;
-      _lifePointsEarned += points;
+      _awardLifePoints(points);
     });
     _gainXP(quest.xpReward);
     _triggerCelebration('Life Quest cleared: ${quest.title}! +$points Points, +${quest.xpReward} XP! 🌱');
@@ -380,14 +468,15 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
     {'label': 'Rough', 'icon': Icons.sentiment_very_dissatisfied, 'color': Color(0xFFF87171)},
   ];
 
-  String get _todayKey {
-    final now = DateTime.now();
-    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-  }
+  static String _dateKey(DateTime date) =>
+      '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+
+  String get _todayKey => _dateKey(DateTime.now());
 
   bool get _moodLoggedToday => _lastMoodDate == _todayKey;
 
   void _recordMood(String label) {
+    _ensureTodayRollover();
     if (_moodLoggedToday) {
       _showMessage('Mood already checked in today 🌤 Come back tomorrow!');
       return;
@@ -411,12 +500,13 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
       MaterialPageRoute(
         builder: (context) => FocusTimerScreen(
           onSessionComplete: (minutes) {
+            _ensureTodayRollover();
             final earnedCoins = (minutes * 2).clamp(25, 90).toInt();
             final earnedXP = minutes.clamp(20, 70).toInt();
             setState(() {
               _coins += earnedCoins;
               _totalLifeLogs += 1;
-              _lifePointsEarned += earnedCoins;
+              _awardLifePoints(earnedCoins);
             });
             _gainXP(earnedXP);
             final focusMatches = _lifeQuests.where((q) => q.id == 'focus');
@@ -429,6 +519,248 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
         ),
       ),
     );
+  }
+
+  // --------------------------------------------------------- Daily Challenge
+  static const List<DailyChallenge> _challengePool = [
+    DailyChallenge(title: 'Momentum', metric: 'logs', target: 2, coinReward: 50, xpReward: 30, icon: Icons.bolt_rounded),
+    DailyChallenge(title: 'Arcade Sprint', metric: 'games', target: 2, coinReward: 60, xpReward: 35, icon: Icons.sports_esports_rounded),
+    DailyChallenge(title: 'Point Rush', metric: 'points', target: 40, coinReward: 70, xpReward: 40, icon: Icons.auto_awesome_rounded),
+    DailyChallenge(title: 'Deep Work', metric: 'logs', target: 3, coinReward: 80, xpReward: 45, icon: Icons.timer_rounded),
+    DailyChallenge(title: 'Marathon', metric: 'games', target: 3, coinReward: 90, xpReward: 50, icon: Icons.rocket_launch_rounded),
+    DailyChallenge(title: 'Big Day', metric: 'points', target: 80, coinReward: 110, xpReward: 60, icon: Icons.local_fire_department_rounded),
+  ];
+
+  /// Deterministic per-day pick, so the same day always shows the same challenge.
+  DailyChallenge get _todayChallenge {
+    final now = DateTime.now();
+    final dayOfYear = now.difference(DateTime(now.year)).inDays;
+    return _challengePool[dayOfYear % _challengePool.length];
+  }
+
+  int get _challengeProgress {
+    final challenge = _todayChallenge;
+    final raw = switch (challenge.metric) {
+      'logs' => _totalLifeLogs - _challengeBaselineLogs,
+      'games' => _totalGamesPlayed - _challengeBaselineGames,
+      _ => _lifePointsEarned - _challengeBaselinePoints,
+    };
+    return raw.clamp(0, challenge.target).toInt();
+  }
+
+  bool get _challengeComplete => _challengeProgress >= _todayChallenge.target;
+
+  /// Rolls the per-day bookkeeping when the calendar day changes. Cheap enough
+  /// to call from anywhere — it returns immediately unless the day moved on.
+  void _ensureTodayRollover() {
+    _ensureWeekRollover();
+    final today = _todayKey;
+    if (_challengeDate == today && _journalDate == today) return;
+    // Baselines hold the lifetime totals at the start of the day, which turns
+    // "progress today" into a subtraction instead of a counter to reset.
+    _challengeBaselineLogs = _totalLifeLogs;
+    _challengeBaselineGames = _totalGamesPlayed;
+    _challengeBaselinePoints = _lifePointsEarned;
+    _challengeDate = today;
+    _challengeClaimed = false;
+    _journalDate = today;
+    _journalCountToday = 0;
+    _pruneLifePointsHistory();
+  }
+
+  void _claimDailyChallenge() {
+    if (_challengeClaimed) {
+      _showMessage('Daily challenge already claimed ✔');
+      return;
+    }
+    if (!_challengeComplete) return;
+    final challenge = _todayChallenge;
+    setState(() {
+      _challengeClaimed = true;
+      _coins += challenge.coinReward;
+    });
+    _gainXP(challenge.xpReward);
+    _triggerCelebration('Daily Challenge: ${challenge.title}! +${challenge.coinReward} Coins, +${challenge.xpReward} XP 🏅');
+  }
+
+  // -------------------------------------------------------- Weekly Milestones
+  static const List<WeeklyMilestone> _weeklyMilestones = [
+    WeeklyMilestone(
+      id: 'week_logs',
+      title: 'Consistency',
+      metric: 'logs',
+      target: 10,
+      coinReward: 150,
+      xpReward: 90,
+      icon: Icons.event_available_rounded,
+    ),
+    WeeklyMilestone(
+      id: 'week_games',
+      title: 'Arcade Regular',
+      metric: 'games',
+      target: 8,
+      coinReward: 200,
+      xpReward: 120,
+      icon: Icons.videogame_asset_rounded,
+    ),
+    WeeklyMilestone(
+      id: 'week_points',
+      title: 'Point Hoarder',
+      metric: 'points',
+      target: 400,
+      coinReward: 250,
+      xpReward: 150,
+      icon: Icons.savings_rounded,
+    ),
+  ];
+
+  /// Monday of the current week, as a yyyy-MM-dd key.
+  static String _weekKeyAt(DateTime date) {
+    final monday = DateTime(date.year, date.month, date.day)
+        .subtract(Duration(days: date.weekday - 1));
+    return _dateKey(monday);
+  }
+
+  String get _currentWeekKey => _weekKeyAt(DateTime.now());
+
+  /// Days left before the milestones reset, counting today.
+  int get _weekDaysRemaining => 8 - DateTime.now().weekday;
+
+  void _ensureWeekRollover() {
+    final week = _currentWeekKey;
+    if (_weekStartKey == week) return;
+    _weekStartKey = week;
+    _weekBaselineLogs = _totalLifeLogs;
+    _weekBaselineGames = _totalGamesPlayed;
+    _weekBaselinePoints = _lifePointsEarned;
+    _weekMilestoneClaimed.clear();
+  }
+
+  int _weeklyProgress(WeeklyMilestone milestone) {
+    final raw = switch (milestone.metric) {
+      'logs' => _totalLifeLogs - _weekBaselineLogs,
+      'games' => _totalGamesPlayed - _weekBaselineGames,
+      _ => _lifePointsEarned - _weekBaselinePoints,
+    };
+    return raw.clamp(0, milestone.target).toInt();
+  }
+
+  bool _weeklyComplete(WeeklyMilestone milestone) =>
+      _weeklyProgress(milestone) >= milestone.target;
+
+  void _claimWeeklyMilestone(WeeklyMilestone milestone) {
+    _ensureTodayRollover();
+    if (_weekMilestoneClaimed[milestone.id] == true) {
+      _showMessage('Weekly milestone already claimed ✔');
+      return;
+    }
+    if (!_weeklyComplete(milestone)) return;
+    setState(() {
+      _weekMilestoneClaimed[milestone.id] = true;
+      _coins += milestone.coinReward;
+    });
+    _gainXP(milestone.xpReward);
+    _triggerCelebration(
+      'Weekly Milestone: ${milestone.title}! +${milestone.coinReward} Coins, +${milestone.xpReward} XP 🎖️',
+    );
+  }
+
+  // -------------------------------------------------------- Gratitude Journal
+  static const int _journalDailyCap = 3;
+  static const int _journalHistoryLimit = 20;
+  static const int _lifePointsHistoryDays = 30;
+
+  void _awardLifePoints(int points) {
+    _lifePointsEarned += points;
+    _lifePointsByDay[_todayKey] = (_lifePointsByDay[_todayKey] ?? 0) + points;
+  }
+
+  /// Newest last, `days` entries long, ending today.
+  static List<String> _lastDayKeys(int days) => List.generate(
+        days,
+        (i) => _dateKey(DateTime.now().subtract(Duration(days: days - 1 - i))),
+      );
+
+  /// Drops history older than [_lifePointsHistoryDays] so the map cannot grow
+  /// without bound over months of use.
+  void _pruneLifePointsHistory() {
+    if (_lifePointsByDay.length <= _lifePointsHistoryDays) return;
+    final kept = _lastDayKeys(_lifePointsHistoryDays).toSet();
+    _lifePointsByDay.removeWhere((key, _) => !kept.contains(key));
+  }
+
+  /// Last seven day keys, oldest first, for the insights chart.
+  List<String> get _lastSevenDayKeys => _lastDayKeys(7);
+
+  void _openJournalEntry() {
+    _ensureTodayRollover();
+    if (_journalCountToday >= _journalDailyCap) {
+      _showMessage('Journal limit reached for today — come back tomorrow! ✍️');
+      return;
+    }
+    final controller = TextEditingController();
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E293B),
+        title: const Text('New Reflection', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLines: 4,
+          maxLength: 240,
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            hintText: 'What went well today?',
+            hintStyle: TextStyle(color: Colors.white38),
+            counterStyle: TextStyle(color: Colors.white38),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('CANCEL', style: TextStyle(color: Colors.white54)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF8B5CF6),
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () {
+              final text = controller.text;
+              Navigator.pop(ctx);
+              _saveJournalEntry(text);
+            },
+            child: const Text('SAVE'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _saveJournalEntry(String text) {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) {
+      _showMessage('Write something first ✍️');
+      return;
+    }
+    _ensureTodayRollover();
+    if (_journalCountToday >= _journalDailyCap) {
+      _showMessage('Journal limit reached for today — come back tomorrow! ✍️');
+      return;
+    }
+    setState(() {
+      _journalEntries.insert(0, trimmed);
+      if (_journalEntries.length > _journalHistoryLimit) {
+        _journalEntries.removeLast();
+      }
+      _journalCountToday += 1;
+      _coins += 15;
+      _totalLifeLogs += 1;
+      _awardLifePoints(10);
+    });
+    _gainXP(10);
+    _showMessage('Reflection saved (+15 Coins, +10 XP) 📖');
   }
 
   // -------------------------------------------------------------- Persistence
@@ -451,6 +783,20 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
         lifeQuestClaimed: {for (final q in _lifeQuests) q.id: q.isClaimed},
         moodHistory: List<String>.from(_moodHistory),
         lastMoodDate: _lastMoodDate,
+        lifePointsByDay: Map<String, int>.from(_lifePointsByDay),
+        journalEntries: List<String>.from(_journalEntries),
+        journalDate: _journalDate,
+        journalCountToday: _journalCountToday,
+        challengeDate: _challengeDate,
+        challengeClaimed: _challengeClaimed,
+        challengeBaselineLogs: _challengeBaselineLogs,
+        challengeBaselineGames: _challengeBaselineGames,
+        challengeBaselinePoints: _challengeBaselinePoints,
+        weekStartKey: _weekStartKey,
+        weekBaselineLogs: _weekBaselineLogs,
+        weekBaselineGames: _weekBaselineGames,
+        weekBaselinePoints: _weekBaselinePoints,
+        weekMilestoneClaimed: Map<String, bool>.from(_weekMilestoneClaimed),
       );
 
   /// Debounced so a burst of rewards only writes once.
@@ -491,6 +837,28 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
         ..clear()
         ..addAll(snapshot.moodHistory);
       _lastMoodDate = snapshot.lastMoodDate;
+      _lifePointsByDay
+        ..clear()
+        ..addAll(snapshot.lifePointsByDay);
+      _journalEntries
+        ..clear()
+        ..addAll(snapshot.journalEntries);
+      _journalDate = snapshot.journalDate;
+      _journalCountToday = snapshot.journalCountToday;
+      _challengeDate = snapshot.challengeDate;
+      _challengeClaimed = snapshot.challengeClaimed;
+      _challengeBaselineLogs = snapshot.challengeBaselineLogs;
+      _challengeBaselineGames = snapshot.challengeBaselineGames;
+      _challengeBaselinePoints = snapshot.challengeBaselinePoints;
+      _weekStartKey = snapshot.weekStartKey;
+      _weekBaselineLogs = snapshot.weekBaselineLogs;
+      _weekBaselineGames = snapshot.weekBaselineGames;
+      _weekBaselinePoints = snapshot.weekBaselinePoints;
+      _weekMilestoneClaimed
+        ..clear()
+        ..addAll(snapshot.weekMilestoneClaimed);
+      // A save from an earlier day must not carry yesterday's baselines over.
+      _ensureTodayRollover();
     });
   }
 
@@ -787,11 +1155,19 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
 
   Widget _buildTopHeader() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: 0.25),
       ),
-      child: Row(
+      // Scroll-safe: on very narrow screens the header items can exceed the
+      // viewport, so let the row scroll instead of overflowing. `minWidth` keeps
+      // the normal `spaceBetween` layout intact whenever the content fits.
+      child: LayoutBuilder(
+        builder: (context, constraints) => SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minWidth: constraints.maxWidth),
+            child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           // Level & XP Bar
@@ -881,6 +1257,9 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
             ),
           ),
         ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -923,9 +1302,13 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
                 children: [
                   Icon(Icons.auto_awesome, color: _currentEvolution.primaryAura, size: 14),
                   const SizedBox(width: 6),
-                  Text(
-                    '${_currentEvolution.title} (Stage ${_currentEvolution.stage})',
-                    style: TextStyle(color: _currentEvolution.primaryAura, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 0.8),
+                  Flexible(
+                    child: Text(
+                      '${_currentEvolution.title} (Stage ${_currentEvolution.stage})',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: _currentEvolution.primaryAura, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 0.8),
+                    ),
                   ),
                   const SizedBox(width: 8),
                   Container(
@@ -1007,30 +1390,30 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _buildActionButton(
+                  Flexible(child: _buildActionButton(
                     icon: Icons.fastfood_rounded,
                     label: 'Feed Snacks',
                     color: const Color(0xFF10B981),
                     onTap: () => _showSnackMenu(),
-                  ),
-                  _buildActionButton(
+                  )),
+                  Flexible(child: _buildActionButton(
                     icon: _isSleeping ? Icons.wb_sunny_rounded : Icons.nightlight_round,
                     label: _isSleeping ? 'Wake Up' : 'Sleep',
                     color: const Color(0xFF6366F1),
                     onTap: _toggleSleep,
-                  ),
-                  _buildActionButton(
+                  )),
+                  Flexible(child: _buildActionButton(
                     icon: Icons.party_mode_rounded,
                     label: 'Party Mode',
                     color: const Color(0xFFEC4899),
                     onTap: () => _triggerCelebration('Party Mode Activated! 🎉'),
-                  ),
-                  _buildActionButton(
+                  )),
+                  Flexible(child: _buildActionButton(
                     icon: Icons.stars_rounded,
                     label: 'Lucky Spin',
                     color: const Color(0xFFFFD700),
                     onTap: _openLuckyWheel,
-                  ),
+                  )),
                 ],
               ),
             ),
@@ -1309,7 +1692,14 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
           children: [
             Icon(icon, color: color, size: 14),
             const SizedBox(width: 4),
-            Text(label, style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 4),
@@ -1331,17 +1721,24 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.2),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: color, width: 1.5),
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: color, size: 26),
+            Icon(icon, color: color, size: 24),
             const SizedBox(height: 4),
-            Text(label, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold),
+            ),
           ],
         ),
       ),
@@ -1424,7 +1821,11 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
         _buildLifeScoreCard(),
 
         const SizedBox(height: 20),
+        _buildDailyChallengeCard(),
+        const SizedBox(height: 16),
         _buildMoodCard(),
+        const SizedBox(height: 16),
+        _buildJournalCard(),
         const SizedBox(height: 16),
         _buildFocusCard(),
 
@@ -1501,6 +1902,171 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
           Text(value, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900)),
           const SizedBox(height: 2),
           Text(label, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDailyChallengeCard() {
+    final challenge = _todayChallenge;
+    final progress = _challengeProgress;
+    final complete = _challengeComplete;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E293B),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFFBBF24).withValues(alpha: complete ? 0.6 : 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(challenge.icon, color: const Color(0xFFFBBF24), size: 20),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'Daily Challenge',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                ),
+              ),
+              Text(
+                '+${challenge.coinReward} Coins',
+                style: const TextStyle(color: Color(0xFFFBBF24), fontSize: 11, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            challenge.title,
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 17),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            challenge.description,
+            style: const TextStyle(color: Colors.white70, fontSize: 12),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: LinearProgressIndicator(
+                    value: progress / challenge.target,
+                    minHeight: 8,
+                    backgroundColor: Colors.black26,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      complete ? const Color(0xFF34D399) : const Color(0xFFFBBF24),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                '$progress/${challenge.target}',
+                style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: complete && !_challengeClaimed ? const Color(0xFFFBBF24) : Colors.black26,
+                foregroundColor: complete && !_challengeClaimed ? Colors.black : Colors.white54,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+              onPressed: complete && !_challengeClaimed ? _claimDailyChallenge : null,
+              child: Text(
+                _challengeClaimed ? 'CLAIMED ✔' : (complete ? 'CLAIM REWARD' : 'IN PROGRESS'),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.5),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildJournalCard() {
+    final recent = _journalEntries.take(3).toList();
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E293B),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFF60A5FA).withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.menu_book_rounded, color: Color(0xFF60A5FA), size: 20),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'Gratitude Journal',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                ),
+              ),
+              Text(
+                '$_journalCountToday/$_journalDailyCap today',
+                style: const TextStyle(color: Colors.white38, fontSize: 11, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Note one thing that went well. +15 Coins, +10 XP.',
+            style: TextStyle(color: Colors.white70, fontSize: 12),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _journalCountToday >= _journalDailyCap ? Colors.black26 : const Color(0xFF60A5FA),
+                foregroundColor: _journalCountToday >= _journalDailyCap ? Colors.white54 : Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+              onPressed: _journalCountToday >= _journalDailyCap ? null : _openJournalEntry,
+              child: const Text('NEW REFLECTION', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.5)),
+            ),
+          ),
+          if (recent.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            ...recent.map(
+              (entry) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(top: 2),
+                      child: Icon(Icons.format_quote_rounded, color: Colors.white24, size: 14),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        entry,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Colors.white54, fontSize: 12, fontStyle: FontStyle.italic),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -2321,6 +2887,64 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
                     );
                   },
                 ),
+                const SizedBox(height: 16),
+                _buildGameCard(
+                  title: 'Eclipse Grid',
+                  description: 'Tap the eclipse nodes to flip them and their neighbours — darken the whole grid in as few moves as you can!',
+                  icon: Icons.grid_on_rounded,
+                  color: const Color(0xFF818CF8),
+                  badgeText: 'NEW',
+                  badgeColor: const Color(0xFF818CF8),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => EclipseGridGameScreen(
+                          onGameFinished: (earnedCoins, earnedXP) {
+                            final scaledCoins = (earnedCoins * _currentEvolution.coinMultiplier).round();
+                            final scaledXP = (earnedXP * _currentEvolution.xpMultiplier).round();
+                            setState(() {
+                              _coins += scaledCoins;
+                              _totalGamesPlayed += 1;
+                            });
+                            _gainXP(scaledXP);
+                            _incrementQuestProgress('play_game');
+                            _checkAndIncrementAchievement('arcade_champion');
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+                _buildGameCard(
+                  title: 'Nova Reflex',
+                  description: 'Stop the sweeping nova inside the glowing zone — ten rounds, tightening windows, pure timing!',
+                  icon: Icons.bolt_rounded,
+                  color: const Color(0xFFF97316),
+                  badgeText: 'NEW',
+                  badgeColor: const Color(0xFFF97316),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => NovaReflexGameScreen(
+                          onGameFinished: (earnedCoins, earnedXP) {
+                            final scaledCoins = (earnedCoins * _currentEvolution.coinMultiplier).round();
+                            final scaledXP = (earnedXP * _currentEvolution.xpMultiplier).round();
+                            setState(() {
+                              _coins += scaledCoins;
+                              _totalGamesPlayed += 1;
+                            });
+                            _gainXP(scaledXP);
+                            _incrementQuestProgress('play_game');
+                            _checkAndIncrementAchievement('arcade_champion');
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
               ],
             ),
           ),
@@ -2399,7 +3023,12 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
                       backgroundColor: color,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    onPressed: onTap,
+                    onPressed: () {
+                      // Capture the day/week baselines before the game moves
+                      // any lifetime counter.
+                      _ensureTodayRollover();
+                      onTap();
+                    },
                     icon: const Icon(Icons.play_arrow, color: Colors.white, size: 20),
                     label: const Text('Play Now', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                   ),
@@ -2442,11 +3071,18 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
   Widget _buildHatsGrid() {
     return Padding(
       padding: const EdgeInsets.all(20),
-      child: GridView.count(
-        crossAxisCount: 2,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        children: _hatPrices.keys.map((hat) {
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // Keep a fixed, comfortable card height instead of square cells so the
+          // hat image, label and buy button always fit on small screens.
+          const spacing = 16.0;
+          final cellWidth = (constraints.maxWidth - spacing) / 2;
+          return GridView.count(
+            crossAxisCount: 2,
+            crossAxisSpacing: spacing,
+            mainAxisSpacing: spacing,
+            childAspectRatio: cellWidth / 180,
+            children: _hatPrices.keys.map((hat) {
           final isUnlocked = _unlockedHats.contains(hat);
           final isEquipped = _equippedHat == hat;
           final price = _hatPrices[hat]!;
@@ -2506,6 +3142,8 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
             ),
           );
         }).toList(),
+          );
+        },
       ),
     );
   }
@@ -2586,6 +3224,140 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
     );
   }
 
+  Widget _buildWeeklyMilestonesCard() {
+    final claimed = _weeklyMilestones
+        .where((m) => _weekMilestoneClaimed[m.id] == true)
+        .length;
+    final resetsIn = _weekDaysRemaining;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E293B),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.military_tech_rounded, color: Color(0xFFF59E0B), size: 20),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'Weekly Milestones',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                ),
+              ),
+              Text(
+                '$claimed of ${_weeklyMilestones.length} claimed',
+                style: const TextStyle(color: Colors.white38, fontSize: 11, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Resets Monday — $resetsIn day${resetsIn == 1 ? '' : 's'} left.',
+            style: const TextStyle(color: Colors.white54, fontSize: 11),
+          ),
+          const SizedBox(height: 14),
+          ..._weeklyMilestones.map(_buildWeeklyMilestoneTile),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWeeklyMilestoneTile(WeeklyMilestone milestone) {
+    final progress = _weeklyProgress(milestone);
+    final complete = _weeklyComplete(milestone);
+    final claimed = _weekMilestoneClaimed[milestone.id] == true;
+    final accent = claimed
+        ? const Color(0xFF34D399)
+        : (complete ? const Color(0xFFF59E0B) : const Color(0xFF8B5CF6));
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(9),
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.18),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(milestone.icon, color: accent, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        milestone.title,
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                      ),
+                    ),
+                    Text(
+                      '$progress/${milestone.target}',
+                      style: TextStyle(color: accent, fontSize: 11, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  milestone.description,
+                  style: const TextStyle(color: Colors.white54, fontSize: 11),
+                ),
+                const SizedBox(height: 8),
+                Semantics(
+                  label: '${milestone.title} progress',
+                  value: '$progress of ${milestone.target}',
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: progress / milestone.target,
+                      minHeight: 6,
+                      backgroundColor: Colors.white12,
+                      valueColor: AlwaysStoppedAnimation<Color>(accent),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '+${milestone.coinReward} Coins · +${milestone.xpReward} XP',
+                  style: const TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          SizedBox(
+            width: 78,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: complete && !claimed ? accent : Colors.black26,
+                foregroundColor: complete && !claimed ? Colors.white : Colors.white54,
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: complete && !claimed ? () => _claimWeeklyMilestone(milestone) : null,
+              child: Text(
+                claimed ? 'DONE ✔' : (complete ? 'CLAIM' : 'LOCKED'),
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 0.3),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildQuestsAndStatsView() {
     return Padding(
       padding: const EdgeInsets.all(20),
@@ -2605,6 +3377,12 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
 
           // Celestial Achievements Section
           _buildAchievementsSection(),
+          const SizedBox(height: 24),
+
+          _buildLifeInsightsCard(),
+          const SizedBox(height: 24),
+
+          _buildWeeklyMilestonesCard(),
           const SizedBox(height: 24),
 
           // Lifetime Stats Card
@@ -2638,6 +3416,91 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
     );
   }
 
+  Widget _buildLifeInsightsCard() {
+    final dayKeys = _lastSevenDayKeys;
+    final values = dayKeys.map((key) => _lifePointsByDay[key] ?? 0).toList();
+    final peak = values.fold<int>(0, (best, value) => value > best ? value : best);
+    final total = values.fold<int>(0, (sum, value) => sum + value);
+    final today = _todayKey;
+    const weekdayLetters = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E293B),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.insights_rounded, color: Color(0xFF34D399), size: 20),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'Life Insights',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                ),
+              ),
+              Text(
+                '$total pts / 7d',
+                style: const TextStyle(color: Colors.white38, fontSize: 11, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: List.generate(7, (i) {
+              final value = values[i];
+              final isToday = dayKeys[i] == today;
+              // A peak of zero would divide by zero, so bars fall back to a stub.
+              final height = peak == 0 ? 4.0 : (value / peak) * 66 + 4;
+              return Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      value == 0 ? '' : '$value',
+                      style: const TextStyle(color: Colors.white54, fontSize: 9, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 2),
+                    Container(
+                      height: height,
+                      margin: const EdgeInsets.symmetric(horizontal: 5),
+                      decoration: BoxDecoration(
+                        color: isToday ? const Color(0xFF34D399) : const Color(0xFF8B5CF6).withValues(alpha: value == 0 ? 0.25 : 0.8),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      weekdayLetters[DateTime.parse(dayKeys[i]).weekday - 1],
+                      style: TextStyle(
+                        color: isToday ? Colors.white : Colors.white38,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ),
+          if (peak == 0) ...[
+            const SizedBox(height: 12),
+            const Text(
+              'Clear a habit, run a focus session or write a reflection to start filling this chart.',
+              style: TextStyle(color: Colors.white38, fontSize: 11),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildStreakCalendar() {
     return Container(
       padding: const EdgeInsets.all(18),
@@ -2658,13 +3521,23 @@ class _MainPetScreenState extends State<MainPetScreen> with SingleTickerProvider
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: const [
-                  Icon(Icons.local_fire_department_rounded, color: Colors.amber, size: 28),
-                  SizedBox(width: 8),
-                  Text('7-Day Login Streak', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16)),
-                ],
+              Flexible(
+                child: Row(
+                  children: const [
+                    Icon(Icons.local_fire_department_rounded, color: Colors.amber, size: 28),
+                    SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        '7-Day Login Streak',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16),
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _streakClaimedToday ? Colors.black38 : Colors.white,

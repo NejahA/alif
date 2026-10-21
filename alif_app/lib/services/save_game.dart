@@ -22,6 +22,20 @@ class SaveSnapshot {
   final Map<String, bool> lifeQuestClaimed;
   final List<String> moodHistory;
   final String lastMoodDate;
+  final Map<String, int> lifePointsByDay;
+  final List<String> journalEntries;
+  final String journalDate;
+  final int journalCountToday;
+  final String challengeDate;
+  final bool challengeClaimed;
+  final int challengeBaselineLogs;
+  final int challengeBaselineGames;
+  final int challengeBaselinePoints;
+  final String weekStartKey;
+  final int weekBaselineLogs;
+  final int weekBaselineGames;
+  final int weekBaselinePoints;
+  final Map<String, bool> weekMilestoneClaimed;
 
   const SaveSnapshot({
     required this.coins,
@@ -42,6 +56,20 @@ class SaveSnapshot {
     required this.lifeQuestClaimed,
     required this.moodHistory,
     required this.lastMoodDate,
+    required this.lifePointsByDay,
+    required this.journalEntries,
+    required this.journalDate,
+    required this.journalCountToday,
+    required this.challengeDate,
+    required this.challengeClaimed,
+    required this.challengeBaselineLogs,
+    required this.challengeBaselineGames,
+    required this.challengeBaselinePoints,
+    required this.weekStartKey,
+    required this.weekBaselineLogs,
+    required this.weekBaselineGames,
+    required this.weekBaselinePoints,
+    required this.weekMilestoneClaimed,
   });
 
   Map<String, dynamic> toJson() => {
@@ -63,6 +91,20 @@ class SaveSnapshot {
         'lifeQuestClaimed': lifeQuestClaimed,
         'moodHistory': moodHistory,
         'lastMoodDate': lastMoodDate,
+        'lifePointsByDay': lifePointsByDay,
+        'journalEntries': journalEntries,
+        'journalDate': journalDate,
+        'journalCountToday': journalCountToday,
+        'challengeDate': challengeDate,
+        'challengeClaimed': challengeClaimed,
+        'challengeBaselineLogs': challengeBaselineLogs,
+        'challengeBaselineGames': challengeBaselineGames,
+        'challengeBaselinePoints': challengeBaselinePoints,
+        'weekStartKey': weekStartKey,
+        'weekBaselineLogs': weekBaselineLogs,
+        'weekBaselineGames': weekBaselineGames,
+        'weekBaselinePoints': weekBaselinePoints,
+        'weekMilestoneClaimed': weekMilestoneClaimed,
       };
 
   static SaveSnapshot fromJson(Map<String, dynamic> json) {
@@ -105,6 +147,20 @@ class SaveSnapshot {
       lifeQuestClaimed: readBoolMap('lifeQuestClaimed'),
       moodHistory: readStringList('moodHistory'),
       lastMoodDate: readString('lastMoodDate', ''),
+      lifePointsByDay: readIntMap('lifePointsByDay'),
+      journalEntries: readStringList('journalEntries'),
+      journalDate: readString('journalDate', ''),
+      journalCountToday: readInt('journalCountToday', 0),
+      challengeDate: readString('challengeDate', ''),
+      challengeClaimed: json['challengeClaimed'] == true,
+      challengeBaselineLogs: readInt('challengeBaselineLogs', 0),
+      challengeBaselineGames: readInt('challengeBaselineGames', 0),
+      challengeBaselinePoints: readInt('challengeBaselinePoints', 0),
+      weekStartKey: readString('weekStartKey', ''),
+      weekBaselineLogs: readInt('weekBaselineLogs', 0),
+      weekBaselineGames: readInt('weekBaselineGames', 0),
+      weekBaselinePoints: readInt('weekBaselinePoints', 0),
+      weekMilestoneClaimed: readBoolMap('weekMilestoneClaimed'),
     );
   }
 }
