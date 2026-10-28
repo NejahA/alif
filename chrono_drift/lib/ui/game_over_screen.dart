@@ -123,7 +123,14 @@ class GameOverScreen extends StatelessWidget {
                   _statTile('CORES SECURED', '+${stats.coresCollected}', Icons.diamond_rounded, const Color(0xFF00E5FF)),
                 ],
               ),
-
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  _statTile('BULLETS GRAZED', '${stats.bulletsGrazed}', Icons.timelapse_rounded, const Color(0xFF7C4DFF)),
+                  const SizedBox(width: 10),
+                  _statTile('KINETIC PARRIES', '${stats.bulletsParried}', Icons.shield_moon_rounded, const Color(0xFFFFD600)),
+                ],
+              ),
               const SizedBox(height: 24),
 
               // Actions

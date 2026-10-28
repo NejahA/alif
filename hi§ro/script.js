@@ -33,13 +33,20 @@ const ACTIVITY_BUCKET_MS = 15000;
 
 // --- MongoDB Cloud sync ---
 
-const SERVER_URL = 'http://localhost:3456';
-const SERVER_ENDPOINT = SERVER_URL + '/api/hi§ro/data';
-const HEALTH_ENDPOINT = SERVER_URL + '/api/hi§ro/health';
+const SERVER_URL =
+  (typeof window !== 'undefined' && window.HIRO_SERVER_URL) ||
+  (typeof localStorage !== 'undefined' && localStorage.getItem('hiro_server_url')) ||
+  'https://hiro-server-three.vercel.app';
+const SERVER_ENDPOINT = SERVER_URL + '/api/hiro/data';
+const HEALTH_ENDPOINT = SERVER_URL + '/api/hiro/health';
+const EVENTS_ENDPOINT = SERVER_URL + '/api/events';
+const CLIENT_ID = 'web_' + Math.random().toString(36).substring(2, 9);
+
 let serverConnected = false;
 let serverSyncPending = null;
 let serverSyncTimer = null;
 let serverLoadDone = false;
+let liveSyncSource = null;
 
 async function checkServerHealth() {
   try {
@@ -53,7 +60,6 @@ async function checkServerHealth() {
 }
 
 function pushToServer(payload) {
-  // Debounce server writes — the server push is async, so batch rapid changes.
   serverSyncPending = payload;
   clearTimeout(serverSyncTimer);
   serverSyncTimer = setTimeout(async () => {
@@ -63,18 +69,47 @@ function pushToServer(payload) {
     try {
       const res = await fetch(SERVER_ENDPOINT, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Client-Id': CLIENT_ID,
+        },
         body: JSON.stringify({ data }),
       });
-      if (res.ok) {
-        serverConnected = true;
-      } else {
-        serverConnected = false;
-      }
+      serverConnected = res.ok;
     } catch {
-      serverConnected = false; // Fall back to localStorage only
+      serverConnected = false;
     }
-  }, 800);
+  }, 200);
+}
+
+function setupLiveSync() {
+  if (typeof EventSource === 'undefined') return;
+  if (liveSyncSource) {
+    try { liveSyncSource.close(); } catch (_) {}
+  }
+
+  try {
+    liveSyncSource = new EventSource(EVENTS_ENDPOINT);
+    liveSyncSource.onmessage = async (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.type === 'update' && msg.senderId !== CLIENT_ID) {
+          // If actively dragging or typing, wait a moment to avoid jitter
+          const isTyping = document.activeElement && ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName);
+          if (isDragging || isTyping) return;
+          const ok = await loadFromServer();
+          if (ok) {
+            draw();
+          }
+        }
+      } catch (_) {}
+    };
+    liveSyncSource.onerror = () => {
+      // EventSource automatically retries
+    };
+  } catch (err) {
+    console.warn('Live sync stream error:', err);
+  }
 }
 
 async function loadFromServer() {
@@ -447,10 +482,20 @@ function restoreHistory(snapshot) {
 
   // Rebuild connections (preserve manual flag + weight + label)
   connections = (snapshot.connections || []).map(c => {
-    const a = synapses.find(s => s.id === c.aId);
-    const b = synapses.find(s => s.id === c.bId);
+    const fromId = c.aId || c.from || c.fromId || c.source;
+    const toId = c.bId || c.to || c.toId || c.target;
+    const a = synapses.find(s => s.id === fromId);
+    const b = synapses.find(s => s.id === toId);
     if (a && b) {
-      return { a, b, dist: Math.hypot(a.x - b.x, a.y - b.y), pulse: 0, manual: c.manual || false, weight: c.weight || 1, label: c.label || '' };
+      return {
+        a,
+        b,
+        dist: Math.hypot(a.x - b.x, a.y - b.y),
+        pulse: 0,
+        manual: c.manual !== undefined ? Boolean(c.manual) : true,
+        weight: c.weight || c.strength || 1,
+        label: c.label || '',
+      };
     }
     return null;
   }).filter(Boolean);
@@ -814,6 +859,237 @@ class Synapse {
     const r = this.radius * this.sproutProgress;
     return Math.hypot(px - this.x, py - this.y) < r + 8;
   }
+}
+
+// --- Cluster (groups of synapses) ---
+
+class Cluster {
+  constructor(name = 'Group', synapseIds = []) {
+    this.id = 'cl_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
+    this.name = name;
+    this.synapseIds = Array.isArray(synapseIds) ? synapseIds : [];
+    this.collapsed = false;
+    this.hue = Math.floor(Math.random() * 360);
+  }
+
+  getMembers() {
+    return synapses.filter(s => this.synapseIds.includes(s.id));
+  }
+
+  getBounds() {
+    const members = this.getMembers();
+    if (members.length === 0) return null;
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const s of members) {
+      const r = (s.radius || 20) * (s.sproutProgress || 1);
+      minX = Math.min(minX, s.x - r);
+      maxX = Math.max(maxX, s.x + r);
+      minY = Math.min(minY, s.y - r);
+      maxY = Math.max(maxY, s.y + r);
+    }
+    const pad = 28;
+    return {
+      x: minX - pad,
+      y: minY - pad,
+      w: (maxX - minX) + pad * 2,
+      h: (maxY - minY) + pad * 2,
+      cx: (minX + maxX) / 2,
+      cy: (minY + maxY) / 2,
+    };
+  }
+
+  hitTest(wx, wy) {
+    const b = this.getBounds();
+    if (!b) return false;
+    if (this.collapsed) {
+      return Math.hypot(wx - b.cx, wy - b.cy) <= 30;
+    } else {
+      const badgeX = b.x + 10;
+      const badgeY = b.y - 12;
+      return (wx >= badgeX && wx <= badgeX + 110 && wy >= badgeY - 10 && wy <= badgeY + 16);
+    }
+  }
+
+  draw() {
+    const b = this.getBounds();
+    if (!b) return;
+    const h = this.hue;
+
+    if (!this.collapsed) {
+      ctx.save();
+      ctx.beginPath();
+      const r = 16;
+      if (typeof ctx.roundRect === 'function') {
+        ctx.roundRect(b.x, b.y, b.w, b.h, r);
+      } else {
+        ctx.rect(b.x, b.y, b.w, b.h);
+      }
+      ctx.fillStyle = `hsla(${h}, 50%, 15%, 0.15)`;
+      ctx.fill();
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = `hsla(${h}, 60%, 55%, 0.4)`;
+      ctx.setLineDash([6, 6]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      const badgeX = b.x + 10;
+      const badgeY = b.y - 12;
+      ctx.beginPath();
+      if (typeof ctx.roundRect === 'function') {
+        ctx.roundRect(badgeX, badgeY - 10, 110, 22, 11);
+      } else {
+        ctx.rect(badgeX, badgeY - 10, 110, 22);
+      }
+      ctx.fillStyle = `hsla(${h}, 40%, 12%, 0.85)`;
+      ctx.fill();
+      ctx.strokeStyle = `hsla(${h}, 60%, 55%, 0.6)`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      ctx.fillStyle = `hsla(${h}, 70%, 80%, 0.95)`;
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      const label = `[-] ${this.name.slice(0, 10)}`;
+      ctx.fillText(label, badgeX + 10, badgeY + 1);
+      ctx.restore();
+    } else {
+      ctx.save();
+      ctx.shadowColor = `hsla(${h}, 80%, 60%, 0.5)`;
+      ctx.shadowBlur = 15;
+      ctx.beginPath();
+      ctx.arc(b.cx, b.cy, 26, 0, Math.PI * 2);
+      ctx.fillStyle = `hsla(${h}, 45%, 18%, 0.9)`;
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = `hsla(${h}, 70%, 65%, 0.8)`;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`[+] ${this.synapseIds.length}`, b.cx, b.cy - 3);
+
+      ctx.fillStyle = `hsla(${h}, 70%, 80%, 0.8)`;
+      ctx.font = '9px sans-serif';
+      ctx.fillText(this.name.slice(0, 12), b.cx, b.cy + 12);
+      ctx.restore();
+    }
+  }
+}
+
+function serializeCluster(cl) {
+  return {
+    id: cl.id,
+    name: cl.name || 'Group',
+    synapseIds: cl.synapseIds || [],
+    collapsed: !!cl.collapsed,
+    hue: cl.hue !== undefined ? cl.hue : 180,
+  };
+}
+
+function restoreClusterFromData(d) {
+  const cl = new Cluster(d.name || 'Group', d.synapseIds || []);
+  cl.id = d.id || ('cl_' + Math.random().toString(36).slice(2, 9));
+  cl.collapsed = !!d.collapsed;
+  cl.hue = d.hue !== undefined ? d.hue : 180;
+  return cl;
+}
+
+function createClusterFromIds(ids) {
+  if (!ids || ids.length === 0) return;
+  const name = prompt('Cluster name:', `Group ${clusters.length + 1}`);
+  if (!name || !name.trim()) return;
+  const cl = new Cluster(name.trim(), ids);
+  for (const s of synapses) {
+    if (ids.includes(s.id)) {
+      s.clusterId = cl.id;
+    }
+  }
+  clusters.push(cl);
+  pushHistory();
+  save();
+  showToast(`Created cluster "${cl.name}" with ${ids.length} synapses`);
+}
+
+function preloadImage(url) {
+  if (!url || imageCache.has(url)) return;
+  const img = new Image();
+  img.src = url;
+  img.onload = () => imageCache.set(url, img);
+}
+
+function connectSynapses(a, b) {
+  return addManualConnection(a, b);
+}
+
+// --- Pomodoro focus timer ---
+
+let pomodoroTimer = null;
+let pomodoroMode = 'work';
+
+function updatePomodoroDisplay() {
+  const disp = $('pomodoro-display');
+  if (!disp) return;
+  const m = Math.floor(pomodoroTimeLeft / 60);
+  const s = pomodoroTimeLeft % 60;
+  disp.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+function bindPomodoroSynapse(syn) {
+  pomodoroSynapse = syn;
+  const label = $('pomodoro-synapse-label');
+  if (label) label.textContent = syn ? '#' + syn.id.slice(0, 6) : 'no synapse bound';
+  const panel = $('pomodoro-panel');
+  if (panel) panel.classList.remove('hidden');
+  if (pomodoroTimeLeft === 0) {
+    pomodoroTimeLeft = 25 * 60;
+    updatePomodoroDisplay();
+  }
+  showToast(syn ? `Pomodoro bound to #${syn.id.slice(0, 6)}` : 'Pomodoro timer opened');
+}
+
+function startPomodoro() {
+  if (pomodoroRunning) {
+    clearInterval(pomodoroTimer);
+    pomodoroRunning = false;
+    const btn = $('btn-pom-start');
+    if (btn) btn.textContent = '▶ start';
+    return;
+  }
+  if (pomodoroTimeLeft <= 0) {
+    pomodoroTimeLeft = (pomodoroMode === 'work' ? 25 : 5) * 60;
+  }
+  pomodoroRunning = true;
+  const btn = $('btn-pom-start');
+  if (btn) btn.textContent = '⏸ pause';
+  clearInterval(pomodoroTimer);
+  pomodoroTimer = setInterval(() => {
+    if (pomodoroTimeLeft > 0) {
+      pomodoroTimeLeft--;
+      updatePomodoroDisplay();
+    } else {
+      clearInterval(pomodoroTimer);
+      pomodoroRunning = false;
+      const btn = $('btn-pom-start');
+      if (btn) btn.textContent = '▶ start';
+      showToast(pomodoroMode === 'work' ? '🔔 Pomodoro finished! Take a break.' : '🔔 Break over! Back to work.');
+      if (pomodoroSynapse) {
+        fireSynapse(pomodoroSynapse);
+      }
+    }
+  }, 1000);
+}
+
+function resetPomodoro() {
+  clearInterval(pomodoroTimer);
+  pomodoroRunning = false;
+  pomodoroTimeLeft = (pomodoroMode === 'work' ? 25 : 5) * 60;
+  updatePomodoroDisplay();
+  const btn = $('btn-pom-start');
+  if (btn) btn.textContent = '▶ start';
 }
 
 // --- Sprout (seed growing into a synapse) ---
@@ -1390,7 +1666,18 @@ function captureGardenState() {
     name: activeGarden,
     synapses: synapses.map(s => serializeSynapse(s)),
     sprouts: sprouts.map(sp => ({ x: sp.x, y: sp.y, age: sp.age, hue: sp.hue })),
-    connections: connections.map(c => ({ aId: c.a.id, bId: c.b.id, manual: c.manual || false, weight: c.weight || 1, label: c.label || '' })),
+    connections: connections.map(c => ({
+      aId: c.a.id,
+      bId: c.b.id,
+      from: c.a.id,
+      to: c.b.id,
+      fromId: c.a.id,
+      toId: c.b.id,
+      manual: c.manual !== undefined ? c.manual : true,
+      weight: c.weight || 1,
+      strength: c.weight || 1,
+      label: c.label || '',
+    })),
     autoConnect: autoConnect,
     gridSnap: gridSnap,
     viewX: viewX, viewY: viewY, viewZoom: viewZoom,
@@ -1452,10 +1739,20 @@ function restoreGarden(g) {
   });
 
   connections = (g.connections || []).map(c => {
-    const a = synapses.find(s => s.id === c.aId);
-    const b = synapses.find(s => s.id === c.bId);
+    const fromId = c.aId || c.from || c.fromId || c.source;
+    const toId = c.bId || c.to || c.toId || c.target;
+    const a = synapses.find(s => s.id === fromId);
+    const b = synapses.find(s => s.id === toId);
     if (a && b) {
-      return { a, b, dist: Math.hypot(a.x - b.x, a.y - b.y), pulse: 0, manual: c.manual || false, weight: c.weight || 1, label: c.label || '' };
+      return {
+        a,
+        b,
+        dist: Math.hypot(a.x - b.x, a.y - b.y),
+        pulse: 0,
+        manual: c.manual !== undefined ? Boolean(c.manual) : true,
+        weight: c.weight || c.strength || 1,
+        label: c.label || '',
+      };
     }
     return null;
   }).filter(Boolean);
@@ -1566,6 +1863,7 @@ async function init() {
   } catch {
     // Server unreachable — keep working offline
   }
+  setupLiveSync();
 }
 
 // --- Drawing ---
@@ -3759,6 +4057,9 @@ canvas.addEventListener('click', (e) => {
     if (selectedSynapses.length > 0 && !e.shiftKey) {
       clearBulkSelection();
     }
+    if (selectedSynapse && !e.shiftKey) {
+      deselect();
+    }
     if (!e.shiftKey) {
       addSprout(world.x, world.y);
     }
@@ -3963,7 +4264,29 @@ $('btn-duplicate-garden').addEventListener('click', (e) => { e.stopPropagation()
 $('btn-export-md').addEventListener('click', (e) => { e.stopPropagation(); exportMarkdown(); });
 $('btn-bulk-hue').addEventListener('click', (e) => { e.stopPropagation(); bulkHue(); });
 $('btn-template').addEventListener('click', (e) => { e.stopPropagation(); $('template-panel').classList.remove('hidden'); });
-$('btn-pomodoro').addEventListener('click', (e) => { e.stopPropagation(); $('pomodoro-panel').classList.remove('hidden'); });
+$('btn-pomodoro').addEventListener('click', (e) => { e.stopPropagation(); $('pomodoro-panel').classList.remove('hidden'); updatePomodoroDisplay(); });
+const btnPomStart = $('btn-pom-start');
+if (btnPomStart) btnPomStart.addEventListener('click', (e) => { e.stopPropagation(); startPomodoro(); });
+const btnPomReset = $('btn-pom-reset');
+if (btnPomReset) btnPomReset.addEventListener('click', (e) => { e.stopPropagation(); resetPomodoro(); });
+const btnPomClose = $('btn-close-pomodoro');
+if (btnPomClose) btnPomClose.addEventListener('click', (e) => { e.stopPropagation(); $('pomodoro-panel').classList.add('hidden'); });
+const btnPomWork = $('btn-pom-work');
+const btnPomBreak = $('btn-pom-break');
+if (btnPomWork) btnPomWork.addEventListener('click', (e) => {
+  e.stopPropagation();
+  pomodoroMode = 'work';
+  btnPomWork.classList.add('pom-active');
+  if (btnPomBreak) btnPomBreak.classList.remove('pom-active');
+  resetPomodoro();
+});
+if (btnPomBreak) btnPomBreak.addEventListener('click', (e) => {
+  e.stopPropagation();
+  pomodoroMode = 'break';
+  btnPomBreak.classList.add('pom-active');
+  if (btnPomWork) btnPomWork.classList.remove('pom-active');
+  resetPomodoro();
+});
 $('btn-present').addEventListener('click', (e) => {
   e.stopPropagation();
   isSlideshowMode = !isSlideshowMode;

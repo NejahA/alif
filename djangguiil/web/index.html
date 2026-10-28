@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="DJANGGUIIL - Rainforest Bio-Sanctuary, Generative Focus & Expedition Field Guide">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="DJANGGUIIL">
+  <link rel="apple-touch-icon" href="favicon.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>DJANGGUIIL — Rainforest Bio-Sanctuary</title>
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Procedural Web Audio Engine for Rainforest Soundscapes -->
+  <script>
+    (function() {
+      let ctx = null;
+      let rainNode = null;
+      let windNode = null;
+      let riverNode = null;
+      let cicadaTimer = null;
+      let gainNodes = {};
+
+      function getContext() {
+        if (!ctx) {
+          ctx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (ctx.state === 'suspended') {
+          ctx.resume();
+        }
+        return ctx;
+      }
+
+      function createNoiseBuffer(duration, type) {
+        const c = getContext();
+        const bufferSize = c.sampleRate * duration;
+        const buffer = c.createBuffer(1, bufferSize, c.sampleRate);
+        const data = buffer.getChannelData(0);
+        let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+        let lastOut = 0.0;
+
+        for (let i = 0; i < bufferSize; i++) {
+          const white = Math.random() * 2 - 1;
+          if (type === 'pink') {
+            b0 = 0.99886 * b0 + white * 0.0555179;
+            b1 = 0.99332 * b1 + white * 0.0750759;
+            b2 = 0.96900 * b2 + white * 0.1538520;
+            b3 = 0.86650 * b3 + white * 0.3104856;
+            b4 = 0.55000 * b4 + white * 0.5329522;
+            b5 = -0.7616 * b5 - white * 0.0168980;
+            data[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.11;
+            b6 = white * 0.115926;
+          } else if (type === 'brown') {
+            lastOut = (lastOut + (0.02 * white)) / 1.02;
+            data[i] = lastOut * 3.5;
+          } else {
+            data[i] = white * 0.3;
+          }
+        }
+        return buffer;
+      }
+
+      window.JungleAudio = {
+        init: function() {
+          getContext();
+        },
+        setChannel: function(channel, volume) {
+          const c = getContext();
+          const targetVol = Math.max(0, Math.min(1, volume));
+
+          if (!gainNodes[channel]) {
+            const gain = c.createGain();
+            gain.gain.value = 0;
+            gain.connect(c.destination);
+            gainNodes[channel] = gain;
+
+            if (channel === 'rain') {
+              const src = c.createBufferSource();
+              src.buffer = createNoiseBuffer(4.0, 'pink');
+              src.loop = true;
+              const filter = c.createBiquadFilter();
+              filter.type = 'lowpass';
+              filter.frequency.value = 1400;
+              src.connect(filter);
+              filter.connect(gain);
+              src.start(0);
+              rainNode = src;
+            } else if (channel === 'wind') {
+              const src = c.createBufferSource();
+              src.buffer = createNoiseBuffer(6.0, 'brown');
+              src.loop = true;
+              const filter = c.createBiquadFilter();
+              filter.type = 'bandpass';
+              filter.frequency.value = 350;
+              filter.Q.value = 2.0;
+
+              // Gentle LFO filter modulation for natural swaying breeze
+              const lfo = c.createOscillator();
+              const lfoGain = c.createGain();
+              lfo.frequency.value = 0.15;
+              lfoGain.gain.value = 180;
+              lfo.connect(lfoGain);
+              lfoGain.connect(filter.frequency);
+              lfo.start();
+
+              src.connect(filter);
+              filter.connect(gain);
+              src.start(0);
+              windNode = src;
+            } else if (channel === 'river') {
+              const src = c.createBufferSource();
+              src.buffer = createNoiseBuffer(5.0, 'brown');
+              src.loop = true;
+              const filter = c.createBiquadFilter();
+              filter.type = 'lowpass';
+              filter.frequency.value = 650;
+              src.connect(filter);
+              filter.connect(gain);
+              src.start(0);
+              riverNode = src;
+            } else if (channel === 'cicadas') {
+              // High frequency resonant pulsing
+              const osc = c.createOscillator();
+              osc.type = 'triangle';
+              osc.frequency.value = 4200;
+
+              const lfo = c.createOscillator();
+              lfo.frequency.value = 7.5;
+              const lfoGain = c.createGain();
+              lfoGain.gain.value = 0.6;
+              lfo.connect(lfoGain.gain);
+
+              const panner = c.createStereoPanner ? c.createStereoPanner() : null;
+              if (panner) panner.pan.value = 0.3;
+
+              osc.connect(lfoGain);
+              if (panner) {
+                lfoGain.connect(panner);
+                panner.connect(gain);
+              } else {
+                lfoGain.connect(gain);
+              }
+              osc.start(0);
+              lfo.start(0);
+            }
+          }
+
+          if (gainNodes[channel]) {
+            gainNodes[channel].gain.setTargetAtTime(targetVol * 0.45, c.currentTime, 0.25);
+          }
+        },
+        playBowlChime: function() {
+          const c = getContext();
+          const osc1 = c.createOscillator();
+          const osc2 = c.createOscillator();
+          const gain = c.createGain();
+
+          osc1.type = 'sine';
+          osc1.frequency.setValueAtTime(329.63, c.currentTime); // E4 Singing bowl
+          osc2.type = 'sine';
+          osc2.frequency.setValueAtTime(659.25, c.currentTime); // E5 Harmonic
+
+          gain.gain.setValueAtTime(0.35, c.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + 3.8);
+
+          osc1.connect(gain);
+          osc2.connect(gain);
+          gain.connect(c.destination);
+
+          osc1.start(c.currentTime);
+          osc2.start(c.currentTime);
+          osc1.stop(c.currentTime + 4.0);
+          osc2.stop(c.currentTime + 4.0);
+        },
+        playBirdChirp: function() {
+          const c = getContext();
+          const osc = c.createOscillator();
+          const gain = c.createGain();
+
+          osc.type = 'sine';
+          const now = c.currentTime;
+          osc.frequency.setValueAtTime(2400, now);
+          osc.frequency.exponentialRampToValueAtTime(3600, now + 0.08);
+          osc.frequency.exponentialRampToValueAtTime(2800, now + 0.18);
+
+          gain.gain.setValueAtTime(0.12, now);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
+
+          osc.connect(gain);
+          gain.connect(c.destination);
+
+          osc.start(now);
+          osc.stop(now + 0.26);
+        },
+        stopAll: function() {
+          const c = getContext();
+          for (let ch in gainNodes) {
+            gainNodes[ch].gain.setTargetAtTime(0, c.currentTime, 0.2);
+          }
+        }
+      };
+    })();
+  </script>
+</head>
+<body>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

@@ -221,6 +221,33 @@ class GameState extends ChangeNotifier {
       );
     }
 
+    // Timeline Splicer: Snap anchored enemies backward along their timeline trajectory
+    for (final enemy in enemies) {
+      if (enemy.isAnchored && enemy.positionHistory.isNotEmpty) {
+        final oldPos = enemy.position;
+        final displacement = enemy.rewindTimeline();
+        final rewindDmg = 85.0 + (activeUpgrades['timeline_splicer']?.currentLevel ?? 0) * 45.0;
+        enemy.takeDamage(rewindDmg);
+        stats.anchoredRewinds++;
+        stats.score += 150;
+
+        _spawnSparks(oldPos, const Color(0xFFFF4081), 10);
+        _spawnSparks(enemy.position, const Color(0xFFFF4081), 10);
+        particles.add(
+          GameParticle(
+            position: enemy.position,
+            velocity: Offset.zero,
+            color: const Color(0xFFFF4081),
+            radius: 14.0,
+            maxLife: 0.45,
+            type: ParticleType.shockwave,
+            extraVal: 140.0,
+          ),
+        );
+        GameAudio.playAnchorRewind();
+      }
+    }
+
     notifyListeners();
   }
 
@@ -231,7 +258,64 @@ class GameState extends ChangeNotifier {
       GameAudio.playDash();
       screenShake = 7.0;
       _spawnDashBurst(player.position, player.velocity);
+
+      // Kinetic Deflector: Parry & deflect nearby enemy projectiles into player homing shards!
+      _checkDashParry();
+
       notifyListeners();
+    }
+  }
+
+  void _checkDashParry() {
+    double parryRadius = 85.0;
+    if (activeUpgrades.containsKey('kinetic_parry')) {
+      parryRadius += activeUpgrades['kinetic_parry']!.currentLevel * 25.0;
+    }
+
+    bool didParry = false;
+    for (final p in projectiles) {
+      if (!p.isPlayer && (p.position - player.position).distance <= parryRadius) {
+        // Target nearest enemy
+        Offset targetDir = p.velocity.distance > 0 ? -p.velocity / p.velocity.distance : const Offset(1, 0);
+        if (enemies.isNotEmpty) {
+          Enemy? closestEnemy;
+          double closestDist = double.infinity;
+          for (final e in enemies) {
+            final dist = (e.position - p.position).distance;
+            if (dist < closestDist) {
+              closestDist = dist;
+              closestEnemy = e;
+            }
+          }
+          if (closestEnemy != null) {
+            final diff = closestEnemy.position - p.position;
+            if (diff.distance > 0.1) {
+              targetDir = diff / diff.distance;
+            }
+          }
+        }
+
+        double defDamage = 45.0;
+        if (activeUpgrades.containsKey('kinetic_parry')) {
+          defDamage += activeUpgrades['kinetic_parry']!.currentLevel * 30.0;
+        }
+
+        p.deflect(
+          targetDir: targetDir,
+          newDamage: defDamage,
+          deflectColor: const Color(0xFF00FFCC),
+        );
+
+        stats.bulletsParried++;
+        stats.score += 50;
+        _spawnSparks(p.position, const Color(0xFF00FFCC), 8);
+        didParry = true;
+      }
+    }
+
+    if (didParry) {
+      GameAudio.playParry();
+      screenShake = 12.0;
     }
   }
 
@@ -338,6 +422,12 @@ class GameState extends ChangeNotifier {
     // 3. Spawning Waves & Enemies
     _updateWaveAndSpawning(dt);
 
+    // Bullet-Time Dilation factor: slow down enemies & their projectiles
+    final enemyDt = player.isBulletTime ? dt * 0.28 : dt;
+
+    // Tachyon Tether & Paradox Grid (Geometric Laser Shearing)
+    _updateTachyonTethers(dt);
+
     // 4. Update Enemies
     // Enemies target the nearest active entity (Player or Echo!)
     for (final enemy in enemies) {
@@ -353,7 +443,7 @@ class GameState extends ChangeNotifier {
         }
       }
 
-      final enemyBullets = enemy.update(dt, currentTarget, viewport);
+      final enemyBullets = enemy.update(enemyDt, currentTarget, viewport);
       projectiles.addAll(enemyBullets);
 
       // Collision: Enemy vs Player (Ramming)
@@ -393,7 +483,7 @@ class GameState extends ChangeNotifier {
     }
 
     // 5. Update Projectiles & Bullet Hit Collisions
-    _updateProjectiles(dt);
+    _updateProjectiles(dt, enemyDt);
 
     // 6. Update Chrono-Cores & Magnet Pull
     double magnetRange = 140.0;
@@ -496,12 +586,13 @@ class GameState extends ChangeNotifier {
     enemies.add(Enemy.create(type: type, spawnPos: spawnPos, wave: stats.currentWave));
   }
 
-  void _updateProjectiles(double dt) {
+  void _updateProjectiles(double dt, double enemyDt) {
     final forkedProjectiles = <Projectile>[];
 
     for (int i = projectiles.length - 1; i >= 0; i--) {
       final p = projectiles[i];
-      if (!p.update(dt)) {
+      final pDt = p.isPlayer ? dt : enemyDt;
+      if (!p.update(pDt)) {
         projectiles.removeAt(i);
         continue;
       }
@@ -574,6 +665,12 @@ class GameState extends ChangeNotifier {
             enemy.takeDamage(p.damage);
             _spawnSparks(p.position, p.color, 5);
             bulletHit = true;
+
+            // Timeline Splicer: Attach anchor to hit enemies
+            if (activeUpgrades.containsKey('timeline_splicer') || p.isResonant || p.isEcho || p.isDeflected) {
+              enemy.attachAnchor(5.0);
+            }
+
             if (p.piercesRemaining > 0) {
               p.piercesRemaining--;
               if (p.piercesRemaining <= 0) {
@@ -587,8 +684,25 @@ class GameState extends ChangeNotifier {
           projectiles.removeAt(i);
         }
       } else {
+        // Enemy projectile
+        final dist = (p.position - player.position).distance;
+
+        // Graze Detection (band between ship hull 18.0 and player.grazeRadius 34.0)
+        if (!p.hasGrazed && dist > (18.0 + p.radius) && dist <= (player.grazeRadius + p.radius)) {
+          p.hasGrazed = true;
+          stats.bulletsGrazed++;
+          stats.score += 25;
+          final triggeredBt = player.addGraze(0.12, activeUpgrades);
+          _spawnSparks(p.position, const Color(0xFF00FFCC), 4);
+          GameAudio.playGraze();
+          if (triggeredBt) {
+            GameAudio.playBulletTime();
+            screenShake = 10.0;
+          }
+        }
+
         // Enemy projectile hits Player
-        if ((p.position - player.position).distance < 18.0 + p.radius) {
+        if (dist < 18.0 + p.radius) {
           player.takeDamage(p.damage);
           screenShake = 10.0;
           _spawnSparks(p.position, Colors.redAccent, 6);
@@ -600,6 +714,88 @@ class GameState extends ChangeNotifier {
     if (forkedProjectiles.isNotEmpty) {
       projectiles.addAll(forkedProjectiles);
     }
+  }
+
+  void _updateTachyonTethers(double dt) {
+    if (echoes.isEmpty) return;
+
+    final tetherSegments = <List<Offset>>[];
+    for (final echo in echoes) {
+      if (!echo.isFinished && !echo.isDetonated) {
+        tetherSegments.add([player.position, echo.currentPosition]);
+      }
+    }
+
+    final activeEchoes = echoes.where((e) => !e.isFinished && !e.isDetonated).toList();
+    if (activeEchoes.length >= 2) {
+      for (int i = 0; i < activeEchoes.length; i++) {
+        for (int j = i + 1; j < activeEchoes.length; j++) {
+          tetherSegments.add([activeEchoes[i].currentPosition, activeEchoes[j].currentPosition]);
+        }
+      }
+    }
+
+    double tetherDmg = 45.0;
+    if (activeUpgrades.containsKey('tachyon_tether')) {
+      tetherDmg += activeUpgrades['tachyon_tether']!.currentLevel * 30.0;
+    }
+
+    // 1. Slicing damage for intersecting enemies
+    for (final seg in tetherSegments) {
+      final a = seg[0];
+      final b = seg[1];
+      final segVec = b - a;
+      final segLenSq = segVec.dx * segVec.dx + segVec.dy * segVec.dy;
+      if (segLenSq < 1.0) continue;
+
+      for (final enemy in enemies) {
+        final ap = enemy.position - a;
+        final t = (ap.dx * segVec.dx + ap.dy * segVec.dy) / segLenSq;
+        final clampedT = t.clamp(0.0, 1.0);
+        final closestPoint = a + segVec * clampedT;
+        final dist = (enemy.position - closestPoint).distance;
+
+        if (dist <= enemy.collisionRadius + 8.0) {
+          enemy.takeDamage(tetherDmg * dt);
+          enemy.velocity *= 0.65; // Temporal slow
+          if (Random().nextDouble() < 0.25) {
+            _spawnSparks(closestPoint, const Color(0xFF00FFCC), 2);
+            GameAudio.playTetherSever();
+          }
+        }
+      }
+    }
+
+    // 2. Paradox Polygon Enclosure: If 2 active echoes exist, check if enemy is inside triangle (Player, Echo1, Echo2)
+    if (activeEchoes.length >= 2) {
+      final v0 = player.position;
+      final v1 = activeEchoes[0].currentPosition;
+      final v2 = activeEchoes[1].currentPosition;
+
+      for (final enemy in enemies) {
+        if (_isPointInTriangle(enemy.position, v0, v1, v2)) {
+          enemy.setParadoxStasis(0.2); // Maintain stasis while enclosed
+          if (Random().nextDouble() < 0.15) {
+            _spawnSparks(enemy.position, const Color(0xFFFFD600), 2);
+          }
+        }
+      }
+    }
+  }
+
+  bool _isPointInTriangle(Offset pt, Offset v1, Offset v2, Offset v3) {
+    double sign(Offset p1, Offset p2, Offset p3) {
+      return (p1.dx - p3.dx) * (p2.dy - p3.dy) - (p2.dx - p3.dx) * (p1.dy - p3.dy);
+    }
+
+    final d1 = sign(pt, v1, v2);
+    final d2 = sign(pt, v2, v3);
+    final d3 = sign(pt, v3, v1);
+
+    final hasNeg = (d1 < 0) || (d2 < 0) || (d3 < 0);
+    final hasPos = (d1 > 0) || (d2 > 0) || (d3 > 0);
+
+    return !(hasNeg && hasPos);
   }
 
   void _spawnSparks(Offset pos, Color color, int count) {
@@ -677,9 +873,9 @@ class GameState extends ChangeNotifier {
       ),
     );
 
-    // Vaporize enemy projectiles caught in blast
+    // Vaporize enemy projectiles (or deflected bullets) caught in EMP blast
     projectiles.removeWhere((p) {
-      if (!p.isPlayer && (p.position - origin).distance <= blastRadius) {
+      if ((!p.isPlayer || p.isDeflected) && (p.position - origin).distance <= blastRadius) {
         _spawnSparks(p.position, const Color(0xFFFF1744), 4);
         return true;
       }

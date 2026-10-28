@@ -233,6 +233,82 @@ class HudOverlay extends StatelessWidget {
                     ),
                   ],
                 ),
+
+                const SizedBox(height: 5),
+
+                // Bullet-Time & Dilation Bar
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: player.isBulletTime ? const Color(0xFF7C4DFF) : const Color(0xFF1E293B),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(
+                          color: player.isBulletTime ? const Color(0xFF00FFCC) : Colors.white24,
+                          width: 1.0,
+                        ),
+                      ),
+                      child: Text(
+                        player.isBulletTime ? 'SLOW-MO' : 'DILATION',
+                        style: TextStyle(
+                          color: player.isBulletTime ? Colors.white : Colors.white70,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Stack(
+                        children: [
+                          Container(
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF1E293B),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                          FractionallySizedBox(
+                            widthFactor: player.bulletTimeProgress,
+                            child: Container(
+                              height: 4,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: player.isBulletTime
+                                      ? [const Color(0xFF7C4DFF), const Color(0xFF00FFCC)]
+                                      : [const Color(0xFF00FFCC), const Color(0xFF7C4DFF)],
+                                ),
+                                borderRadius: BorderRadius.circular(2),
+                                boxShadow: player.isBulletTime
+                                    ? [
+                                        BoxShadow(
+                                          color: const Color(0xFF7C4DFF).withValues(alpha: 0.8),
+                                          blurRadius: 6,
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (gameState.stats.bulletsGrazed > 0 || gameState.stats.bulletsParried > 0) ...[
+                      const SizedBox(width: 8),
+                      Text(
+                        '⚡ ${gameState.stats.bulletsGrazed}G / ${gameState.stats.bulletsParried}P',
+                        style: const TextStyle(
+                          color: Color(0xFF00FFCC),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ],
             ),
           ),
@@ -240,7 +316,7 @@ class HudOverlay extends StatelessWidget {
           // Temporal Overdrive Status Banner
           if (player.isOverdrive)
             Positioned(
-              top: 84,
+              top: 96,
               left: 0,
               right: 0,
               child: Center(
@@ -268,6 +344,48 @@ class HudOverlay extends StatelessWidget {
                         'TEMPORAL OVERDRIVE [${player.overdriveTimer.toStringAsFixed(1)}s]',
                         style: const TextStyle(
                           color: Colors.black,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 12,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+          // Bullet-Time Dilation Banner
+          if (player.isBulletTime)
+            Positioned(
+              top: player.isOverdrive ? 134 : 96,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF7C4DFF), Color(0xFF00FFCC)],
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF7C4DFF).withValues(alpha: 0.7),
+                        blurRadius: 16,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.timelapse_rounded, color: Colors.white, size: 18),
+                      const SizedBox(width: 6),
+                      Text(
+                        'BULLET-TIME ACTIVE [${player.bulletTimeTimer.toStringAsFixed(1)}s]',
+                        style: const TextStyle(
+                          color: Colors.white,
                           fontWeight: FontWeight.w900,
                           fontSize: 12,
                           letterSpacing: 1.5,

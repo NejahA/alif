@@ -72,4 +72,42 @@ class GameAudio {
     }
     SystemSound.play(SystemSoundType.click);
   }
+
+  static void playGraze() {
+    if (!soundEnabled) return;
+    if (hapticsEnabled) {
+      HapticFeedback.selectionClick();
+    }
+  }
+
+  static void playParry() {
+    if (!soundEnabled) return;
+    if (hapticsEnabled) {
+      HapticFeedback.heavyImpact();
+    }
+    SystemSound.play(SystemSoundType.click);
+  }
+
+  static void playTetherSever() {
+    if (!soundEnabled) return;
+    if (hapticsEnabled) {
+      HapticFeedback.lightImpact();
+    }
+  }
+
+  static void playBulletTime() {
+    if (!soundEnabled) return;
+    if (hapticsEnabled) {
+      HapticFeedback.heavyImpact();
+    }
+    SystemSound.play(SystemSoundType.alert);
+  }
+
+  static void playAnchorRewind() {
+    if (!soundEnabled) return;
+    if (hapticsEnabled) {
+      HapticFeedback.heavyImpact();
+    }
+    SystemSound.play(SystemSoundType.click);
+  }
 }

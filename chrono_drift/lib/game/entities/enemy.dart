@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:math';
 import 'dart:ui';
 import 'projectile.dart';
@@ -30,6 +31,15 @@ class Enemy {
   // Boss rotation phase
   double bossSpiralAngle = 0.0;
 
+  // Timeline Splicer & Anchor
+  final Queue<Offset> positionHistory = Queue<Offset>();
+  bool isAnchored = false;
+  double anchorTimer = 0.0;
+
+  // Paradox Stasis (trapped in Paradox Polygon)
+  bool isInParadoxStasis = false;
+  double stasisTimer = 0.0;
+
   Enemy({
     required this.id,
     required this.type,
@@ -42,6 +52,27 @@ class Enemy {
     required this.scoreValue,
   }) {
     shootTimer = 1.0 + Random().nextDouble() * 1.5;
+  }
+
+  void attachAnchor(double duration) {
+    isAnchored = true;
+    anchorTimer = max(anchorTimer, duration);
+  }
+
+  void setParadoxStasis(double duration) {
+    isInParadoxStasis = true;
+    stasisTimer = max(stasisTimer, duration);
+  }
+
+  /// Rewinds enemy along recorded timeline, returns displacement vector
+  Offset rewindTimeline() {
+    if (positionHistory.isEmpty) return Offset.zero;
+    final startPos = position;
+    position = positionHistory.first;
+    positionHistory.clear();
+    isAnchored = false;
+    anchorTimer = 0.0;
+    return startPos - position;
   }
 
   factory Enemy.create({
@@ -112,6 +143,27 @@ class Enemy {
     Offset targetPos,
     Size bounds,
   ) {
+    if (isInParadoxStasis) {
+      stasisTimer -= dt;
+      if (stasisTimer <= 0) {
+        isInParadoxStasis = false;
+      }
+      return [];
+    }
+
+    if (isAnchored) {
+      anchorTimer -= dt;
+      if (anchorTimer <= 0) {
+        isAnchored = false;
+      }
+    }
+
+    // Record timeline history
+    positionHistory.addLast(position);
+    if (positionHistory.length > 90) {
+      positionHistory.removeFirst();
+    }
+
     final diff = targetPos - position;
     final dist = diff.distance;
     final dir = dist > 0.001 ? diff / dist : const Offset(1, 0);

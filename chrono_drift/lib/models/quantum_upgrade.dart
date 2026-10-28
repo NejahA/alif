@@ -148,6 +148,42 @@ class QuantumUpgrade {
         rarity: UpgradeRarity.common,
         maxLevel: 3,
       ),
+      QuantumUpgrade(
+        id: 'tachyon_tether',
+        name: 'Tachyon Monofilament',
+        description: 'Echoes project high-energy cutting laser tethers that slice intersecting hostiles and trap groups in Stasis Polygons.',
+        icon: Icons.linear_scale_rounded,
+        themeColor: const Color(0xFF00FFCC),
+        rarity: UpgradeRarity.rare,
+        maxLevel: 3,
+      ),
+      QuantumUpgrade(
+        id: 'timeline_splicer',
+        name: 'Timeline Splicer',
+        description: 'Weapon discharges attach Tachyon Anchors. Triggering Rewind forcibly yanks anchored enemies backward for massive dislocation trauma.',
+        icon: Icons.history_toggle_off_rounded,
+        themeColor: const Color(0xFFFF4081),
+        rarity: UpgradeRarity.rare,
+        maxLevel: 3,
+      ),
+      QuantumUpgrade(
+        id: 'kinetic_parry',
+        name: 'Kinetic Deflector',
+        description: 'Phase Dashing through enemy projectiles parries and deflects them into lethal homing tachyon shards.',
+        icon: Icons.shield_moon_rounded,
+        themeColor: const Color(0xFFFFD600),
+        rarity: UpgradeRarity.rare,
+        maxLevel: 3,
+      ),
+      QuantumUpgrade(
+        id: 'chrono_reflex',
+        name: 'Tachyon Reflex',
+        description: 'Grazing enemy bullets charges Bullet-Time 50% faster, expands graze radius, and extends Bullet-Time duration by +1.0s.',
+        icon: Icons.timelapse_rounded,
+        themeColor: const Color(0xFF7C4DFF),
+        rarity: UpgradeRarity.legendary,
+        maxLevel: 2,
+      ),
     ];
   }
 }

@@ -1447,3 +1447,181 @@ body {
   .cosmic-timeline { bottom: 52px; }
 }
 
+/* --- Bulk Launch: header buttons --- */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.header-actions-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--font-main);
+  color: var(--text-dim);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.action-btn.run-all-btn {
+  color: #ffffff;
+  background: linear-gradient(135deg, #10b981, #06b6d4);
+  border-color: transparent;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+}
+
+.action-btn.run-all-btn:hover {
+  background: linear-gradient(135deg, #059669, #0891b2);
+  transform: translateY(-1px);
+}
+
+.action-btn.flutter-btn {
+  color: #ffffff;
+  background: linear-gradient(135deg, #4f9cf9, #8b5cf6);
+  border-color: transparent;
+  box-shadow: 0 4px 14px rgba(79, 156, 249, 0.35);
+}
+
+.action-btn.flutter-btn:hover {
+  background: linear-gradient(135deg, #3b82f6, #7c3aed);
+  transform: translateY(-1px);
+}
+
+.action-btn.flutter-btn.busy {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.action-btn.run-all-btn.busy {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.fleet-count {
+  min-width: 18px;
+  padding: 1px 6px;
+  border-radius: 9px;
+  font-size: 10px;
+  line-height: 1.5;
+  text-align: center;
+  background: rgba(0, 0, 0, 0.45);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+}
+
+.fleet-count.hot {
+  color: #34d399;
+  border-color: rgba(16, 185, 129, 0.5);
+}
+
+/* --- Ecosystem Fleet Modal --- */
+.modal-card-fleet {
+  width: 880px;
+  max-width: 94vw;
+  height: 580px;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  background: #05060b;
+  border: 1px solid rgba(129, 140, 248, 0.3);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9);
+}
+
+.fleet-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fleet-empty {
+  padding: 28px 16px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.fleet-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+}
+
+.fleet-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #34d399;
+  box-shadow: 0 0 8px #34d399;
+}
+
+.fleet-dot.dead {
+  background: #f87171;
+  box-shadow: none;
+}
+
+.fleet-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fleet-name {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fleet-sub {
+  font-family: var(--font-code);
+  font-size: 11px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fleet-actions {
+  flex: none;
+  display: flex;
+  gap: 6px;
+}
+
+.fleet-actions .btn {
+  padding: 5px 10px;
+  font-size: 11px;
+}
+
+@media (max-width: 700px) {
+  .header-actions-buttons .action-label { display: none; }
+  .modal-card-fleet { width: 96vw; height: 80vh; }
+}
+

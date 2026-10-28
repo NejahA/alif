@@ -4,6 +4,9 @@ class GameStats {
   int coresCollected = 0;
   int currentWave = 1;
   int rewindsExecuted = 0;
+  int bulletsGrazed = 0;
+  int bulletsParried = 0;
+  int anchoredRewinds = 0;
   double timeSurvived = 0.0;
   int level = 1;
   int currentExp = 0;
@@ -15,6 +18,9 @@ class GameStats {
     coresCollected = 0;
     currentWave = 1;
     rewindsExecuted = 0;
+    bulletsGrazed = 0;
+    bulletsParried = 0;
+    anchoredRewinds = 0;
     timeSurvived = 0.0;
     level = 1;
     currentExp = 0;

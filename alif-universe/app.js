@@ -1711,6 +1711,331 @@ function closeTerminal() {
   }
 }
 
+// --- Ecosystem Fleet: bulk launch & process supervision ---
+let fleetProcesses = [];
+let bulkStatusActive = false;
+
+async function fetchProcesses() {
+  try {
+    const res = await fetch('/api/processes');
+    const data = await res.json();
+    if (!data.ok) return;
+    fleetProcesses = data.processes || [];
+    const running = fleetProcesses.filter(p => p.running);
+    updateFleetBadge(running.length);
+    renderFleet();
+  } catch (e) { }
+}
+
+function updateFleetBadge(count) {
+  const badge = document.getElementById('fleet-count');
+  if (badge) {
+    badge.textContent = count;
+    badge.classList.toggle('hot', count > 0);
+  }
+  const procEl = document.getElementById('stat-processes');
+  if (procEl) {
+    procEl.textContent = `${count} Active`;
+    procEl.className = count > 0 ? 'stat-val text-emerald' : 'stat-val text-amber';
+  }
+}
+
+function renderFleet() {
+  const listEl = document.getElementById('fleet-list');
+  const statusEl = document.getElementById('fleet-status');
+  if (!listEl) return;
+
+  const running = fleetProcesses.filter(p => p.running);
+  if (statusEl && !bulkStatusActive) {
+    statusEl.textContent = `${running.length} running / ${fleetProcesses.length} tracked`;
+    statusEl.className = `status-badge ${running.length > 0 ? 'status-running' : 'status-stopped'}`;
+  }
+
+  if (!fleetProcesses.length) {
+    listEl.innerHTML = '<div class="fleet-empty">No managed processes yet. Hit <strong>🚀 Run All</strong> to launch the ecosystem.</div>';
+    return;
+  }
+
+  // Live processes first, newest first
+  const ordered = fleetProcesses.slice().sort((a, b) => {
+    if (a.running !== b.running) return a.running ? -1 : 1;
+    return new Date(b.startTime) - new Date(a.startTime);
+  });
+
+  listEl.innerHTML = '';
+  ordered.forEach(p => {
+    const row = document.createElement('div');
+    row.className = 'fleet-row';
+
+    const dot = document.createElement('span');
+    dot.className = 'fleet-dot' + (p.running ? '' : ' dead');
+
+    const meta = document.createElement('div');
+    meta.className = 'fleet-meta';
+    const nameEl = document.createElement('div');
+    nameEl.className = 'fleet-name';
+    nameEl.textContent = (p.isFlutter ? '🐦 ' : '') + p.projectName;
+    const subEl = document.createElement('div');
+    subEl.className = 'fleet-sub';
+    if (p.static) {
+      subEl.textContent = `static · served at ${p.url || '/apps/' + encodeURIComponent(p.projectName) + '/'}`;
+    } else {
+      const portInfo = p.detectedPort
+        ? ` · live :${p.detectedPort}`
+        : (p.port ? ` · PORT=${p.port}` : '');
+      const stateText = p.running
+        ? (p.installing ? 'installing dependencies…' : (p.isFlutter && !p.detectedPort ? 'compiling…' : 'running'))
+        : `exited (${p.exitCode})`;
+      subEl.textContent = `${p.command || 'npm run ' + p.scriptName}${portInfo} · ${stateText}`;
+    }
+    meta.appendChild(nameEl);
+    meta.appendChild(subEl);
+
+    const actions = document.createElement('div');
+    actions.className = 'fleet-actions';
+
+    if (p.static) {
+      const btnOpen = document.createElement('button');
+      btnOpen.className = 'btn primary';
+      btnOpen.textContent = '🌐 Open';
+      btnOpen.onclick = () => window.open(p.url || `/apps/${encodeURIComponent(p.projectName)}/`, '_blank');
+      actions.appendChild(btnOpen);
+    } else {
+      const btnLogs = document.createElement('button');
+      btnLogs.className = 'btn secondary';
+      btnLogs.textContent = '💻 Logs';
+      btnLogs.onclick = () => openProcessLogs(p.pid);
+      actions.appendChild(btnLogs);
+
+      if (p.detectedPort) {
+        const btnChrome = document.createElement('button');
+        btnChrome.className = 'btn primary';
+        btnChrome.textContent = '🌐 Chrome';
+        btnChrome.onclick = async () => {
+          await fetch('/api/open-in-chrome', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pid: p.pid })
+          });
+        };
+        actions.appendChild(btnChrome);
+      }
+    }
+
+    if (p.running) {
+      const btnStop = document.createElement('button');
+      btnStop.className = 'btn danger-btn';
+      btnStop.textContent = p.static ? '✕ Remove' : '⏹️ Stop';
+      btnStop.onclick = async () => {
+        await fetch('/api/stop-process', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pid: p.pid })
+        });
+        fetchProcesses();
+      };
+      actions.appendChild(btnStop);
+    }
+
+    row.appendChild(dot);
+    row.appendChild(meta);
+    row.appendChild(actions);
+    listEl.appendChild(row);
+  });
+}
+
+function openFleet() {
+  const modal = document.getElementById('fleet-modal');
+  if (!modal) return;
+  modal.classList.remove('hidden');
+  fetchProcesses();
+}
+
+function closeFleet() {
+  const modal = document.getElementById('fleet-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+// Attach a log stream to an already-running process
+function openProcessLogs(pid) {
+  if (!terminalModal || !terminalLogs) return;
+  if (activeEventSource) {
+    activeEventSource.close();
+    activeEventSource = null;
+  }
+
+  terminalLogs.innerHTML = '';
+  currentPid = pid;
+  document.getElementById('terminal-title').textContent = `Process ${pid}`;
+  const statusBadge = document.getElementById('terminal-status');
+  if (statusBadge) {
+    statusBadge.textContent = 'Streaming';
+    statusBadge.className = 'status-badge status-running';
+  }
+  document.getElementById('btn-terminal-connect').classList.add('hidden');
+  terminalModal.classList.remove('hidden');
+
+  activeEventSource = new EventSource(`/api/logs/${pid}`);
+  activeEventSource.onmessage = (event) => {
+    try {
+      const log = JSON.parse(event.data);
+      appendTerminalLog(log.type, log.text);
+    } catch (e) { }
+  };
+  activeEventSource.onerror = () => {
+    if (statusBadge) {
+      statusBadge.textContent = 'Disconnected';
+      statusBadge.className = 'status-badge status-stopped';
+    }
+  };
+}
+
+async function runAllProjects() {
+  const btn = document.getElementById('btn-run-all');
+  if (btn) btn.classList.add('busy');
+
+  try {
+    const plan = await (await fetch('/api/launch-plan')).json();
+    if (!plan.ok) throw new Error(plan.error || 'Could not build launch plan');
+
+    const alreadyRunning = (plan.alreadyRunning || []).length;
+    const runnable = plan.runnableTotal || 0;
+    const staticCount = plan.staticOnlyTotal || 0;
+    const toInstall = plan.needsInstallTotal || 0;
+    const willLaunch = Math.max(0, runnable - alreadyRunning);
+
+    const msg = [
+      `🚀 ALIVERSE Bulk Launch`,
+      ``,
+      `Projects to launch: ${willLaunch}`,
+      `  · of which need "npm install" first: ${toInstall}`,
+      `Already running: ${alreadyRunning}`,
+      `Static apps (served directly at /apps/<name>/): ${staticCount}`,
+      ``,
+      `Dev servers start 5 at a time; installing dependencies can take a`,
+      `few minutes per project. Static apps are registered in the Fleet`,
+      `right away, so every app is reachable from one place.`,
+      ``,
+      `Launch now?`
+    ].join('\n');
+
+    if (!window.confirm(msg)) return;
+
+    const res = await fetch('/api/run-all', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ limit: 0, concurrency: 5 })
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Bulk launch failed');
+
+    openFleet();
+    fetchProcesses();
+    startBulkStatusPolling();
+  } catch (err) {
+    window.alert(`Bulk launch error: ${err.message}`);
+  } finally {
+    if (btn) btn.classList.remove('busy');
+  }
+}
+
+async function runFlutterProjects() {
+  const btn = document.getElementById('btn-run-flutter');
+  if (btn) btn.classList.add('busy');
+
+  try {
+    const plan = await (await fetch('/api/launch-plan')).json();
+    if (!plan.ok) throw new Error(plan.error || 'Could not build launch plan');
+
+    const flutter = (plan.runnable || []).filter(r => r.isFlutter);
+    const alreadyRunning = flutter.filter(r => (plan.alreadyRunning || []).includes(r.name)).length;
+    const willLaunch = flutter.length - alreadyRunning;
+
+    if (willLaunch <= 0) {
+      window.alert('No Flutter apps left to launch — they are all already running.');
+      return;
+    }
+
+    const openInChrome = window.confirm([
+      `🐦 Flutter Launch — ${willLaunch} app(s)`,
+      ``,
+      `Each app is compiled to web and served on its own port.`,
+      ``,
+      `Open each app in Chrome as it becomes ready?`,
+      ``,
+      `OK  = launch and open in Chrome (one tab per app)`,
+      `Cancel = just launch, then open them from the Fleet panel`
+    ].join('\n'));
+
+    const res = await fetch('/api/run-all', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        limit: 0,
+        concurrency: 3,
+        runtime: 'flutter',
+        openInChrome
+      })
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Flutter launch failed');
+
+    openFleet();
+    fetchProcesses();
+    startBulkStatusPolling();
+  } catch (err) {
+    window.alert(`Flutter launch error: ${err.message}`);
+  } finally {
+    if (btn) btn.classList.remove('busy');
+  }
+}
+
+// --- Bulk queue progress ---
+let bulkPollTimer = null;
+
+function startBulkStatusPolling() {
+  if (bulkPollTimer) clearInterval(bulkPollTimer);
+  refreshBulkStatus();
+  bulkPollTimer = setInterval(refreshBulkStatus, 2000);
+}
+
+async function refreshBulkStatus() {
+  try {
+    const data = await (await fetch('/api/bulk-status')).json();
+    if (!data.ok) return;
+
+    bulkStatusActive = !!data.active;
+    const statusEl = document.getElementById('fleet-status');
+    if (statusEl) {
+      if (data.active) {
+        statusEl.textContent = `launching ${data.launched}/${data.total} · ${data.inFlight} in flight · ${data.remaining} queued`;
+        statusEl.className = 'status-badge status-running';
+      }
+    }
+    if (data.active) {
+      fetchProcesses();
+    } else if (bulkPollTimer) {
+      clearInterval(bulkPollTimer);
+      bulkPollTimer = null;
+      fetchProcesses();
+    }
+  } catch (e) { }
+}
+
+async function stopAllProjects() {
+  try {
+    await fetch('/api/stop-all', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    });
+    fetchProcesses();
+    fetchStats();
+  } catch (err) {
+    console.warn('Stop all failed:', err);
+  }
+}
+
 // --- Galaxy Canvas Engine ---
 function resizeCanvas() {
   if (!canvas) return;
@@ -2118,7 +2443,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
   fetchProjects();
   fetchStats();
+  fetchProcesses();
   setInterval(fetchStats, 5000);
+  setInterval(fetchProcesses, 3000);
+
+  // Bulk launch controls
+  const btnRunAll = document.getElementById('btn-run-all');
+  if (btnRunAll) btnRunAll.addEventListener('click', runAllProjects);
+  const btnRunFlutter = document.getElementById('btn-run-flutter');
+  if (btnRunFlutter) btnRunFlutter.addEventListener('click', runFlutterProjects);
+  const btnFleet = document.getElementById('btn-fleet');
+  if (btnFleet) btnFleet.addEventListener('click', openFleet);
+  const btnFleetStopAll = document.getElementById('btn-fleet-stop-all');
+  if (btnFleetStopAll) btnFleetStopAll.addEventListener('click', stopAllProjects);
+  const btnFleetRefresh = document.getElementById('btn-fleet-refresh');
+  if (btnFleetRefresh) btnFleetRefresh.addEventListener('click', fetchProcesses);
+  const btnFleetClose = document.getElementById('btn-fleet-close');
+  if (btnFleetClose) btnFleetClose.addEventListener('click', closeFleet);
 
   // Keyboard Shortcuts (Ctrl+K search, Ctrl+T timeline, Ctrl+G tour, Ctrl+Shift+S snapshot,
   // Space timeline play, Arrows: timeline scrub if open / node navigation otherwise,
@@ -2141,6 +2482,7 @@ document.addEventListener('DOMContentLoaded', () => {
       closeInspector();
       closeLiveApp();
       closeTerminal();
+      closeFleet();
       tourExit(); // Added to ensure tour also closes
       return;
     }
@@ -2182,6 +2524,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key.toLowerCase() === 's')) {
       e.preventDefault();
       galaxySnapshot();
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && e.altKey && e.key.toLowerCase() === 'r') {
+      e.preventDefault();
+      runAllProjects();
       return;
     }
 

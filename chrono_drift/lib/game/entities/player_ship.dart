@@ -37,6 +37,38 @@ class PlayerShip {
     overdriveTimer = max(overdriveTimer, duration);
   }
 
+  // Bullet-Time & Dilation Meter (Grazing)
+  double dilationMeter = 0.0;
+  double bulletTimeTimer = 0.0;
+  double maxBulletTimeDuration = 3.5;
+  bool get isBulletTime => bulletTimeTimer > 0;
+  double get grazeRadius => 34.0;
+  double get bulletTimeProgress => isBulletTime ? (bulletTimeTimer / maxBulletTimeDuration).clamp(0.0, 1.0) : dilationMeter;
+
+  bool addGraze(double amount, Map<String, QuantumUpgrade> upgrades) {
+    if (isBulletTime) return false;
+    double mult = 1.0;
+    if (upgrades.containsKey('chrono_reflex')) {
+      mult += upgrades['chrono_reflex']!.currentLevel * 0.45;
+    }
+    dilationMeter = (dilationMeter + amount * mult).clamp(0.0, 1.0);
+    if (dilationMeter >= 1.0) {
+      double dur = 3.5;
+      if (upgrades.containsKey('chrono_reflex')) {
+        dur += upgrades['chrono_reflex']!.currentLevel * 1.0;
+      }
+      activateBulletTime(dur);
+      return true; // Triggered bullet time!
+    }
+    return false;
+  }
+
+  void activateBulletTime(double duration) {
+    maxBulletTimeDuration = duration;
+    bulletTimeTimer = duration;
+    dilationMeter = 0.0;
+  }
+
   // History buffer for 3.0s rewind
   final Queue<TemporalSnapshot> history = Queue<TemporalSnapshot>();
   static const double recordWindowSeconds = 3.0;
@@ -91,6 +123,10 @@ class PlayerShip {
 
     if (overdriveTimer > 0) {
       overdriveTimer -= dt;
+    }
+
+    if (bulletTimeTimer > 0) {
+      bulletTimeTimer -= dt;
     }
 
     if (fireCooldown > 0) {

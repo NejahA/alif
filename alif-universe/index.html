@@ -34,6 +34,19 @@
 
       <div class="header-actions">
         <div class="header-actions-buttons">
+          <button id="btn-run-all" class="action-btn run-all-btn" title="Launch every runnable project in the ecosystem (Ctrl+Alt+R)">
+            <span>🚀</span>
+            <span class="action-label">Run All</span>
+          </button>
+          <button id="btn-run-flutter" class="action-btn flutter-btn" title="Launch every Flutter app as a web build and open it in Chrome">
+            <span>🐦</span>
+            <span class="action-label">Flutter</span>
+          </button>
+          <button id="btn-fleet" class="action-btn" title="Ecosystem Fleet — running processes">
+            <span>📡</span>
+            <span class="action-label">Fleet</span>
+            <span id="fleet-count" class="fleet-count">0</span>
+          </button>
           <button id="btn-galaxy-tour" class="action-btn tour-btn" title="Galaxy Camera Tour (Ctrl+G)">
             <span class="tour-icon">🪐</span>
             <span class="action-label">Tour</span>
@@ -335,6 +348,32 @@
         </div>
         <div class="modal-body terminal-body">
           <pre id="terminal-logs" class="terminal-logs"></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ecosystem Fleet Modal (bulk-managed processes) -->
+    <div id="fleet-modal" class="modal hidden">
+      <div class="modal-backdrop"></div>
+      <div class="modal-card modal-card-fleet">
+        <div class="modal-header terminal-header">
+          <div class="modal-title-group">
+            <span class="modal-icon">📡</span>
+            <div>
+              <h2>Ecosystem Fleet</h2>
+              <span id="fleet-status" class="status-badge status-stopped">0 running</span>
+            </div>
+          </div>
+          <div class="terminal-actions">
+            <button id="btn-fleet-refresh" class="btn secondary">🔄 Refresh</button>
+            <button id="btn-fleet-stop-all" class="btn danger-btn">⏹️ Stop All</button>
+            <button id="btn-fleet-close" class="close-btn">✕</button>
+          </div>
+        </div>
+        <div class="modal-body terminal-body">
+          <div id="fleet-list" class="fleet-list">
+            <div class="fleet-empty">No managed processes yet. Hit <strong>🚀 Run All</strong> to launch the ecosystem.</div>
+          </div>
         </div>
       </div>
     </div>

@@ -92,6 +92,10 @@ class GamePainter extends CustomPainter {
     // 3. Shockwaves and Singularity Mines
     _drawShockwaves(canvas);
 
+    // Paradox Grid Stasis Polygon & Tachyon Laser Tethers
+    _drawParadoxGrid(canvas);
+    _drawTachyonTethers(canvas);
+
     // 4. Chrono-Core Collectibles
     _drawCores(canvas);
 
@@ -110,7 +114,12 @@ class GamePainter extends CustomPainter {
     // 9. Player Ship
     _drawPlayer(canvas);
 
-    // 10. Rewind VFX Glitch Distortion Overlay
+    // 10. Bullet-Time Dilation Chromatic Vignette
+    if (gameState.player.isBulletTime) {
+      _drawBulletTimeVfx(canvas, size);
+    }
+
+    // 11. Rewind VFX Glitch Distortion Overlay
     if (gameState.rewindVfxTimer > 0) {
       _drawRewindVfx(canvas, size);
     }
@@ -311,6 +320,40 @@ class GamePainter extends CustomPainter {
 
       canvas.restore();
 
+      // Timeline Splicer: Anchor indicator
+      if (enemy.isAnchored) {
+        final spin = gameState.stats.timeSurvived * 5.0;
+        final anchorPaint = Paint()
+          ..color = const Color(0xFFFF4081).withValues(alpha: 0.85)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.8;
+
+        canvas.drawCircle(enemy.position, enemy.collisionRadius + 7.0, anchorPaint);
+        for (int a = 0; a < 4; a++) {
+          final ang = spin + a * (pi / 2);
+          final p1 = enemy.position + Offset(cos(ang), sin(ang)) * (enemy.collisionRadius + 3.0);
+          final p2 = enemy.position + Offset(cos(ang), sin(ang)) * (enemy.collisionRadius + 11.0);
+          canvas.drawLine(p1, p2, anchorPaint);
+        }
+      }
+
+      // Paradox Grid: Stasis Cage indicator
+      if (enemy.isInParadoxStasis) {
+        final stasisPaint = Paint()
+          ..color = const Color(0xFFFFD600).withValues(alpha: 0.9)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.0;
+
+        final cageRadius = enemy.collisionRadius + 8.0;
+        final stasisRect = Rect.fromCircle(center: enemy.position, radius: cageRadius);
+        canvas.drawRect(stasisRect, stasisPaint);
+
+        final stasisFill = Paint()
+          ..color = const Color(0xFFFFD600).withValues(alpha: 0.15)
+          ..style = PaintingStyle.fill;
+        canvas.drawRect(stasisRect, stasisFill);
+      }
+
       // Health bar above enemy if wounded
       if (enemy.health < enemy.maxHealth) {
         _drawHealthBar(canvas, enemy.position, enemy.health / enemy.maxHealth, enemy.collisionRadius + 10);
@@ -491,7 +534,125 @@ class GamePainter extends CustomPainter {
       canvas.drawCircle(Offset.zero, 26, shieldPaint);
     }
 
+    // Graze & Bullet-Time Halo
+    if (player.dilationMeter > 0 || player.isBulletTime) {
+      final haloAlpha = player.isBulletTime ? 0.65 : (player.dilationMeter * 0.45);
+      final haloPaint = Paint()
+        ..color = (player.isBulletTime ? const Color(0xFF7C4DFF) : const Color(0xFF00FFCC)).withValues(alpha: haloAlpha)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.8;
+      canvas.drawCircle(Offset.zero, player.grazeRadius, haloPaint);
+    }
+
     canvas.restore();
+  }
+
+  void _drawTachyonTethers(Canvas canvas) {
+    final echoes = gameState.echoes.where((e) => !e.isFinished && !e.isDetonated).toList();
+    if (echoes.isEmpty) return;
+
+    final playerPos = gameState.player.position;
+    final time = gameState.stats.timeSurvived;
+
+    for (final echo in echoes) {
+      final echoPos = echo.currentPosition;
+      final dist = (echoPos - playerPos).distance;
+      if (dist < 1.0) continue;
+
+      // Outer glow beam
+      final glowPaint = Paint()
+        ..color = const Color(0xFF00FFCC).withValues(alpha: 0.35)
+        ..strokeWidth = 6.0
+        ..style = PaintingStyle.stroke;
+      canvas.drawLine(playerPos, echoPos, glowPaint);
+
+      // Core energetic laser line
+      final corePaint = Paint()
+        ..color = Colors.white
+        ..strokeWidth = 2.0
+        ..style = PaintingStyle.stroke;
+      canvas.drawLine(playerPos, echoPos, corePaint);
+
+      // Electric pulse nodes moving along tether
+      const pulseCount = 3;
+      for (int i = 0; i < pulseCount; i++) {
+        final t = (time * 1.5 + (i / pulseCount)) % 1.0;
+        final pulsePos = Offset.lerp(playerPos, echoPos, t)!;
+        final sparkPaint = Paint()
+          ..color = const Color(0xFF00FFCC)
+          ..style = PaintingStyle.fill;
+        canvas.drawCircle(pulsePos, 3.5, sparkPaint);
+      }
+    }
+
+    // Connect echoes to each other if 2+ echoes
+    if (echoes.length >= 2) {
+      for (int i = 0; i < echoes.length; i++) {
+        for (int j = i + 1; j < echoes.length; j++) {
+          final p1 = echoes[i].currentPosition;
+          final p2 = echoes[j].currentPosition;
+          final edgeGlow = Paint()
+            ..color = const Color(0xFFFF4081).withValues(alpha: 0.4)
+            ..strokeWidth = 5.0
+            ..style = PaintingStyle.stroke;
+          canvas.drawLine(p1, p2, edgeGlow);
+
+          final edgeCore = Paint()
+            ..color = Colors.white
+            ..strokeWidth = 1.8
+            ..style = PaintingStyle.stroke;
+          canvas.drawLine(p1, p2, edgeCore);
+        }
+      }
+    }
+  }
+
+  void _drawParadoxGrid(Canvas canvas) {
+    final echoes = gameState.echoes.where((e) => !e.isFinished && !e.isDetonated).toList();
+    if (echoes.length < 2) return;
+
+    final v0 = gameState.player.position;
+    final v1 = echoes[0].currentPosition;
+    final v2 = echoes[1].currentPosition;
+
+    final polyPath = Path()
+      ..moveTo(v0.dx, v0.dy)
+      ..lineTo(v1.dx, v1.dy)
+      ..lineTo(v2.dx, v2.dy)
+      ..close();
+
+    // Holographic fill
+    final pulse = (sin(gameState.stats.timeSurvived * 6.0) * 0.15) + 0.25;
+    final fillPaint = Paint()
+      ..color = const Color(0xFF7C4DFF).withValues(alpha: pulse)
+      ..style = PaintingStyle.fill;
+    canvas.drawPath(polyPath, fillPaint);
+
+    // Grid border
+    final borderPaint = Paint()
+      ..color = const Color(0xFFFFD600).withValues(alpha: 0.7)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0;
+    canvas.drawPath(polyPath, borderPaint);
+  }
+
+  void _drawBulletTimeVfx(Canvas canvas, Size size) {
+    final progress = gameState.player.bulletTimeProgress;
+
+    // Chromatic vignette
+    final vignettePaint = Paint()
+      ..shader = RadialGradient(
+        center: Alignment.center,
+        radius: 0.95,
+        colors: [
+          Colors.transparent,
+          const Color(0xFF7C4DFF).withValues(alpha: 0.15 * progress),
+          const Color(0xFF00FFCC).withValues(alpha: 0.35 * progress),
+        ],
+        stops: const [0.4, 0.75, 1.0],
+      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), vignettePaint);
   }
 
   void _drawRewindVfx(Canvas canvas, Size size) {

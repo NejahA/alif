@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="NEURAL-PULSE: Synapse Zero - An all-in-one Cyberpunk Kinetic Canvas Shooter, Real-Time Web Audio Synthesizer, and AI Telemetry Command Studio." />
+    <meta name="theme-color" content="#030712" />
+    <title>NEURAL-PULSE // Synapse Zero Protocol</title>
+
+    <!-- Google Fonts: Orbitron, Rajdhani, JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet" />
+
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <!-- Top Cyber Header Navigation -->
+    <header id="cyber-nav">
+      <div class="nav-brand">
+        <div class="brand-glyph">
+          <span class="glyph-core"></span>
+          <span class="glyph-orbit"></span>
+        </div>
+        <div class="brand-text">
+          <h1 class="brand-title">NEURAL<span class="neon-cyan">PULSE</span></h1>
+          <span class="brand-subtitle">SYNAPSE ZERO PROTOCOL // V2.8</span>
+        </div>
+      </div>
+
+      <!-- Mode Switcher Tabs -->
+      <nav class="nav-modes">
+        <button id="tab-arena" class="nav-tab active" data-mode="arena">
+          <span class="tab-icon">⚡</span>
+          <span class="tab-label">COMBAT ARENA</span>
+        </button>
+        <button id="tab-synth" class="nav-tab" data-mode="synth">
+          <span class="tab-icon">🎹</span>
+          <span class="tab-label">SYNTHESIS LAB</span>
+        </button>
+        <button id="tab-telemetry" class="nav-tab" data-mode="telemetry">
+          <span class="tab-icon">📊</span>
+          <span class="tab-label">NEURAL TELEMETRY</span>
+        </button>
+        <button id="tab-omni" class="nav-tab" data-mode="omni">
+          <span class="tab-icon">⬡</span>
+          <span class="tab-label">OMNI SPLIT</span>
+        </button>
+      </nav>
+
+      <!-- System Quick Stats & Audio Toggle -->
+      <div class="nav-actions">
+        <div class="system-status-badge">
+          <span class="status-dot pulsing"></span>
+          <span id="nav-system-status">SYS.ONLINE</span>
+        </div>
+        <button id="btn-audio-toggle" class="btn-icon" title="Toggle Synthesizer Audio">
+          <span id="audio-icon">🔊</span>
+          <span class="btn-glow"></span>
+        </button>
+        <button id="btn-fullscreen" class="btn-icon" title="Toggle Fullscreen">
+          <span>⛶</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace Container -->
+    <main id="app-viewport" class="mode-arena">
+      <!-- 1. Combat Arena Section -->
+      <section id="section-arena" class="studio-pane">
+        <div class="arena-wrapper">
+          <canvas id="combat-canvas"></canvas>
+
+          <!-- Combat HUD Overlay -->
+          <div id="combat-hud">
+            <!-- Top HUD Bar -->
+            <div class="hud-top-bar">
+              <div class="hud-metric-box health-box">
+                <div class="metric-header">
+                  <span class="metric-label">VESSEL INTEGRITY</span>
+                  <span id="hud-hp-text" class="metric-val">100 / 100</span>
+                </div>
+                <div class="hud-bar-track">
+                  <div id="hud-hp-bar" class="hud-bar-fill hp-gradient" style="width: 100%;"></div>
+                  <div id="hud-shield-bar" class="hud-bar-fill shield-gradient" style="width: 100%;"></div>
+                </div>
+              </div>
+
+              <div class="hud-center-pill">
+                <div class="wave-badge">
+                  <span class="badge-tag">SECTOR</span>
+                  <span id="hud-wave-val" class="badge-num">01</span>
+                </div>
+                <div class="score-badge">
+                  <span class="badge-tag">SCORE</span>
+                  <span id="hud-score-val" class="badge-num">000000</span>
+                </div>
+              </div>
+
+              <div class="hud-metric-box exp-box">
+                <div class="metric-header">
+                  <span class="metric-label">NEURAL OVERCLOCK</span>
+                  <span id="hud-level-text" class="metric-val">LV. 1</span>
+                </div>
+                <div class="hud-bar-track">
+                  <div id="hud-exp-bar" class="hud-bar-fill exp-gradient" style="width: 0%;"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bullet-Time / Dilation HUD Ribbon -->
+            <div class="hud-sub-ribbon">
+              <div class="dilation-meter-container">
+                <span class="sub-label">DILATION</span>
+                <div class="dilation-track">
+                  <div id="hud-dilation-bar" class="dilation-fill" style="width: 0%;"></div>
+                </div>
+                <span id="hud-graze-stats" class="sub-stats">⚡ 0 GRAZES / 0 PARRIES</span>
+              </div>
+              <div id="hud-overdrive-tag" class="hud-alert-tag hidden">
+                ⚡ OVERDRIVE ENGAGED
+              </div>
+              <div id="hud-bullet-time-tag" class="hud-alert-tag hidden">
+                ⏳ BULLET-TIME ACTIVE
+              </div>
+            </div>
+
+            <!-- Bottom Controls Guide & Ability Triggers -->
+            <div class="hud-bottom-bar">
+              <div class="controls-guide">
+                <span class="key-hint"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Move</span>
+                <span class="key-hint"><kbd>Mouse</kbd> Aim & Fire</span>
+                <span class="key-hint"><kbd>Shift</kbd> Phase Dash</span>
+                <span class="key-hint"><kbd>Space</kbd> Chrono Rewind</span>
+              </div>
+
+              <div class="action-buttons-pod">
+                <button id="btn-phase-dash" class="action-btn dash-btn">
+                  <span class="btn-name">PHASE DASH</span>
+                  <span class="btn-cooldown" id="dash-cd-indicator">READY</span>
+                  <svg class="radial-ring" viewBox="0 0 40 40">
+                    <circle class="ring-bg" cx="20" cy="20" r="17"></circle>
+                    <circle id="dash-radial-fill" class="ring-fill" cx="20" cy="20" r="17"></circle>
+                  </svg>
+                </button>
+                <button id="btn-chrono-rewind" class="action-btn rewind-btn">
+                  <span class="btn-name">REWIND</span>
+                  <span class="btn-cooldown" id="rewind-cd-indicator">READY</span>
+                  <svg class="radial-ring" viewBox="0 0 40 40">
+                    <circle class="ring-bg" cx="20" cy="20" r="17"></circle>
+                    <circle id="rewind-radial-fill" class="ring-fill" cx="20" cy="20" r="17"></circle>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Roguelite Level Up Modal -->
+          <div id="upgrade-modal" class="cyber-modal hidden">
+            <div class="modal-card">
+              <div class="modal-header">
+                <span class="modal-glyph">⬡</span>
+                <h2>QUANTUM PROTOCOL SYNTHESIS</h2>
+                <p>Select a neural augmentation matrix upgrade:</p>
+              </div>
+              <div id="upgrade-options-container" class="upgrade-grid">
+                <!-- Injected via JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Game Over Modal -->
+          <div id="gameover-modal" class="cyber-modal hidden">
+            <div class="modal-card gameover-card">
+              <div class="modal-header danger-header">
+                <span class="modal-glyph danger-glyph">⚠️</span>
+                <h2>TIMELINE DISSOLUTION</h2>
+                <p>Vessel hull breached. Quantum timeline destabilized.</p>
+              </div>
+              <div class="gameover-stats-grid">
+                <div class="stat-cell">
+                  <span class="stat-title">FINAL SCORE</span>
+                  <span id="go-score" class="stat-highlight">0</span>
+                </div>
+                <div class="stat-cell">
+                  <span class="stat-title">SECTORS CLEARED</span>
+                  <span id="go-wave" class="stat-highlight">0</span>
+                </div>
+                <div class="stat-cell">
+                  <span class="stat-title">HOSTILES DESTROYED</span>
+                  <span id="go-kills" class="stat-highlight">0</span>
+                </div>
+                <div class="stat-cell">
+                  <span class="stat-title">KINETIC PARRIES</span>
+                  <span id="go-parries" class="stat-highlight">0</span>
+                </div>
+              </div>
+              <div class="modal-actions">
+                <button id="btn-restart-run" class="btn-cyber-primary">INITIALIZE NEW RUN</button>
+                <button id="btn-switch-synth" class="btn-cyber-secondary">OPEN SYNTH LAB</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. Synthesizer Lab Section -->
+      <section id="section-synth" class="studio-pane">
+        <div class="synth-layout">
+          <!-- Top Visualizer Deck -->
+          <div class="synth-panel visualizer-panel">
+            <div class="panel-header">
+              <div class="header-left">
+                <span class="panel-icon">〰️</span>
+                <h3>REAL-TIME SPECTRUM & OSCILLOSCOPE</h3>
+              </div>
+              <div class="visualizer-modes">
+                <button id="btn-vis-wave" class="vis-btn active">OSCILLOSCOPE</button>
+                <button id="btn-vis-bars" class="vis-btn">FFT BARS</button>
+                <button id="btn-vis-circular" class="vis-btn">CIRCULAR</button>
+              </div>
+            </div>
+            <div class="canvas-container">
+              <canvas id="synth-visualizer-canvas"></canvas>
+            </div>
+          </div>
+
+          <!-- Middle Synthesis Controls Grid -->
+          <div class="synth-grid">
+            <!-- Oscillator Module -->
+            <div class="synth-card module-card">
+              <div class="card-title">
+                <span>01. OSCILLATOR MATRIX</span>
+                <span class="status-indicator">ACTIVE</span>
+              </div>
+              <div class="wave-selector">
+                <button class="wave-btn active" data-wave="sawtooth">SAW</button>
+                <button class="wave-btn" data-wave="square">SQUARE</button>
+                <button class="wave-btn" data-wave="sine">SINE</button>
+                <button class="wave-btn" data-wave="triangle">TRI</button>
+              </div>
+              <div class="slider-group">
+                <div class="slider-row">
+                  <label for="synth-detune">DETUNE <span id="val-detune">0</span>c</label>
+                  <input type="range" id="synth-detune" min="-50" max="50" value="0" />
+                </div>
+                <div class="slider-row">
+                  <label for="synth-sub">SUB OSC <span id="val-sub">0.2</span></label>
+                  <input type="range" id="synth-sub" min="0" max="1" step="0.05" value="0.2" />
+                </div>
+                <div class="slider-row">
+                  <label for="synth-glide">PORTAMENTO <span id="val-glide">0.05</span>s</label>
+                  <input type="range" id="synth-glide" min="0" max="0.3" step="0.01" value="0.05" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Filter & Resonance Module -->
+            <div class="synth-card module-card">
+              <div class="card-title">
+                <span>02. 24dB LOWPASS FILTER</span>
+                <span class="status-indicator">ACTIVE</span>
+              </div>
+              <div class="filter-xy-pad" id="filter-xy-pad">
+                <div class="pad-crosshair" id="filter-crosshair"></div>
+                <div class="pad-label">CUTOFF (X) vs RESONANCE (Y)</div>
+              </div>
+              <div class="slider-group">
+                <div class="slider-row">
+                  <label for="synth-cutoff">CUTOFF <span id="val-cutoff">2400</span>Hz</label>
+                  <input type="range" id="synth-cutoff" min="100" max="12000" step="50" value="2400" />
+                </div>
+                <div class="slider-row">
+                  <label for="synth-reso">RESONANCE <span id="val-reso">6.0</span>Q</label>
+                  <input type="range" id="synth-reso" min="0.1" max="20" step="0.5" value="6.0" />
+                </div>
+              </div>
+            </div>
+
+            <!-- ADSR Envelope Module -->
+            <div class="synth-card module-card">
+              <div class="card-title">
+                <span>03. ADSR ENVELOPE</span>
+                <span class="status-indicator">ACTIVE</span>
+              </div>
+              <div class="adsr-sliders">
+                <div class="v-slider-col">
+                  <input type="range" id="env-a" class="v-slider" min="0.005" max="1.5" step="0.01" value="0.02" orient="vertical" />
+                  <span class="slider-tag">A</span>
+                  <span id="val-env-a" class="val-tag">0.02s</span>
+                </div>
+                <div class="v-slider-col">
+                  <input type="range" id="env-d" class="v-slider" min="0.05" max="2.0" step="0.05" value="0.25" orient="vertical" />
+                  <span class="slider-tag">D</span>
+                  <span id="val-env-d" class="val-tag">0.25s</span>
+                </div>
+                <div class="v-slider-col">
+                  <input type="range" id="env-s" class="v-slider" min="0.0" max="1.0" step="0.05" value="0.6" orient="vertical" />
+                  <span class="slider-tag">S</span>
+                  <span id="val-env-s" class="val-tag">60%</span>
+                </div>
+                <div class="v-slider-col">
+                  <input type="range" id="env-r" class="v-slider" min="0.05" max="3.0" step="0.05" value="0.45" orient="vertical" />
+                  <span class="slider-tag">R</span>
+                  <span id="val-env-r" class="val-tag">0.45s</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Arpeggiator & Effects Module -->
+            <div class="synth-card module-card">
+              <div class="card-title">
+                <span>04. CYBER ARPEGGIATOR</span>
+                <button id="btn-arp-toggle" class="btn-micro active">ARP ON</button>
+              </div>
+              <div class="arp-controls">
+                <div class="slider-row">
+                  <label for="arp-bpm">TEMPO <span id="val-arp-bpm">138</span> BPM</label>
+                  <input type="range" id="arp-bpm" min="80" max="190" value="138" />
+                </div>
+                <div class="slider-row">
+                  <label for="arp-pattern">PATTERN</label>
+                  <select id="arp-pattern" class="cyber-select">
+                    <option value="up">CYBER ASCENT (UP)</option>
+                    <option value="down">GRAVITY FALL (DOWN)</option>
+                    <option value="upDown">CHRONO CYCLE (UP-DOWN)</option>
+                    <option value="random">NEURAL RANDOM</option>
+                  </select>
+                </div>
+                <div class="slider-row">
+                  <label for="synth-delay">ANALOG DELAY <span id="val-delay">35</span>%</label>
+                  <input type="range" id="synth-delay" min="0" max="0.8" step="0.05" value="0.35" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Interactive Keyboard & Beat Pads -->
+          <div class="synth-panel piano-panel">
+            <div class="keyboard-header">
+              <span class="panel-icon">🎹</span>
+              <h3>INTERACTIVE SYNAPSE KEYBOARD // C3 - B4</h3>
+              <div class="octave-controls">
+                <button id="btn-octave-down" class="btn-micro">OCT -</button>
+                <span id="val-octave" class="octave-val">OCT: 3</span>
+                <button id="btn-octave-up" class="btn-micro">OCT +</button>
+              </div>
+            </div>
+            <!-- Dynamic Virtual Keyboard -->
+            <div id="virtual-piano" class="piano-keys-container"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. Neural Telemetry & AI Command Console Section -->
+      <section id="section-telemetry" class="studio-pane">
+        <div class="telemetry-grid">
+          <!-- Live Real-Time Performance & Metrics Graph -->
+          <div class="telemetry-card full-col">
+            <div class="card-header">
+              <div class="header-left">
+                <span class="panel-icon">📈</span>
+                <h3>NEURAL SYNAPSE PERFORMANCE // LIVE TELEMETRY</h3>
+              </div>
+              <div class="stat-pills">
+                <span class="pill cyan-pill">FPS: <strong id="tel-fps">60</strong></span>
+                <span class="pill magenta-pill">APM: <strong id="tel-apm">0</strong></span>
+                <span class="pill gold-pill">LATENCY: <strong id="tel-latency">2.1ms</strong></span>
+              </div>
+            </div>
+            <div class="telemetry-chart-container">
+              <canvas id="telemetry-chart-canvas"></canvas>
+            </div>
+          </div>
+
+          <!-- Cybernetic AI Command Terminal -->
+          <div class="telemetry-card half-col">
+            <div class="card-header">
+              <div class="header-left">
+                <span class="panel-icon">💻</span>
+                <h3>AI ARCHITECT TERMINAL // CLI</h3>
+              </div>
+              <span class="terminal-status">bash v5.2-neural</span>
+            </div>
+            <div class="terminal-wrapper">
+              <div id="terminal-output" class="terminal-logs">
+                <div class="log-line system">[SYSTEM] Neural-Pulse OS initialized. Type 'help' for diagnostics.</div>
+                <div class="log-line info">[STATUS] Quantum sub-oscillators synchronized at 138 BPM.</div>
+                <div class="log-line success">[READY] Tactical arena ready. Press [Shift] to dash, [Space] to rewind.</div>
+              </div>
+              <div class="terminal-input-bar">
+                <span class="terminal-prompt">root@synapse:~$</span>
+                <input type="text" id="terminal-input" placeholder="Type command (e.g. 'help', 'overclock', 'synth')..." autocomplete="off" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Vessel & Core Overclocking Matrix -->
+          <div class="telemetry-card half-col">
+            <div class="card-header">
+              <div class="header-left">
+                <span class="panel-icon">⚙️</span>
+                <h3>CORE SUBSYSTEM TUNING MATRIX</h3>
+              </div>
+              <button id="btn-reset-tuning" class="btn-micro">DEFAULTS</button>
+            </div>
+            <div class="tuning-list">
+              <div class="tuning-row">
+                <div class="tuning-meta">
+                  <span class="tuning-name">THRUSTER PLASMA OVERCLOCK</span>
+                  <span id="tune-val-speed" class="tuning-val">100%</span>
+                </div>
+                <input type="range" id="tune-speed" min="50" max="200" value="100" />
+              </div>
+              <div class="tuning-row">
+                <div class="tuning-meta">
+                  <span class="tuning-name">TACHYON HARPOON FREQUENCY</span>
+                  <span id="tune-val-fire" class="tuning-val">100%</span>
+                </div>
+                <input type="range" id="tune-fire" min="50" max="250" value="100" />
+              </div>
+              <div class="tuning-row">
+                <div class="tuning-meta">
+                  <span class="tuning-name">GRAZE SENSITIVITY RADIUS</span>
+                  <span id="tune-val-graze" class="tuning-val">34px</span>
+                </div>
+                <input type="range" id="tune-graze" min="20" max="60" value="34" />
+              </div>
+              <div class="tuning-row">
+                <div class="tuning-meta">
+                  <span class="tuning-name">AUDIO-COMBAT MODULATION DEPTH</span>
+                  <span id="tune-val-mod" class="tuning-val">75%</span>
+                </div>
+                <input type="range" id="tune-mod" min="0" max="100" value="75" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Global Cyber Footer / Ticker Bar -->
+    <footer id="cyber-footer">
+      <div class="footer-left">
+        <span class="ticker-label">KERNEL:</span>
+        <span class="ticker-text">QUANTUM_THREAD_OK // 60.0 FPS // 44.1kHz STEREO // SECTOR ZERO PROTOCOL</span>
+      </div>
+      <div class="footer-right">
+        <span id="footer-time">TIME: 00:00.00</span>
+        <span class="separator">|</span>
+        <span>NEURAL-PULSE SYSTEM // ALL RIGHTS RESERVED</span>
+      </div>
+    </footer>
+
+    <!-- App Entry Point -->
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
