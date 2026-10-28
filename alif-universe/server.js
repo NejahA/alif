@@ -264,7 +264,7 @@ function buildProjectEntry(fullDir, relativeDir, projectName) {
     if (fs.existsSync(pkgPath)) {
       pkgJson = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
       hasPkg = true;
-    }
+    } 
   } catch (e) { }
 
   const entryHtml = findEntryHtml(fullDir);

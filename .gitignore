@@ -19,7 +19,7 @@ replay_pid*.log
 **/.docusaurus/
 **/.cache/
 **/target/
-
+/p.int/
 # Native Platform Project Boilerplate Folders - Ignore only build/dependency/cache outputs
 # This keeps native configs & custom platform code tracked while avoiding binary bloat
 **/ios/build/
