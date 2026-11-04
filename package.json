@@ -1,8 +1,19 @@
 {
-  "dependencies": {
-    "cors": "^2.8.6",
-    "dotenv": "^17.4.2",
-    "express-rate-limit": "^8.5.2",
-    "morgan": "^1.11.0"
+  "name": "alif-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Unified workspace for Alif projects, mobile apps, web suites, arcade games, and backend services.",
+  "scripts": {
+    "dev:desktop": "cd alif/desktop && npm run tauri dev",
+    "build:desktop": "cd alif/desktop && npm run build",
+    "dev:game": "cd banjoui && npm run dev",
+    "build:game": "cd banjoui && npm run build",
+    "dev:web": "cd Alpalin/alpalin-web && npm run dev",
+    "build:web": "cd Alpalin/alpalin-web && npm run build",
+    "dev:mobile": "cd AlpalinMobile && npx expo start",
+    "dev:mahdia": "cd alif/mahdia-react && npm run dev",
+    "build:mahdia": "cd alif/mahdia-react && npm run build",
+    "server:start": "cd Alpalin/server && node index.js",
+    "build:all": "npm run build:desktop && npm run build:game && npm run build:web && npm run build:mahdia"
   }
 }

@@ -182,10 +182,15 @@ app.post(dataRoutes, async (req, res) => {
   }
 });
 
-// Serve static frontend
-app.use(express.static('.'));
-app.get('/', (_req, res) => {
-  res.sendFile(new URL('./index.html', import.meta.url).pathname);
+// Serve static frontend (client build)
+import path from 'path';
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+app.use(express.static(path.join(__dirname, 'aplifire/client/dist')));
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/')) return next();
+  res.sendFile(path.join(__dirname, 'aplifire/client/dist', 'index.html'));
 });
 
 const PORT = process.env.PORT || 3456;

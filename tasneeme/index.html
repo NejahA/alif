@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dawn" dir="ltr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#0b1220" />
+<title>Tasneeme — The Living Spring OS</title>
+<meta name="description" content="Tasneeme turns your daily habits, focus, moods and reflections into a living spring that grows with you." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%230f766e'/%3E%3Cpath d='M16 5c3 4 6 7 6 11a6 6 0 1 1-12 0c0-4 3-7 6-11z' fill='%235eead4'/%3E%3C/svg%3E" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div class="app-bg" aria-hidden="true"><span class="orb orb-1"></span><span class="orb orb-2"></span><span class="orb orb-3"></span></div>
+
+<div id="app" class="app" hidden>
+
+  <!-- ============ SIDEBAR / NAV ============ -->
+  <aside class="sidebar" role="navigation" aria-label="Primary">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 48 48" width="30" height="30"><defs><linearGradient id="bg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5eead4"/><stop offset="1" stop-color="#38bdf8"/></linearGradient></defs><path d="M24 4c5 6 10 11 10 18a10 10 0 1 1-20 0c0-7 5-12 10-18z" fill="url(#bg1)"/><circle cx="24" cy="24" r="3.4" fill="#0b1220" opacity=".55"/></svg>
+      </div>
+      <div class="brand-text">
+        <strong>Tasneeme</strong>
+        <small data-i18n="brand.tagline">The Living Spring OS</small>
+      </div>
+    </div>
+
+    <nav class="nav" id="nav">
+      <button class="nav-item is-active" data-view="garden"><span class="nav-ico">🌱</span><span data-i18n="nav.garden">Garden</span></button>
+      <button class="nav-item" data-view="habits"><span class="nav-ico">✅</span><span data-i18n="nav.habits">Habits</span></button>
+      <button class="nav-item" data-view="focus"><span class="nav-ico">🎧</span><span data-i18n="nav.focus">Focus</span></button>
+      <button class="nav-item" data-view="journal"><span class="nav-ico">📓</span><span data-i18n="nav.journal">Journal</span></button>
+      <button class="nav-item" data-view="quests"><span class="nav-ico">🗺️</span><span data-i18n="nav.quests">Quests</span></button>
+      <button class="nav-item" data-view="stats"><span class="nav-ico">📊</span><span data-i18n="nav.stats">Stats</span></button>
+      <button class="nav-item" data-view="achievements"><span class="nav-ico">🏆</span><span data-i18n="nav.achievements">Trophies</span></button>
+      <button class="nav-item" data-view="settings"><span class="nav-ico">⚙️</span><span data-i18n="nav.settings">Settings</span></button>
+    </nav>
+
+    <div class="sidebar-foot">
+      <div class="mini-stat" title="Streak">
+        <span class="mini-ico">🔥</span>
+        <div><b id="side-streak">0</b><small data-i18n="top.streak">day streak</small></div>
+      </div>
+      <div class="mini-stat" title="Spring drops">
+        <span class="mini-ico">💧</span>
+        <div><b id="side-coins">0</b><small data-i18n="top.drops">spring drops</small></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main class="main">
+    <header class="topbar">
+      <button class="icon-btn only-mobile" id="menu-btn" aria-label="Menu">☰</button>
+
+      <div class="topbar-level">
+        <div class="ring" id="level-ring" role="img" aria-label="Level progress">
+          <svg viewBox="0 0 44 44" width="46" height="46">
+            <circle class="ring-bg" cx="22" cy="22" r="19"></circle>
+            <circle class="ring-fg" id="ring-fg" cx="22" cy="22" r="19"></circle>
+          </svg>
+          <span class="ring-num" id="level-num">1</span>
+        </div>
+        <div class="xp-block">
+          <div class="xp-line">
+            <strong id="greeting" data-i18n="top.hello">Welcome back</strong>
+            <span class="xp-num"><span id="xp-now">0</span> / <span id="xp-next">100</span></span>
+          </div>
+          <div class="xp-bar"><span id="xp-fill"></span></div>
+        </div>
+      </div>
+
+      <div class="topbar-attrs" id="attr-chips" aria-label="Attributes"></div>
+
+      <div class="topbar-actions">
+        <button class="chip-btn" id="lang-btn" title="Language"><span id="lang-label">EN</span></button>
+        <button class="chip-btn" id="sound-btn" title="Ambient sound">🔇</button>
+        <button class="chip-btn" id="theme-btn" title="Theme">🎨</button>
+      </div>
+    </header>
+
+    <div class="views" id="views">
+
+      <!-- GARDEN -->
+      <section class="view is-active" data-view="garden">
+        <div class="garden-wrap">
+          <canvas id="garden" aria-label="Your living spring"></canvas>
+          <div class="garden-hud">
+            <div class="hud-card">
+              <small data-i18n="garden.spring">Spring vitality</small>
+              <b id="garden-vitality">0%</b>
+            </div>
+            <div class="hud-card">
+              <small data-i18n="garden.species">Flora unlocked</small>
+              <b id="garden-species">0</b>
+            </div>
+            <div class="hud-card">
+              <small data-i18n="garden.time">Local time</small>
+              <b id="garden-clock">--:--</b>
+            </div>
+          </div>
+          <div class="garden-overlay">
+            <h1 data-i18n="garden.title">Your spring is alive</h1>
+            <p data-i18n="garden.sub">Every habit you keep, every focused minute and every honest reflection feeds the water. Watch it bloom.</p>
+            <div class="garden-btns">
+              <button class="btn primary" data-goto="habits" data-i18n="garden.cta1">Tend today's habits</button>
+              <button class="btn ghost" id="garden-bloom" data-i18n="garden.cta2">Release a droplet</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- HABITS -->
+      <section class="view" data-view="habits">
+        <div class="view-head">
+          <div>
+            <h2 data-i18n="habits.title">Habits</h2>
+            <p class="muted" data-i18n="habits.sub">Small rivers carve canyons. Keep the streak.</p>
+          </div>
+          <button class="btn primary" id="add-habit" data-i18n="habits.add">+ New habit</button>
+        </div>
+        <div class="today-ribbon" id="habit-ribbon"></div>
+        <div class="grid cards" id="habit-list"></div>
+        <div class="panel" id="habit-heatmap-panel">
+          <h3 data-i18n="habits.heatmap">Consistency map · last 12 weeks</h3>
+          <canvas id="habit-heatmap" height="150"></canvas>
+        </div>
+      </section>
+
+      <!-- FOCUS -->
+      <section class="view" data-view="focus">
+        <div class="view-head">
+          <div>
+            <h2 data-i18n="focus.title">Focus chamber</h2>
+            <p class="muted" data-i18n="focus.sub">Deep work distilled into a single luminous timer.</p>
+          </div>
+        </div>
+        <div class="focus-grid">
+          <div class="panel focus-core">
+            <div class="focus-timer">
+              <svg viewBox="0 0 200 200" width="220" height="220">
+                <circle class="ft-bg" cx="100" cy="100" r="88"></circle>
+                <circle class="ft-fg" id="focus-ring" cx="100" cy="100" r="88"></circle>
+              </svg>
+              <div class="focus-readout">
+                <b id="focus-time">25:00</b>
+                <small id="focus-mode" data-i18n="focus.modeWork">Deep work</small>
+              </div>
+            </div>
+            <div class="focus-controls">
+              <button class="btn primary" id="focus-start" data-i18n="focus.start">Start</button>
+              <button class="btn ghost" id="focus-reset" data-i18n="focus.reset">Reset</button>
+            </div>
+            <div class="preset-row" id="focus-presets">
+              <button class="pill is-active" data-min="25">25</button>
+              <button class="pill" data-min="45">45</button>
+              <button class="pill" data-min="60">60</button>
+              <button class="pill" data-min="15">15</button>
+            </div>
+            <label class="field">
+              <span data-i18n="focus.task">What are you focusing on?</span>
+              <input id="focus-task" type="text" placeholder="Write the chapter…" />
+            </label>
+          </div>
+          <div class="panel">
+            <h3 data-i18n="focus.today">Today's sessions</h3>
+            <div id="focus-today" class="log-list"></div>
+            <hr class="sep" />
+            <h3 data-i18n="focus.total">Lifetime focused</h3>
+            <div class="stat-big"><b id="focus-total">0</b> <small data-i18n="focus.minutes">minutes</small></div>
+            <canvas id="focus-chart" height="120" class="mt"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- JOURNAL -->
+      <section class="view" data-view="journal">
+        <div class="view-head">
+          <div>
+            <h2 data-i18n="journal.title">Reflection & Mood</h2>
+            <p class="muted" data-i18n="journal.sub">Name the weather inside you. The garden listens.</p>
+          </div>
+        </div>
+        <div class="journal-grid">
+          <div class="panel">
+            <h3 data-i18n="journal.moodTitle">How do you feel today?</h3>
+            <div class="mood-picker" id="mood-picker"></div>
+            <div class="tag-picker" id="mood-tags"></div>
+            <label class="field">
+              <span data-i18n="journal.noteLabel">A line about today</span>
+              <textarea id="mood-note" rows="3" placeholder="Today I…"></textarea>
+            </label>
+            <button class="btn primary" id="mood-save" data-i18n="journal.saveMood">Save today's weather</button>
+          </div>
+          <div class="panel">
+            <div class="row-between">
+              <h3 data-i18n="journal.entries">Journal</h3>
+              <button class="btn ghost sm" id="new-entry" data-i18n="journal.new">+ Entry</button>
+            </div>
+            <div id="journal-list" class="journal-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- QUESTS -->
+      <section class="view" data-view="quests">
+        <div class="view-head">
+          <div>
+            <h2 data-i18n="quests.title">Daily quests</h2>
+            <p class="muted" data-i18n="quests.sub">Three small deeds, woven fresh each dawn.</p>
+          </div>
+          <button class="btn ghost" id="reroll-quests" data-i18n="quests.reroll">Reroll (costs 5 💧)</button>
+        </div>
+        <div class="grid cards" id="quest-list"></div>
+        <div class="panel">
+          <h3 data-i18n="quests.contracts">Standing contracts</h3>
+          <p class="muted" data-i18n="quests.contractsSub">Longer vows that grow with repetition.</p>
+          <div id="contracts" class="log-list"></div>
+        </div>
+      </section>
+
+      <!-- STATS -->
+      <section class="view" data-view="stats">
+        <div class="view-head">
+          <div>
+            <h2 data-i18n="stats.title">The Ledger</h2>
+            <p class="muted" data-i18n="stats.sub">What you have been watering, and what grew.</p>
+          </div>
+        </div>
+        <div class="stat-grid" id="stat-tiles"></div>
+        <div class="panel-grid">
+          <div class="panel">
+            <h3 data-i18n="stats.radar">Attribute constellation</h3>
+            <canvas id="radar" height="260"></canvas>
+          </div>
+          <div class="panel">
+            <h3 data-i18n="stats.xpChart">XP current · last 30 days</h3>
+            <canvas id="xp-line" height="240"></canvas>
+          </div>
+          <div class="panel">
+            <h3 data-i18n="stats.moodChart">Mood tide · last 30 days</h3>
+            <canvas id="mood-line" height="240"></canvas>
+          </div>
+          <div class="panel">
+            <h3 data-i18n="stats.attrBars">Attribute depth</h3>
+            <div id="attr-bars" class="attr-bars"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ACHIEVEMENTS -->
+      <section class="view" data-view="achievements">
+        <div class="view-head">
+          <div>
+            <h2 data-i18n="ach.title">Trophies</h2>
+            <p class="muted" data-i18n="ach.sub">Markers of a spring well tended.</p>
+          </div>
+          <div class="ach-progress"><span id="ach-count">0</span>/<span id="ach-total">0</span></div>
+        </div>
+        <div class="grid cards" id="ach-list"></div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section class="view" data-view="settings">
+        <div class="view-head">
+          <div>
+            <h2 data-i18n="set.title">Settings</h2>
+            <p class="muted" data-i18n="set.sub">Tune the spring to your liking.</p>
+          </div>
+        </div>
+        <div class="panel-grid">
+          <div class="panel">
+            <h3 data-i18n="set.identity">Identity</h3>
+            <label class="field"><span data-i18n="set.name">Your name</span><input id="set-name" type="text" /></label>
+            <label class="field"><span data-i18n="set.lang">Language</span>
+              <select id="set-lang">
+                <option value="en">English</option>
+                <option value="ar">العربية</option>
+                <option value="tn">Tounsi 🇹🇳</option>
+              </select>
+            </label>
+          </div>
+          <div class="panel">
+            <h3 data-i18n="set.look">Look & feel</h3>
+            <div class="theme-row" id="theme-row"></div>
+            <label class="switch"><input type="checkbox" id="set-reduce" /><span data-i18n="set.reduce">Reduce motion</span></label>
+            <label class="switch"><input type="checkbox" id="set-bloom" checked /><span data-i18n="set.particles">Particles & bloom</span></label>
+            <label class="switch"><input type="checkbox" id="set-sound" /><span data-i18n="set.ambient">Ambient sound</span></label>
+            <label class="field"><span data-i18n="set.volume">Volume</span><input id="set-volume" type="range" min="0" max="100" value="45" /></label>
+          </div>
+          <div class="panel">
+            <h3 data-i18n="set.data">Your data</h3>
+            <p class="muted" data-i18n="set.dataSub">Stored only in this browser. Nothing leaves your device.</p>
+            <div class="btn-row">
+              <button class="btn ghost" id="export-btn" data-i18n="set.export">Export JSON</button>
+              <button class="btn ghost" id="import-btn" data-i18n="set.import">Import JSON</button>
+              <input type="file" id="import-file" accept="application/json" hidden />
+            </div>
+            <hr class="sep" />
+            <h3 data-i18n="set.danger">Danger zone</h3>
+            <div class="btn-row">
+              <button class="btn ghost" id="seed-demo" data-i18n="set.demo">Load demo spring</button>
+              <button class="btn danger" id="wipe-btn" data-i18n="set.wipe">Erase everything</button>
+            </div>
+          </div>
+          <div class="panel">
+            <h3 data-i18n="set.about">About</h3>
+            <p class="muted" data-i18n="set.aboutText">Tasneeme (تسنيم) is a living spring: an offline-first, gamified life-companion that renders your real growth as a procedurally grown garden. No accounts, no tracking.</p>
+            <p class="muted small" id="version-line">v1.0.0</p>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<!-- ============ ONBOARDING ============ -->
+<div class="modal-layer" id="onboard" hidden>
+  <div class="modal onboard">
+    <div class="onboard-mark" aria-hidden="true">
+      <svg viewBox="0 0 64 64" width="64" height="64"><defs><linearGradient id="og" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5eead4"/><stop offset="1" stop-color="#818cf8"/></linearGradient></defs><path d="M32 4c7 8 13 15 13 24a13 13 0 1 1-26 0c0-9 6-16 13-24z" fill="url(#og)"/></svg>
+    </div>
+    <h1 data-i18n="onb.title">Welcome to Tasneeme</h1>
+    <p class="muted" data-i18n="onb.sub">Name yourself and plant the first seed. Everything you do here grows a private, living spring.</p>
+    <label class="field"><span data-i18n="onb.name">What should the spring call you?</span><input id="onb-name" type="text" placeholder="Traveler" /></label>
+    <label class="field"><span data-i18n="onb.focus">What do you most want to grow?</span>
+      <select id="onb-focus">
+        <option value="body" data-i18n="attr.body">Body · vitality</option>
+        <option value="mind" data-i18n="attr.mind">Mind · clarity</option>
+        <option value="spirit" data-i18n="attr.spirit">Spirit · calm</option>
+        <option value="craft" data-i18n="attr.craft">Craft · making</option>
+      </select>
+    </label>
+    <div class="onboard-themes" id="onboard-themes"></div>
+    <button class="btn primary wide" id="onb-start" data-i18n="onb.start">Plant the seed</button>
+    <button class="btn ghost wide" id="onb-demo" data-i18n="onb.demo">Explore a demo spring first</button>
+  </div>
+</div>
+
+<!-- ============ HABIT MODAL ============ -->
+<div class="modal-layer" id="habit-modal" hidden>
+  <div class="modal">
+    <h2 id="habit-modal-title" data-i18n="habitModal.new">New habit</h2>
+    <label class="field"><span data-i18n="habitModal.name">Habit name</span><input id="hm-name" type="text" placeholder="Morning walk" /></label>
+    <label class="field"><span data-i18n="habitModal.attr">Which part of you does it feed?</span>
+      <select id="hm-attr">
+        <option value="body">Body</option><option value="mind">Mind</option><option value="spirit">Spirit</option><option value="craft">Craft</option>
+      </select>
+    </label>
+    <div class="field"><span data-i18n="habitModal.energy">Effort / reward</span>
+      <div class="pill-row" id="hm-weight">
+        <button class="pill" data-w="1">Light</button>
+        <button class="pill is-active" data-w="2">Steady</button>
+        <button class="pill" data-w="3">Heavy</button>
+      </div>
+    </div>
+    <div class="field"><span data-i18n="habitModal.days">Days</span><div class="day-row" id="hm-days"></div></div>
+    <label class="field"><span data-i18n="habitModal.icon">Emblem</span><input id="hm-icon" type="text" maxlength="2" placeholder="🌿" /></label>
+    <div class="modal-actions">
+      <button class="btn ghost" data-close="habit-modal" data-i18n="common.cancel">Cancel</button>
+      <button class="btn primary" id="hm-save" data-i18n="common.save">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ JOURNAL MODAL ============ -->
+<div class="modal-layer" id="entry-modal" hidden>
+  <div class="modal">
+    <h2 data-i18n="entry.new">New reflection</h2>
+    <label class="field"><span data-i18n="entry.title">Title</span><input id="em-title" type="text" placeholder="On patience" /></label>
+    <label class="field"><span data-i18n="entry.body">Write freely</span><textarea id="em-body" rows="8" placeholder="I noticed that…"></textarea></label>
+    <label class="field"><span data-i18n="entry.tags">Tags (comma separated)</span><input id="em-tags" type="text" placeholder="gratitude, work, family" /></label>
+    <div class="modal-actions">
+      <button class="btn ghost" data-close="entry-modal" data-i18n="common.cancel">Cancel</button>
+      <button class="btn primary" id="em-save" data-i18n="common.save">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ LEVEL UP OVERLAY ============ -->
+<div class="levelup" id="levelup" hidden>
+  <div class="levelup-inner">
+    <div class="levelup-burst" aria-hidden="true"></div>
+    <small data-i18n="levelup.kicker">The spring rises</small>
+    <b id="levelup-num">2</b>
+    <span data-i18n="levelup.text">A new terrace of the garden unlocks</span>
+    <div class="levelup-rewards" id="levelup-rewards"></div>
+    <button class="btn primary" id="levelup-ok" data-i18n="common.continue">Continue</button>
+  </div>
+</div>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script src="js/i18n.js"></script>
+<script src="js/store.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/garden.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
