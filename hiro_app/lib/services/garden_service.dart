@@ -13,6 +13,18 @@ import '../models/soundscape_model.dart';
 import '../models/synapse_model.dart';
 
 class GardenService extends ChangeNotifier {
+  // =========================
+  // Node update helper
+  // =========================
+  /// Replace an existing node with a new version and notify listeners.
+  void updateNode(SynapseModel updated) {
+    final index = _synapses.indexWhere((s) => s.id == updated.id);
+    if (index != -1) {
+      _synapses[index] = updated;
+      notifyListeners();
+    }
+  }
+
   static String? customServerUrl;
 
   static String get serverBaseUrl {
@@ -533,6 +545,30 @@ class GardenService extends ChangeNotifier {
 
   // --- Physics & Pulse Simulation Loop ---
 
+  // ---------------------------------------------------------------------
+  // Export / Import JSON
+  // ---------------------------------------------------------------------
+  /// Return the current garden as a JSON string (for export).
+  String exportGarden() {
+    final jsonMap = _serializeGarden();
+    return jsonEncode(jsonMap);
+  }
+
+  /// Import a JSON string, replace the current garden, and sync.
+  Future<void> importGarden(String jsonString) async {
+    try {
+      final Map<String, dynamic> decoded = jsonDecode(jsonString);
+      if (decoded['gardens']?['main'] != null) {
+        _restoreGardenData(decoded['gardens']['main'] as Map<String, dynamic>);
+        pushSync();
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Import failed: $e');
+    }
+  }
+
+
   void _stepSimulation() {
     bool hasVisualChange = false;
 
@@ -640,8 +676,13 @@ class GardenService extends ChangeNotifier {
   }
 
   void moveSynapse(String id, double x, double y) {
-    _draggedSynapseId = id;
     final syn = findSynapseById(id);
+    // Remember where the drag started so it can be undone as one action.
+    if (_draggedSynapseId != id && syn != null) {
+      _dragStartX = syn.x;
+      _dragStartY = syn.y;
+    }
+    _draggedSynapseId = id;
     if (syn != null) {
       if (_gridSnap) {
         x = (x / 40).round() * 40.0;
@@ -657,7 +698,20 @@ class GardenService extends ChangeNotifier {
   }
 
   void endMoveSynapse() {
+    final movedId = _draggedSynapseId;
     _draggedSynapseId = null;
+    if (movedId != null) {
+      final syn = findSynapseById(movedId);
+      if (syn != null &&
+          _dragStartX != null &&
+          _dragStartY != null &&
+          (syn.x != _dragStartX || syn.y != _dragStartY)) {
+        _recordAction(
+            _MoveSynapseAction(movedId, _dragStartX!, _dragStartY!, syn.x, syn.y));
+      }
+    }
+    _dragStartX = null;
+    _dragStartY = null;
     if (_autoConnect) {
       _rebuildAutoConnections();
     }
@@ -1040,5 +1094,213 @@ class GardenService extends ChangeNotifier {
       if (s.id.trim() == cleanId) return s;
     }
     return null;
+  }
+
+  // ===========================================================
+  // Undo / Redo, multi-select & batch actions
+  // (used by GardenScreen)
+  // ===========================================================
+
+  // --- Settings the screen reads ---
+  bool get gridSnapEnabled => _gridSnap;
+
+  double _animationSpeed = 1.0;
+  double get animationSpeed => _animationSpeed;
+  set animationSpeed(double v) {
+    _animationSpeed = v;
+    notifyListeners();
+  }
+
+  /// True when no sync is currently in flight.
+  bool get isSaved => !_isSyncing;
+
+  // --- Drag bookkeeping for undo ---
+  double? _dragStartX;
+  double? _dragStartY;
+
+  // --- Undo / redo stacks ---
+  final List<_GardenAction> _undoStack = [];
+  final List<_GardenAction> _redoStack = [];
+
+  /// Human-readable list of undoable actions (oldest first).
+  List<String> get undoRedoHistory =>
+      _undoStack.map((a) => a.label).toList(growable: false);
+
+  /// Record an action for undo/redo.
+  void _recordAction(_GardenAction action) {
+    _undoStack.add(action);
+    _redoStack.clear(); // new action invalidates redo history
+  }
+
+  /// Undo the last action, if any.
+  void undo() {
+    if (_undoStack.isEmpty) return;
+    final action = _undoStack.removeLast();
+    action.undo(this);
+    _redoStack.add(action);
+    pushSync();
+    notifyListeners();
+  }
+
+  /// Redo the last undone action, if any.
+  void redo() {
+    if (_redoStack.isEmpty) return;
+    final action = _redoStack.removeLast();
+    action.redo(this);
+    _undoStack.add(action);
+    pushSync();
+    notifyListeners();
+  }
+
+  /// Undo back to (and including) the history entry at [index].
+  void jumpToHistory(int index) {
+    if (index < 0 || index >= _undoStack.length) return;
+    while (_undoStack.length > index) {
+      final action = _undoStack.removeLast();
+      action.undo(this);
+      _redoStack.add(action);
+    }
+    pushSync();
+    notifyListeners();
+  }
+
+  // --- Multi-select ---
+  final Set<String> _selectedSynapseIds = {};
+
+  bool _multiSelectEnabled = false;
+  bool get multiSelectEnabled => _multiSelectEnabled;
+
+  Set<String> get selectedSynapseIds => Set.unmodifiable(_selectedSynapseIds);
+
+  List<SynapseModel> get selectedNodes =>
+      _synapses.where((s) => _selectedSynapseIds.contains(s.id)).toList();
+
+  void toggleMultiSelectMode() {
+    _multiSelectEnabled = !_multiSelectEnabled;
+    if (!_multiSelectEnabled) _selectedSynapseIds.clear();
+    notifyListeners();
+  }
+
+  /// Add/remove a synapse from the multi-selection.
+  void toggleSynapseInSelection(String id) {
+    if (!_selectedSynapseIds.remove(id)) {
+      _selectedSynapseIds.add(id);
+    }
+    notifyListeners();
+  }
+
+  void clearSelection() {
+    _selectedSynapseIds.clear();
+    notifyListeners();
+  }
+
+  // --- Batch actions ---
+
+  /// Delete all currently selected synapses.
+  void deleteSelectedNodes() {
+    for (final id in List<String>.from(_selectedSynapseIds)) {
+      deleteSynapse(id);
+    }
+    _selectedSynapseIds.clear();
+    pushSync();
+    notifyListeners();
+  }
+
+  /// Shift the hue of all selected synapses by 30 degrees.
+  void changeHueOfSelection() {
+    for (final syn in selectedNodes) {
+      syn.hue = (syn.hue + 30) % 360;
+    }
+    pushSync();
+    notifyListeners();
+  }
+
+  /// Change hue of all selected synapses to the given value.
+  void setHueForSelected(double hue) {
+    for (final syn in selectedNodes) {
+      syn.hue = hue;
+    }
+    pushSync();
+    notifyListeners();
+  }
+
+  void duplicateSelectedNodes() {
+    final ids = List<String>.from(_selectedSynapseIds);
+    for (final id in ids) {
+      duplicateSynapse(id);
+    }
+  }
+
+  void moveSelectionToFront() {
+    final sel = selectedNodes;
+    if (sel.isEmpty) return;
+    _synapses.removeWhere((s) => _selectedSynapseIds.contains(s.id));
+    _synapses.addAll(sel);
+    pushSync();
+    notifyListeners();
+  }
+
+  void moveSelectionToBack() {
+    final sel = selectedNodes;
+    if (sel.isEmpty) return;
+    _synapses.removeWhere((s) => _selectedSynapseIds.contains(s.id));
+    _synapses.insertAll(0, sel);
+    pushSync();
+    notifyListeners();
+  }
+
+  /// Duplicate a synapse (clone) with a new id and slight offset.
+  void duplicateSynapse(String id) {
+    final original = findSynapseById(id);
+    if (original == null) return;
+    final newId =
+        'syn_${DateTime.now().millisecondsSinceEpoch}_${Random().nextInt(999)}';
+    final json = Map<String, dynamic>.from(original.toJson());
+    json['id'] = newId;
+    json['title'] = '${original.title} (copy)';
+    json['x'] = original.x + 20;
+    json['y'] = original.y + 20;
+    final clone = SynapseModel.fromJson(json);
+    _synapses.add(clone);
+    _selectedSynapse = clone;
+    pushSync();
+    notifyListeners();
+  }
+}
+
+// ===========================================================
+// Undo / redo action classes (must live outside GardenService)
+// ===========================================================
+
+abstract class _GardenAction {
+  String get label;
+  void undo(GardenService service);
+  void redo(GardenService service);
+}
+
+class _MoveSynapseAction extends _GardenAction {
+  final String id;
+  final double oldX, oldY, newX, newY;
+  _MoveSynapseAction(this.id, this.oldX, this.oldY, this.newX, this.newY);
+
+  @override
+  String get label => 'Move node';
+
+  @override
+  void undo(GardenService service) {
+    final syn = service.findSynapseById(id);
+    if (syn != null) {
+      syn.x = oldX;
+      syn.y = oldY;
+    }
+  }
+
+  @override
+  void redo(GardenService service) {
+    final syn = service.findSynapseById(id);
+    if (syn != null) {
+      syn.x = newX;
+      syn.y = newY;
+    }
   }
 }

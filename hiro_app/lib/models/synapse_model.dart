@@ -1,28 +1,48 @@
 import 'dart:math';
 
 class SynapseModel {
+  // =========================
+  // Core identifiers
+  // =========================
   String id;
   String title;
   String notes;
+
+  // =========================
+  // Position & layout
+  // =========================
   double x;
   double y;
   double radius;
   double hue;
-  double charge; // 0.0 to 1.0 (vitality / action potential)
+  double charge; // 0.0 – 1.0 (vitality / action potential)
   String type; // 'idea', 'task', 'question', 'resource', 'warning'
   bool starred;
   String tag;
   bool isCompleted;
   bool isReady;
-  double sproutProgress; // 0.0 to 1.0 for sprouting growth animation
+  double sproutProgress; // 0.0 – 1.0 for sprouting growth animation
   DateTime createdAt;
   DateTime updatedAt;
 
+  // =========================
+  // New controllable fields
+  // =========================
+  bool isFixed;                     // If true, node does not drift or get repelled
+  double driftSpeed;                // Pixels per simulation step (default = 0.5)
+  double repulsionStrength;         // Force multiplier for repulsion (default = 1.0)
+  Map<String, dynamic> metadata;    // Arbitrary key‑value data
+
+  // =========================
   // Transient simulation state
+  // =========================
   double vx;
   double vy;
-  double pulseWave; // 0.0 to 1.0 for radiating ring when fired
+  double pulseWave; // 0.0 – 1.0 for radiating ring when fired
 
+  // -------------------------------------------------
+  // Constructor
+  // -------------------------------------------------
   SynapseModel({
     required this.id,
     this.title = '',
@@ -40,13 +60,21 @@ class SynapseModel {
     this.sproutProgress = 1.0,
     DateTime? createdAt,
     DateTime? updatedAt,
+    this.isFixed = false,
+    this.driftSpeed = 0.5,
+    this.repulsionStrength = 1.0,
+    Map<String, dynamic>? metadata,
     this.vx = 0.0,
     this.vy = 0.0,
     this.pulseWave = 0.0,
   })  : hue = hue ?? (Random().nextDouble() * 360),
         createdAt = createdAt ?? DateTime.now(),
-        updatedAt = updatedAt ?? DateTime.now();
+        updatedAt = updatedAt ?? DateTime.now(),
+        metadata = metadata ?? {};
 
+  // -------------------------------------------------
+  // JSON deserialization
+  // -------------------------------------------------
   factory SynapseModel.fromJson(Map<String, dynamic> json) {
     final titleStr = json['title']?.toString() ?? json['message']?.toString() ?? '';
     final notesStr = json['notes']?.toString() ?? '';
@@ -54,7 +82,7 @@ class SynapseModel {
         (json['templateType'] != null && json['templateType'].toString().isNotEmpty
             ? json['templateType'].toString()
             : 'idea');
-    
+
     String tagStr = json['tag']?.toString() ?? '';
     if (tagStr.isEmpty && json['tags'] is List && (json['tags'] as List).isNotEmpty) {
       tagStr = (json['tags'] as List).first.toString();
@@ -85,9 +113,17 @@ class SynapseModel {
       updatedAt: json['updatedAt'] != null
           ? DateTime.tryParse(json['updatedAt'].toString()) ?? DateTime.now()
           : DateTime.now(),
+      // New controllable fields – defaults if missing
+      isFixed: json['isFixed'] == true,
+      driftSpeed: (json['driftSpeed'] as num?)?.toDouble() ?? 0.5,
+      repulsionStrength: (json['repulsionStrength'] as num?)?.toDouble() ?? 1.0,
+      metadata: json['metadata'] as Map<String, dynamic>? ?? {},
     );
   }
 
+  // -------------------------------------------------
+  // JSON serialization
+  // -------------------------------------------------
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -110,9 +146,17 @@ class SynapseModel {
       'sproutProgress': sproutProgress,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
+      // New fields
+      'isFixed': isFixed,
+      'driftSpeed': driftSpeed,
+      'repulsionStrength': repulsionStrength,
+      'metadata': metadata,
     };
   }
 
+  // -------------------------------------------------
+  // copyWith – includes new controllable fields
+  // -------------------------------------------------
   SynapseModel copyWith({
     String? title,
     String? notes,
@@ -127,6 +171,10 @@ class SynapseModel {
     bool? isCompleted,
     bool? isReady,
     double? sproutProgress,
+    bool? isFixed,
+    double? driftSpeed,
+    double? repulsionStrength,
+    Map<String, dynamic>? metadata,
   }) {
     return SynapseModel(
       id: id,
@@ -145,12 +193,19 @@ class SynapseModel {
       sproutProgress: sproutProgress ?? this.sproutProgress,
       createdAt: createdAt,
       updatedAt: DateTime.now(),
+      isFixed: isFixed ?? this.isFixed,
+      driftSpeed: driftSpeed ?? this.driftSpeed,
+      repulsionStrength: repulsionStrength ?? this.repulsionStrength,
+      metadata: metadata ?? Map<String, dynamic>.from(this.metadata),
       vx: vx,
       vy: vy,
       pulseWave: pulseWave,
     );
   }
 
+  // -------------------------------------------------
+  // Hit‑testing helper
+  // -------------------------------------------------
   bool hitTest(double px, double py) {
     final r = radius * sproutProgress;
     return sqrt((px - x) * (px - x) + (py - y) * (py - y)) <= r + 10;

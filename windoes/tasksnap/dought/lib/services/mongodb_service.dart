@@ -2,7 +2,7 @@ import 'package:mongo_dart/mongo_dart.dart';
 
 class MongoDBService {
   static const String connectionString =
-      'mongodb+srv://achrefhamdi:21960975@cluster0.qd9v5k1.mongodb.net/dought?retryWrites=true&w=majority';
+      'mongodb+srv://achrefhamdi:21960975@cluster0.qd9v5k1.mongodb.net/dought?retryWrites=true&w=majority&appName=dought';
   static const String databaseName = 'dought';
   static const String collectionName = 'tasks';
 

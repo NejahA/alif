@@ -4,7 +4,7 @@ void main() async {
   print('Testing MongoDB connection...');
   
   const connectionString = 
-      'mongodb+srv://achrefhamdi:21960975@cluster0.qd9v5k1.mongodb.net/dought?retryWrites=true&w=majority';
+      'mongodb+srv://achrefhamdi:21960975@cluster0.qd9v5k1.mongodb.net/dought?retryWrites=true&w=majority&appName=dought';
   
   try {
     print('Creating database connection...');

@@ -21,7 +21,10 @@ class TaskAdapter extends TypeAdapter<Task> {
       title: fields[1] as String,
       description: fields[2] as String?,
       dueDate: fields[3] as DateTime?,
-      isCompleted: fields[4] as bool,
+      isCompleted: fields[4] as bool?,
+      status: fields[6] as String,
+      tags: (fields[7] as List?)?.cast<String>(),
+      timeSpent: fields[8] as int,
       createdAt: fields[5] as DateTime?,
     );
   }
@@ -29,7 +32,7 @@ class TaskAdapter extends TypeAdapter<Task> {
   @override
   void write(BinaryWriter writer, Task obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -41,7 +44,13 @@ class TaskAdapter extends TypeAdapter<Task> {
       ..writeByte(4)
       ..write(obj.isCompleted)
       ..writeByte(5)
-      ..write(obj.createdAt);
+      ..write(obj.createdAt)
+      ..writeByte(6)
+      ..write(obj.status)
+      ..writeByte(7)
+      ..write(obj.tags)
+      ..writeByte(8)
+      ..write(obj.timeSpent);
   }
 
   @override
@@ -59,7 +68,7 @@ class TaskAdapter extends TypeAdapter<Task> {
 // RiverpodGenerator
 // **************************************************************************
 
-String _$taskListHash() => r'ed8c86aad12c76a9c9cfa30fabb87d626332ade2';
+String _$taskListHash() => r'069ca06c6a8fd6993f71773441ec252ac05ae43f';
 
 /// See also [TaskList].
 @ProviderFor(TaskList)
@@ -74,19 +83,5 @@ final taskListProvider =
 );
 
 typedef _$TaskList = AutoDisposeNotifier<List<Task>>;
-String _$filterHash() => r'a4079699a2dab7fe8e714d0f5c951b989e9bd0ee';
-
-/// See also [Filter].
-@ProviderFor(Filter)
-final filterProvider = AutoDisposeNotifierProvider<Filter, TaskFilter>.internal(
-  Filter.new,
-  name: r'filterProvider',
-  debugGetCreateSourceHash:
-      const bool.fromEnvironment('dart.vm.product') ? null : _$filterHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
-
-typedef _$Filter = AutoDisposeNotifier<TaskFilter>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, inference_failure_on_uninitialized_variable, inference_failure_on_function_return_type, inference_failure_on_untyped_parameter, deprecated_member_use_from_same_package

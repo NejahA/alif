@@ -7,11 +7,7 @@ import {
   Code2,
   Play,
   Terminal,
-  Globe,
-  ExternalLink,
-  ChevronRight,
-  Sparkles,
-  Command
+  Sparkles
 } from 'lucide-react';
 
 export interface ProjectEntry {

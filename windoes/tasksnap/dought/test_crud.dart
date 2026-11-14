@@ -3,7 +3,7 @@ import 'package:mongo_dart/mongo_dart.dart';
 void main() async {
   print('Testing MongoDB CRUD operations...\n');
   
-  const connectionString = 'mongodb+srv://achrefhamdi:21960975@cluster0.qd9v5k1.mongodb.net/?retryWrites=true&w=majority';
+  const connectionString = 'mongodb+srv://achrefhamdi:21960975@cluster0.qd9v5k1.mongodb.net/dought?retryWrites=true&w=majority&appName=dought';
   const databaseName = 'dought';
   const collectionName = 'tasks';
   

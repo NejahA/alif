@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import json
 import os
+import threading
 from datetime import datetime
 import time
 from tkcalendar import DateEntry
@@ -72,6 +73,8 @@ class Dought:
         }
         self.active_timers = {}  # task_id: start_time
         self.last_modified = 0  # Track file modification time
+        self._stop_polling = False
+        self.mongo_last_updated = None  # last 'last_updated' value seen in MongoDB
         
         # MongoDB setup
         self.mongo_client = None
@@ -101,6 +104,11 @@ class Dought:
         
         # Check for external changes every 2 seconds
         self.check_external_changes()
+        
+        # Poll MongoDB in the background so changes made elsewhere (Flutter app,
+        # another instance, ...) show up here in real time.
+        self.mongo_poll_thread = threading.Thread(target=self.mongo_poll_loop, daemon=True)
+        self.mongo_poll_thread.start()
         
         # Cleanup on close
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
@@ -307,16 +315,21 @@ class Dought:
         info_frame.pack(fill=tk.X, pady=(8, 0))
         
         # Created date
-        created = datetime.fromisoformat(task['created'])
-        date_str = created.strftime('%b %d, %H:%M')
-        
-        tk.Label(
-            info_frame,
-            text=f"🕐 {date_str}",
-            bg=self.bg_card,
-            fg=self.text_muted,
-            font=('Segoe UI', 8)
-        ).pack(side=tk.LEFT)
+        created_str = task.get('created')
+        if created_str:
+            try:
+                created = datetime.fromisoformat(created_str)
+            except (ValueError, TypeError):
+                created = None
+            if created:
+                date_str = created.strftime('%b %d, %H:%M')
+                tk.Label(
+                    info_frame,
+                    text=f"🕐 {date_str}",
+                    bg=self.bg_card,
+                    fg=self.text_muted,
+                    font=('Segoe UI', 8)
+                ).pack(side=tk.LEFT)
         
         # Time tracked
         if task.get('time_spent', 0) > 0:
@@ -415,7 +428,7 @@ class Dought:
                 btn_frame,
                 text="✓ Done",
                 command=lambda: self.move_task(task_id, 'in_progress', 'done'),
-                bg=self.accent_done,
+                bg=self.accent_done,    
                 fg=self.bg_dark,
                 font=('Segoe UI', 8, 'bold'),
                 relief=tk.FLAT,
@@ -921,6 +934,7 @@ class Dought:
                         'in_progress': doc.get('in_progress', []),
                         'done': doc.get('done', [])
                     }
+                    self.mongo_last_updated = doc.get('last_updated')
                     print("Loaded data from MongoDB")
                     return
             except Exception as e:
@@ -936,6 +950,8 @@ class Dought:
                 pass
     
     def save_data(self):
+        last_updated = datetime.now().isoformat()
+        
         # Save to MongoDB
         if self.mongo_collection is not None:
             try:
@@ -945,21 +961,27 @@ class Dought:
                         'todo': self.tasks['todo'],
                         'in_progress': self.tasks['in_progress'],
                         'done': self.tasks['done'],
-                        'last_updated': datetime.now().isoformat()
+                        'last_updated': last_updated
                     }},
                     upsert=True
                 )
+                # Remember our own write so the poller does not echo it back
+                self.mongo_last_updated = last_updated
                 print("Saved to MongoDB")
             except Exception as e:
                 print(f"MongoDB save error: {e}")
         
         # Also save to local file
+        self._write_local_cache()
+    
+    def _write_local_cache(self):
+        """Keep a local JSON copy as an offline fallback."""
         with open(self.data_file, 'w') as f:
             json.dump(self.tasks, f, indent=2)
         self.last_modified = os.path.getmtime(self.data_file)
     
     def check_external_changes(self):
-        """Check if data file was modified externally and reload"""
+        """Check if the local data file was modified externally and reload"""
         try:
             if os.path.exists(self.data_file):
                 current_modified = os.path.getmtime(self.data_file)
@@ -972,12 +994,54 @@ class Dought:
         
         self.root.after(2000, self.check_external_changes)
     
+    def mongo_poll_loop(self):
+        """Background loop that watches MongoDB for changes made by other apps."""
+        while not self._stop_polling:
+            try:
+                if self.mongo_collection is not None:
+                    doc = self.mongo_collection.find_one({'_id': 'tasks_data'})
+                    if doc is not None and doc.get('last_updated') != self.mongo_last_updated:
+                        # Apply on the Tk main thread (widgets are not thread-safe)
+                        self.root.after(0, self.apply_remote_doc, doc)
+            except Exception as e:
+                print(f"MongoDB poll error: {e}")
+            time.sleep(2)
+    
+    def apply_remote_doc(self, doc):
+        """Merge a document pulled from MongoDB into the current view."""
+        self.mongo_last_updated = doc.get('last_updated')
+        
+        remote = {
+            'todo': doc.get('todo', []),
+            'in_progress': doc.get('in_progress', []),
+            'done': doc.get('done', [])
+        }
+        
+        # Nothing actually changed -> avoid a needless UI rebuild
+        if remote == self.tasks:
+            return
+        
+        self.tasks = remote
+        
+        # Drop timers for tasks that no longer exist
+        known_ids = {t['id'] for tasks in self.tasks.values() for t in tasks}
+        for task_id in list(self.active_timers):
+            if task_id not in known_ids:
+                del self.active_timers[task_id]
+        
+        self._write_local_cache()
+        self.refresh_view()
+        self.update_stats()
+        print("Applied remote changes from MongoDB")
+    
     def auto_save(self):
         self.save_data()
         self.root.after(30000, self.auto_save)  # Save every 30 seconds
     
     def on_closing(self):
         """Cleanup when closing the app"""
+        self._stop_polling = True
+        
         # Remove lock file
         try:
             if os.path.exists(self.lock_file):

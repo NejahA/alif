@@ -1,0 +1,43 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  role      Role     @default(USER)
+  dreams    Dream[]
+  createdAt DateTime @default(now())
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model Dream {
+  id        String   @id @default(uuid())
+  title     String
+  content   String
+  tags      String?   // comma‑separated list of tags
+  audioUrl  String?   // optional path to uploaded voice recording
+  emotion   String?   // sentiment/emotion label from Gemini
+  createdAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  insights  Insight?
+}
+
+model Insight {
+  id        String   @id @default(uuid())
+  dreamId   String   @unique
+  summary   String
+  createdAt DateTime @default(now())
+  dream     Dream    @relation(fields: [dreamId], references: [id])
+}

@@ -5,7 +5,7 @@ Place your MongoDB Atlas credentials here
 
 # MongoDB Atlas connection string
 # Format: mongodb+srv://<username>:<password>@<cluster>.mongodb.net/<database>?retryWrites=true&w=majority
-MONGODB_URI = "mongodb+srv://achrefhamdi:21960975@cluster0.qd9v5k1.mongodb.net/?retryWrites=true&w=majority"
+MONGODB_URI = "mongodb+srv://achrefhamdi:21960975@cluster0.qd9v5k1.mongodb.net/dought?retryWrites=true&w=majority&appName=dought"
 
 # Database and collection names
 DATABASE_NAME = "dought"

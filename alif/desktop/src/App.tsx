@@ -20,6 +20,7 @@ import GameTab from "./pages/GameTab";
 import PomodoroTab from "./pages/PomodoroTab";
 import TasksTab from "./pages/TasksTab";
 import DiagnosticsTab from "./pages/DiagnosticsTab";
+import { updateAppIcon } from "./appIcon";
 import "./App.css";
 
 interface SystemStats {
@@ -44,6 +45,10 @@ export function App() {
       .then((res) => setStats(res))
       .catch((err) => console.error("Error fetching system stats:", err));
   }, []);
+
+  useEffect(() => {
+    updateAppIcon(activeTab);
+  }, [activeTab]);
 
   async function handleGreet(e: React.FormEvent) {
     e.preventDefault();

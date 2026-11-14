@@ -4,9 +4,9 @@ import cors from 'cors';
 import { MongoClient } from 'mongodb';
 
 const DEFAULT_MONGO_URI =
-  'mongodb+srv://achrefhamdi:21960975@cluster0.qd9v5k1.mongodb.net/hidro?retryWrites=true&w=majority&appName=hidro';
+  'mongodb+srv://achrefhamdi:21960975@cluster0.qd9v5k1.mongodb.net/hiro?retryWrites=true&w=majority&appName=hiro';
 const MONGO_URI = process.env.MONGO_URI || process.env.MONGO_URI_2 || DEFAULT_MONGO_URI;
-const DB_NAME = process.env.DB_NAME || 'hidro';
+const DB_NAME = process.env.DB_NAME || 'hiro';
 const COLLECTION = process.env.COLLECTION || 'gardens';
 
 const app = express();

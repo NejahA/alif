@@ -1,0 +1,14 @@
+# MongoDB Shared Database - Python Requirements
+# For the dought task management application
+
+pymongo>=4.6.0
+tkcalendar>=1.6.1
+psutil>=5.9.0
+
+# GUI and Utilities
+tkinter  # Usually comes with Python
+
+# Optional: for testing
+pytest>=7.4.0
+
+# To install: pip install -r requirements.txt
