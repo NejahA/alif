@@ -14,11 +14,14 @@ import notificationRoutes from './routes/notifications';
 import profileRoutes from './routes/profile';
 import pushRoutes from './routes/push';
 import calendarRoutes from './routes/calendar';
-import { i18nHandler } from './middleware/i18n';
+import newsRoutes from './routes/news';
+import favoritesRoutes from './routes/favorites';
 import { apiLimiter } from './middleware/rateLimiter';
 import { initSocket } from './socket';
 import { scheduleDigest } from './tasks/digest';
 import publicRoutes from './routes/public';
+import i18nHandler from './middleware/i18nHandler';
+import { scheduleEmailReminder } from './tasks/emailReminder';
 
 dotenv.config();
 
@@ -44,10 +47,12 @@ app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/dreams', dreamRoutes);
 app.use('/api/export', exportRoutes);
-app.use('/api/auth/google', oauthRoutes); // OAuth routes
+app.use('/api/auth/google', oauthExtraRoutes); // OAuth routes
 app.use('/api/profile', profileRoutes);
 app.use('/api/push', pushRoutes);
 app.use('/api/public', publicRoutes);
+app.use('/api/news', newsRoutes);
+app.use('/api/favorites', favoritesRoutes);
 
 // Create HTTP server for Socket.io integration
 const httpServer = http.createServer(app);
