@@ -15,5 +15,21 @@
     "build:mahdia": "cd alif/mahdia-react && npm run build",
     "server:start": "cd Alpalin/server && node index.js",
     "build:all": "npm run build:desktop && npm run build:game && npm run build:web && npm run build:mahdia"
+  },
+  "devDependencies": {
+    "electron-updater": "^6.8.11"
+  },
+  "dependencies": {
+    "antd": "^6.7.1",
+    "axe-core": "^4.14.0",
+    "electron": "^41.7.1",
+    "electron-builder": "^26.18.0",
+    "express-rate-limit": "^8.7.4",
+    "file-saver": "^2.0.5",
+    "i18next": "^26.7.2",
+    "jsdom": "^29.1.1",
+    "jszip": "^3.10.2",
+    "nodemailer": "^10.6.0",
+    "react-i18next": "^17.1.13"
   }
 }

@@ -18,7 +18,7 @@ import { i18nHandler } from './middleware/i18n';
 import { apiLimiter } from './middleware/rateLimiter';
 import { initSocket } from './socket';
 import { scheduleDigest } from './tasks/digest';
-import { scheduleEmailReminder } from './tasks/emailReminder';
+import publicRoutes from './routes/public';
 
 dotenv.config();
 
@@ -47,7 +47,7 @@ app.use('/api/export', exportRoutes);
 app.use('/api/auth/google', oauthRoutes); // OAuth routes
 app.use('/api/profile', profileRoutes);
 app.use('/api/push', pushRoutes);
-app.use('/api/calendar', calendarRoutes);
+app.use('/api/public', publicRoutes);
 
 // Create HTTP server for Socket.io integration
 const httpServer = http.createServer(app);
