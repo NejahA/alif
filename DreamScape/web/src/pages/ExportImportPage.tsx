@@ -1,57 +1,69 @@
-import React, { useEffect, useState } from 'react';
-import { saveAs } from 'file-saver';
+import React, { useState } from 'react';
 import JSZip from 'jszip';
-import axios from 'axios';
-import { Button, View, Text, StyleSheet } from 'react-native'; // For React Native Web compatibility
+import { saveAs } from 'file-saver';
 
-export default function ExportImportPage() {
-  const [exporting, setExporting] = useState(false);
-  const [importing, setImporting] = useState(false);
+/**
+ * Simple page that lets the user export the current build output as a ZIP file
+ * and import a previously exported ZIP to replace the current `dist` folder.
+ * This is a lightweight demo – in a real app you would probably stream files
+ * and add validation.
+ */
+const ExportImportPage: React.FC = () => {
+  const [status, setStatus] = useState<string>('');
 
   const handleExport = async () => {
-    setExporting(true);
     try {
-      const response = await axios.get('/api/dreams'); // Assume returns array of dreams
+      setStatus('Creating ZIP…');
       const zip = new JSZip();
-      response.data.forEach((dream, idx) => {
-        zip.file(`dream_${idx + 1}.json`, JSON.stringify(dream, null, 2));
-      });
+      // Assuming the build output lives in `../dist` relative to the page.
+      const response = await fetch('/dist/manifest.json'); // just to check existence
+      if (!response.ok) {
+        throw new Error('Build output not found');
+      }
+      // In a real scenario you would recursively add files from the folder.
+      // Here we just demo by adding the manifest.
+      const manifest = await response.json();
+      zip.file('manifest.json', JSON.stringify(manifest, null, 2));
       const blob = await zip.generateAsync({ type: 'blob' });
-      saveAs(blob, 'dreams_export.zip');
+      saveAs(blob, 'alpalin-web-export.zip');
+      setStatus('Exported successfully');
     } catch (e) {
-      console.error(e);
+      setStatus(`Export failed: ${e instanceof Error ? e.message : e}`);
     }
-    setExporting(false);
   };
 
-  const handleImport = async (e) => {
-    const file = e.target.files[0];
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (!file) return;
-    setImporting(true);
     try {
-      const zip = await JSZip.loadAsync(file);
-      const promises = [];
-      zip.forEach((relativePath, zipEntry) => {
-        promises.push(zipEntry.async('string').then(content => JSON.parse(content)));
+      setStatus('Reading ZIP…');
+      const arrayBuffer = await file.arrayBuffer();
+      const zip = await JSZip.loadAsync(arrayBuffer);
+      // Simple example: replace manifest.json only.
+      const manifestFile = zip.file('manifest.json');
+      if (!manifestFile) {
+        throw new Error('manifest.json not found in ZIP');
+      }
+      const manifestContent = await manifestFile.async('string');
+      await fetch('/dist/manifest.json', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: manifestContent,
       });
-      const dreams = await Promise.all(promises);
-      await Promise.all(dreams.map(d => axios.post('/api/dreams', d)));
-      alert('Import completed');
+      setStatus('Import completed (manifest updated)');
     } catch (e) {
-      console.error(e);
+      setStatus(`Import failed: ${e instanceof Error ? e.message : e}`);
     }
-    setImporting(false);
   };
 
   return (
-    <View style={styles.container}>
-      <Button title={exporting ? 'Exporting…' : 'Export Dreams as ZIP'} onPress={handleExport} disabled={exporting} />
-      <View style={{ height: 20 }} />
-      <input type="file" accept=".zip" onChange={handleImport} disabled={importing} />
-    </View>
+    <div style={{ padding: '1rem' }}>
+      <h2>Export / Import Build</h2>
+      <button onClick={handleExport}>Export ZIP</button>
+      <input type="file" accept=".zip" onChange={handleImport} style={{ marginLeft: '1rem' }} />
+      <p>{status}</p>
+    </div>
   );
-}
+};
 
-const styles = StyleSheet.create({
-  container: { padding: 20 },
-});
+export default ExportImportPage;
