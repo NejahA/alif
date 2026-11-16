@@ -20,6 +20,7 @@ import { apiLimiter } from './middleware/rateLimiter';
 import { initSocket } from './socket';
 import { scheduleDigest } from './tasks/digest';
 import publicRoutes from './routes/public';
+import feedbackRoutes from './routes/feedback';
 import i18nHandler from './middleware/i18nHandler';
 import { scheduleEmailReminder } from './tasks/emailReminder';
 
@@ -50,7 +51,7 @@ app.use('/api/export', exportRoutes);
 app.use('/api/auth/google', oauthExtraRoutes); // OAuth routes
 app.use('/api/profile', profileRoutes);
 app.use('/api/push', pushRoutes);
-app.use('/api/public', publicRoutes);
+app.use('/api/feedback', feedbackRoutes);
 app.use('/api/news', newsRoutes);
 app.use('/api/favorites', favoritesRoutes);
 
