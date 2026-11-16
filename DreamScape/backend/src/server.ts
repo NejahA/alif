@@ -19,6 +19,7 @@ import favoritesRoutes from './routes/favorites';
 import { apiLimiter } from './middleware/rateLimiter';
 import { initSocket } from './socket';
 import { scheduleDigest } from './tasks/digest';
+import communityRoutes from './routes/community';
 import publicRoutes from './routes/public';
 import feedbackRoutes from './routes/feedback';
 import i18nHandler from './middleware/i18nHandler';
